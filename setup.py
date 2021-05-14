@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='hhnk_threedi_tools',
-    version='0.1.4',    
+    version='0.1.9',    
     description='HHNK tools for working with 3di',
     url='https://github.com/LER1990/hhnk_threedi_tools',
     author='Laure Ravier',
@@ -18,11 +18,11 @@ setup(
     packages=find_packages(),
     python_requires=">=3.7",
 	install_requires=[
-   	'numpy>=1.19.1',
-	'Shapely>=1.7.0',
-	'gdal>=3.1.4',
-    'pandas>=1.0.1',
-    'geopandas>=0.7.0',
-    'threedigrid>=1.0.25'
+   	'numpy>=1.17.0', # Was 1.19.1
+	'Shapely>=1.6.4', # Was 1.7.0
+	'gdal>=2.4.0', # Was 3.1.4
+    'pandas>=0.25.3', # Was 1.0.1
+    'geopandas>=0.6.0', # Was 0.7.0
+    'threedigrid>=1.0.16' # Was 1.0.25
 	]
 )

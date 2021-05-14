@@ -7,6 +7,8 @@ def set_band_data(data_source, num_bands, nodata):
             band = data_source.GetRasterBand(i)
             band.SetNoDataValue(nodata)
             band.Fill(nodata)
+            band.FlushCache() # close file after writing
+            band = None
     except Exception as e:
         raise e from None
 
@@ -58,5 +60,6 @@ def save_raster_array_to_tiff(output_file, raster_array, nodata, metadata, datat
                                            compression=compression)  # create new raster
         for i in range(1, num_bands + 1):
             target_ds.GetRasterBand(i).WriteArray(raster_array)  # fill file with data
+        target_ds = None
     except Exception as e:
         raise e from None
