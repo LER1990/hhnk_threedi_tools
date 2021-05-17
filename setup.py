@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='hhnk_research_tools',
-    version='0.1.1',
+    version='0.1.2',
     description='HHNK tools for working with 3di',
     url='https://github.com/LER1990/hhnk_threedi_tools',
     author='Laure Ravier',
