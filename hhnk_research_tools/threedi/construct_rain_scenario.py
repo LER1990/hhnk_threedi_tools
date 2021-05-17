@@ -1,4 +1,6 @@
 import numpy as np
+import threedigrid
+threedigrid.admin.gridresultadmin.logging.disable()
 from threedigrid.admin.gridresultadmin import GridH5ResultAdmin
 from .variables.gridadmin import all_1d, all_2d
 
