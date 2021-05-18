@@ -1,7 +1,6 @@
 import numpy as np
-import threedigrid
-threedigrid.admin.gridresultadmin.logging.disable()
-from threedigrid.admin.gridresultadmin import GridH5ResultAdmin
+from threedigrid.admin.gridresultadmin import GridH5ResultAdmin, logging
+logging.disable()
 from .variables.gridadmin import all_1d, all_2d
 
 def calculate_rain_days(rain):
