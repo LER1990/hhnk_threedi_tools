@@ -2,13 +2,13 @@ from setuptools import setup, find_packages
 
 setup(
     name='hhnk_research_tools',
-    version='0.1.2',
+    version='0.1.0',
     description='HHNK tools for working with 3di',
-    url='https://github.com/LER1990/hhnk_threedi_tools',
-    author='Laure Ravier',
-    author_email='L.Ravier@hhnk.nl',
+    url='https://github.com/HHNK/hhnk_research_tools_py',
+    author='Wietse van Gerwen',
+    author_email='w.vangerwen@hhnk.nl',
     project_urls={
-        "Bug Tracker": "https://github.com/LER1990/hhnk_threedi_tools/issues",
+        "Bug Tracker": "https://github.com/HHNK/hhnk_research_tools_py/issues",
     },
     classifiers=[
         "Programming Language :: Python :: 3",
