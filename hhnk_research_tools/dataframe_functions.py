@@ -1,19 +1,55 @@
+import geopandas as gpd
+from shapely import wkt
 import os
-from pathlib import Path
-from ..variables.types import file_types_dict, GPKG, CSV
-from ..variables.definitions import GPKG_DRIVER
-from ..variables.default_variables import DEF_DELIMITER, DEF_ENCODING
+from hhnk_research_tools.variables import WKT, GPKG_DRIVER
+from hhnk_research_tools.variables import DEF_GEOMETRY_COL, DEF_SRC_CRS, DEF_TRGT_CRS, DEF_DELIMITER, DEF_ENCODING
+from hhnk_research_tools.variables import file_types_dict, GPKG, CSV
+from hhnk_research_tools.sql_functions import execute_sql_selection, create_sqlite_connection
+from hhnk_research_tools.general_functions import ensure_file_path
 
-def ensure_file_path(filepath):
+#Conversion
+def _set_geometry_by_type(df, geom_col_type, col=DEF_GEOMETRY_COL):
     """
-    Functions makes sure all folders in a given file path exist. Creates them if they don't.
+    Converts geometry if necessary, depending on geometry column type
+
+        _set_geometry_by_type(
+            df (pandas DataFrame),
+            geom_col_type (string: type of geometry)
+            col -> 'geometry' (string: name of column containing geometry in df)
+
+    replaces geometry column with converted values
     """
+    if geom_col_type == WKT:
+        try:
+            df[col] = df[col].apply(wkt.loads)
+        except Exception as e:
+            raise e from None
+
+#TODO YOU ARE HERE>
+#TODO convert_df_to_gdf en create_gdf_from_df zijn geworden; convert_df_to_gdf
+def df_convert_to_gdf(df, geom_col_type=WKT, geometry_col=DEF_GEOMETRY_COL,
+                      src_crs=DEF_SRC_CRS, trgt_crs=DEF_TRGT_CRS):
+    """
+    Convert a pandas DataFrame to a geopandas GeoDataFrame
+
+        df_convert_to_gdf(
+            df (original pandas dataframe)
+            geom_col_type -> WKT (type of geometry column to make sure geometry is interpreted correctly)
+            geometry_col -> 'geometry' (string: name of column in df to be used as geometry)
+            src_crs -> 4326 (original projection geometry)
+            trgt_crs -> 28992 (crs to convert geometry to)
+            )
+    """
+    src_epsg = f'EPSG:{src_crs}'
     try:
-        path = Path(filepath)
-        path.parent.mkdir(parents=True, exist_ok=True)
+        _set_geometry_by_type(df, geom_col_type, geometry_col)
+        gdf = gpd.GeoDataFrame(df, geometry=geometry_col, crs=src_epsg)
+        gdf.to_crs(epsg=trgt_crs, inplace=True)
+        return gdf
     except Exception as e:
         raise e from None
 
+#Saving
 def gdf_write_to_geopackage(gdf, path, filename, driver=GPKG_DRIVER, index=False):
     """
     Functions outputs DataFrame of GeoDataFrame to .gpkg document

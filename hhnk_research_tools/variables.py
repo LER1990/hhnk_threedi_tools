@@ -1,5 +1,24 @@
 import gdal
 
+#default_variables
+DEF_GEOMETRY_COL = 'geometry'
+DEF_TRGT_CRS = 28992
+DEF_SRC_CRS = 4326
+DEF_DELIMITER = ','
+DEF_ENCODING = 'utf-8'
+
+#Download from http://www.gaia-gis.it/gaia-sins/windows-bin-amd64/ into anaconda installation
+#Needs to be added to path before using.
+MOD_SPATIALITE_PATH = r'C:\ProgramData\Anaconda3\mod_spatialite-5.0.1-win-amd64'
+
+
+# definitions
+WKT = 'wkt'
+GPKG_DRIVER = 'GPKG'
+ESRI_DRIVER = 'ESRI Shapefile'
+OPEN_FILE_GDB_DRIVER = 'OpenFileGDB'
+
+#types
 #   Output file types: to prevent typo's and in case of remapping
 TIF = 'tif'
 CSV = 'csv'
@@ -32,4 +51,3 @@ file_types_dict = {'csv': '.csv',
                    'dbf': '.dbf',
                    'prj': '.prj'}
 UTF8 = 'utf-8'
-
