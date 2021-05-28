@@ -4,7 +4,6 @@ import os
 from hhnk_research_tools.variables import WKT, GPKG_DRIVER
 from hhnk_research_tools.variables import DEF_GEOMETRY_COL, DEF_SRC_CRS, DEF_TRGT_CRS, DEF_DELIMITER, DEF_ENCODING
 from hhnk_research_tools.variables import file_types_dict, GPKG, CSV
-from hhnk_research_tools.sql_functions import execute_sql_selection, create_sqlite_connection
 from hhnk_research_tools.general_functions import ensure_file_path
 
 #Conversion
@@ -25,7 +24,6 @@ def _set_geometry_by_type(df, geom_col_type, col=DEF_GEOMETRY_COL):
         except Exception as e:
             raise e from None
 
-#TODO YOU ARE HERE>
 #TODO convert_df_to_gdf en create_gdf_from_df zijn geworden; convert_df_to_gdf
 def df_convert_to_gdf(df, geom_col_type=WKT, geometry_col=DEF_GEOMETRY_COL,
                       src_crs=DEF_SRC_CRS, trgt_crs=DEF_TRGT_CRS):
