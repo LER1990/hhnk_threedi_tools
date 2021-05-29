@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from .variables.rain_dataframe import t_0_col, t_start_rain_col, t_end_rain_min_one_col, t_end_sum_col, \
+from hhnk_research_tools.threedi.variables.rain_dataframe import t_0_col, t_start_rain_col, t_end_rain_min_one_col, t_end_sum_col, \
     t_end_rain_col, t_index_col
 
 def create_results_dataframe(timestep, days_dry_start, days_dry_end):

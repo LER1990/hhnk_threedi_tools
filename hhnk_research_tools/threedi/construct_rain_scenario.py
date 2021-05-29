@@ -1,7 +1,7 @@
 import numpy as np
 from threedigrid.admin.gridresultadmin import GridH5ResultAdmin, logging
 logging.disable()
-from .variables.gridadmin import all_1d, all_2d
+from hhnk_research_tools.threedi.variables.gridadmin import all_1d, all_2d
 
 def calculate_rain_days(rain):
     """
