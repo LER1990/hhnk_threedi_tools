@@ -25,10 +25,15 @@ def _set_geometry_by_type(df, geom_col_type, col=DEF_GEOMETRY_COL):
             raise e from None
 
 #TODO convert_df_to_gdf en create_gdf_from_df zijn geworden; convert_df_to_gdf
+#TODO make this more logical, it now handles two types of geometry_cols under the same variable.
 def df_convert_to_gdf(df, geom_col_type=WKT, geometry_col=DEF_GEOMETRY_COL,
                       src_crs=DEF_SRC_CRS, trgt_crs=DEF_TRGT_CRS):
     """
     Convert a pandas DataFrame to a geopandas GeoDataFrame
+
+    geometry_col can both be a column name or a pd.Series. 
+    When a pandas series is provided it already needs to be shapely geometry type
+
 
         df_convert_to_gdf(
             df (original pandas dataframe)
@@ -40,12 +45,32 @@ def df_convert_to_gdf(df, geom_col_type=WKT, geometry_col=DEF_GEOMETRY_COL,
     """
     src_epsg = f'EPSG:{src_crs}'
     try:
-        _set_geometry_by_type(df, geom_col_type, geometry_col)
+        if type(geometry_col)==str:
+            _set_geometry_by_type(df, geom_col_type, geometry_col)
         gdf = gpd.GeoDataFrame(df, geometry=geometry_col, crs=src_epsg)
         gdf.to_crs(epsg=trgt_crs, inplace=True)
         return gdf
     except Exception as e:
         raise e from None
+
+def df_add_geometry_to_gdf(df, geometry_col, crs=DEF_TRGT_CRS) -> gpd.GeoDataFrame:
+    """
+    Creates geopandas GeoDataFrame from pandas DataFrame
+
+        df_add_geometry_to_gdf(
+                df (pandas DataFrame)
+                geometry_col (Geometry column for GeoDataFrame)
+                crs (projection) -> 28992
+            )
+
+    return value: GeoDataFrame with df as data, geometry_col as geometry and crs as crs
+    """
+    trgt_crs = f'EPSG:{crs}'
+    try:
+        gdf = gpd.GeoDataFrame(df, geometry=geometry_col, crs=trgt_crs)
+        return gdf
+    except Exception as e:
+        raise e from None    
 
 #Saving
 def gdf_write_to_geopackage(gdf, path, filename, driver=GPKG_DRIVER, index=False):
