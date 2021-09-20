@@ -1,7 +1,9 @@
 import numpy as np
 from threedigrid.admin.gridresultadmin import GridH5ResultAdmin, logging
+
 logging.disable()
 from hhnk_research_tools.threedi.variables.gridadmin import all_1d, all_2d
+
 
 def calculate_rain_days(rain):
     """
@@ -20,20 +22,27 @@ def calculate_rain_days(rain):
     else:
         raise Exception(f"Geen regen gedetecteerd in 3di scenario")
 
+
 def get_rain_properties(results):
-    '''
+    """
     Calculates the rain scenario used for this result
-    '''
+    """
     try:
         # Calculates the mean of steps between timestamps (in seconds), then converts to minutes
         dt = round(np.mean(np.diff(results.nodes.timestamps)) / 60, 0)
         # Timestep is list of time passed between timestamp and start in minutes
         timestep = results.nodes.timestamps / 60
         # Calculates rain per node between 0 and end of scenario at every step of size dt / 60 (so every hour)
-        rain_1d_list = results.nodes.subset(all_1d).timeseries(
-            indexes=slice(0, timestep.size, int(60 / dt))).rain.tolist()
-        rain_2d_list = results.nodes.subset(all_2d).timeseries(
-            indexes=slice(0, timestep.size, int(60 / dt))).rain.tolist()
+        rain_1d_list = (
+            results.nodes.subset(all_1d)
+            .timeseries(indexes=slice(0, timestep.size, int(60 / dt)))
+            .rain.tolist()
+        )
+        rain_2d_list = (
+            results.nodes.subset(all_2d)
+            .timeseries(indexes=slice(0, timestep.size, int(60 / dt)))
+            .rain.tolist()
+        )
         # Blijft raar in sublijsten staan ookal lezen we maar 1 node uit, dit haalt dat weg om er 1 list van te maken
         # We pick the index of the first node in the list of rain
         rain_1d = [x[0] for x in rain_1d_list]
@@ -57,12 +66,18 @@ def get_rain_properties(results):
     except Exception as e:
         raise e from None
 
+
+def threedi_timesteps(threedi_result):
+    rain, dt, timestep = get_rain_properties(threedi_result)
+    detected_rain, days_dry_start, days_dry_end = calculate_rain_days(rain)
+    return timestep, days_dry_start, days_dry_end
+
+
 def construct_scenario(test_env):
     try:
-        nc_file = test_env.src_paths['nc_file']
-        h5_file = test_env.src_paths['h5_file']
-        result = GridH5ResultAdmin(h5_file_path=h5_file,
-                                   netcdf_file_path=nc_file)
+        nc_file = test_env.src_paths["nc_file"]
+        h5_file = test_env.src_paths["h5_file"]
+        result = GridH5ResultAdmin(h5_file_path=h5_file, netcdf_file_path=nc_file)
         rain, dt, timestep = get_rain_properties(result)
         detected_rain, days_dry_start, days_dry_end = calculate_rain_days(rain)
         return result, rain, detected_rain, timestep, days_dry_start, days_dry_end
