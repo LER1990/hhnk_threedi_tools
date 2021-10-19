@@ -1,7 +1,7 @@
-import gdal
+from osgeo import gdal
 import numpy as np
 import json
-import ogr
+from osgeo import ogr
 from shapely.geometry import LineString
 from hhnk_research_tools.variables import DEF_TRGT_CRS
 from hhnk_research_tools.variables import GDAL_DATATYPE, GEOTIFF
@@ -54,7 +54,7 @@ def _get_array_from_bands(gdal_file, band_count, window, raster_source):
                 f"Unexpected number of bands in raster {raster_source} (expect 1 or 3)"
             )
     except Exception as e:
-        raise e from None
+        raise e
 
 
 def _get_gdal_metadata(gdal_file) -> dict:
@@ -80,10 +80,10 @@ def _get_gdal_metadata(gdal_file) -> dict:
         meta["shape"] = [meta["y_res"], meta["x_res"]]
         return meta
     except Exception as e:
-        raise e from None
+        raise e
 
 
-def load_gdal_raster(raster_source, window=None, return_array=True):
+def load_gdal_raster(raster_source, window=None, return_array=True, band_count=None):
     """
     Loads a raster (tif) and returns an array of its values, its no_data value and
     dict containing associated metadata
@@ -93,7 +93,8 @@ def load_gdal_raster(raster_source, window=None, return_array=True):
         gdal_file = gdal.Open(raster_source)
         if gdal_file:
             if return_array:
-                band_count = gdal_file.RasterCount
+                if band_count==None:
+                    band_count = gdal_file.RasterCount
                 raster_array = _get_array_from_bands(
                     gdal_file, band_count, window, raster_source
                 )
@@ -104,7 +105,7 @@ def load_gdal_raster(raster_source, window=None, return_array=True):
             metadata = _get_gdal_metadata(gdal_file)
             return raster_array, no_data, metadata
     except Exception as e:
-        raise e from None
+        raise e
 
 
 # Conversion
@@ -118,7 +119,7 @@ def _gdf_to_json(gdf, epsg=DEF_TRGT_CRS):
         gdf_json_str = json.dumps(gdf_json)
         return gdf_json_str
     except Exception as e:
-        raise e from None
+        raise e
 
 
 def _gdf_to_ogr(gdf, epsg=DEF_TRGT_CRS):
@@ -129,7 +130,7 @@ def _gdf_to_ogr(gdf, epsg=DEF_TRGT_CRS):
         polygon = ogr_ds.GetLayer()
         return ogr_ds, polygon
     except Exception as e:
-        raise e from None
+        raise e
 
 
 def gdf_to_raster(
@@ -173,7 +174,7 @@ def gdf_to_raster(
         raster_array = new_raster.ReadAsArray()
         return raster_array
     except Exception as e:
-        raise e from None
+        raise e
 
 
 # Saving
@@ -186,7 +187,7 @@ def _set_band_data(data_source, num_bands, nodata):
             band.FlushCache()  # close file after writing
             band = None
     except Exception as e:
-        raise e from None
+        raise e
 
 
 def create_new_raster_file(
@@ -223,7 +224,7 @@ def create_new_raster_file(
         target_ds.SetProjection(meta["proj"])
         return target_ds
     except Exception as e:
-        raise e from None
+        raise e
 
 
 def save_raster_array_to_tiff(
@@ -259,4 +260,4 @@ def save_raster_array_to_tiff(
             target_ds.GetRasterBand(i).WriteArray(raster_array)  # fill file with data
         target_ds = None
     except Exception as e:
-        raise e from None
+        raise e

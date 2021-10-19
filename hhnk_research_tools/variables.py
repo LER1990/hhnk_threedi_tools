@@ -1,4 +1,4 @@
-import gdal
+from osgeo import gdal
 
 # default_variables
 DEF_GEOMETRY_COL = "geometry"

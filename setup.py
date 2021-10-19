@@ -28,12 +28,12 @@ def find_version(*file_paths):
 setup(
     name="hhnk_research_tools",
     version=find_version("hhnk_research_tools", "__init__.py"),
-    description="HHNK tools for working with 3di",
-    url="https://github.com/HHNK/hhnk_research_tools_py",
-    author="Wietse van Gerwen",
-    author_email="w.vangerwen@hhnk.nl",
+    description='HHNK tools for working with 3di',
+    url='https://github.com/HHNK/hhnk-research-tools',
+    author='Wietse van Gerwen',
+    author_email='w.vangerwen@hhnk.nl',
     project_urls={
-        "Bug Tracker": "https://github.com/HHNK/hhnk_research_tools_py/issues",
+        "Bug Tracker": "https://github.com/HHNK/hhnk-research-tools/issues",
     },
     classifiers=[
         "Programming Language :: Python :: 3",
