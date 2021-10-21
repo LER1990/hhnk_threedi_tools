@@ -1,7 +1,5 @@
 import hhnk_research_tools.variables as variables
 
-from hhnk_research_tools.gis.raster import Raster
-
 from hhnk_research_tools.sql_functions import (
     sql_create_update_case_statement,
     sql_construct_select_query,

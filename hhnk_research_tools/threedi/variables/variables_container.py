@@ -1,4 +1,4 @@
-class ThreediInformation():
+class ThreediInformation:
     """
     Initialization:
     ThreediInformation(result, scenario_df)
@@ -9,6 +9,7 @@ class ThreediInformation():
                         in rain scenario)
     return value: object
     """
+
     def __init__(self, result, df):
         self.result = result
         self.scenario_df = df
