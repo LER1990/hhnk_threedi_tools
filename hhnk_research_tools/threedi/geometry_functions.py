@@ -3,6 +3,7 @@ from shapely.geometry import Point, LineString
 
 
 def coordinates_to_points(nodes):
+    """Input is r.nodes"""
     res_crds = nodes.coordinates
     crds_lst = np.vstack(res_crds.T)
     # convert to shapely format so we can create a geodataframe
