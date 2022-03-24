@@ -153,7 +153,8 @@ def gdf_to_raster(
     try:
         ogr_ds, polygon = _gdf_to_ogr(gdf, epsg)
         # make sure folders exist
-        ensure_file_path(raster_out)
+        if raster_out != '': #empty str when driver='MEM'
+            ensure_file_path(raster_out)
         new_raster = create_new_raster_file(
             file_name=raster_out,
             nodata=nodata,

@@ -87,7 +87,7 @@ def df_add_geometry_to_gdf(df, geometry_col, crs=DEF_TRGT_CRS) -> gpd.GeoDataFra
 
 
 # Saving
-def gdf_write_to_geopackage(gdf, path, filename, driver=GPKG_DRIVER, index=False):
+def gdf_write_to_geopackage(gdf, path=None, filename=None, filepath=None, driver=GPKG_DRIVER, index=False):
     """
     Functions outputs DataFrame of GeoDataFrame to .gpkg document
 
@@ -101,20 +101,26 @@ def gdf_write_to_geopackage(gdf, path, filename, driver=GPKG_DRIVER, index=False
     Return value: file path (path + filename + extension) if gdf is not empty, else None
     """
     ext = file_types_dict[GPKG]
-    filepath = os.path.join(path, filename + ext)
+    if filepath is None:
+        filepath = os.path.join(path, filename + ext)
+        
     try:
         if os.path.exists(filepath):
             os.remove(filepath)
         if not gdf.empty:
             ensure_file_path(filepath)
-            gdf.to_file(filepath, layer=filename, driver=driver, index=index)
+            if filename is None:
+                gdf.to_file(filepath, driver=driver, index=index)
+            else:
+                gdf.to_file(filepath, layer=filename, driver=driver, index=index)
+
             return filepath
         return None
     except Exception as e:
         raise e from None
 
 
-def gdf_write_to_csv(gdf, path, filename, mode="w", cols=None, index=False):
+def gdf_write_to_csv(gdf, path=None, filename=None, filepath=None, mode="w", cols=None, index=False):
     """
     Functions outputs DataFrame of GeoDataFrame to .csv document
 
@@ -129,9 +135,11 @@ def gdf_write_to_csv(gdf, path, filename, mode="w", cols=None, index=False):
     Return value: file path (path + filename + extension) if gdf is not empty, else None
     """
     ext = file_types_dict[CSV]
-    filepath = os.path.join(path, filename + ext)
+    if filepath is None:
+        filepath = os.path.join(path, filename + ext)
     try:
-        ensure_file_path(filename)
+        if filename:
+            ensure_file_path(filename)
         if os.path.exists(filepath):
             os.remove(filepath)
         if not gdf.empty:
