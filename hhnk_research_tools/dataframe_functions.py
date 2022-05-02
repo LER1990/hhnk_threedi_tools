@@ -103,7 +103,7 @@ def gdf_write_to_geopackage(gdf, path=None, filename=None, filepath=None, driver
     ext = file_types_dict[GPKG]
     if filepath is None:
         filepath = os.path.join(path, filename + ext)
-        
+    
     try:
         if os.path.exists(filepath):
             os.remove(filepath)

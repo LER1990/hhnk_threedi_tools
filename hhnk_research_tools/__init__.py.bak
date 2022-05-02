@@ -36,7 +36,7 @@ from hhnk_research_tools.raster_functions import (
 # TODO how does this versioning work?
 # Threedigrid version number is automatic updated with zest.releaser. Geopandas uses versioneer.py.
 # the version number in setup.py is updated using the find_version()
-__version__ = '0.4.1'
+__version__ = '0.4'
 
 __doc__ = """
 General toolbox for loading, converting and saving serval datatypes.
