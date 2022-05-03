@@ -4,6 +4,10 @@ Created on Thu Aug 26 16:24:32 2021
 
 @author: chris.kerklaan
 """
+
+# First party imports
+import os
+import tempfile
 import pandas as pd
 import numpy as np
 import geopandas as gpd
@@ -35,14 +39,64 @@ levee_height_col = "levee_height"
 type_col = "type"
 
 
+# Third-party imports
+from threedigrid.admin.gridadmin import GridH5Admin
+from threedigrid.admin.gridresultadmin import GridH5ResultAdmin
+from threedigrid_builder import make_gridadmin
+
+
+
+def _write_grid_to_file(grid, grid_type, output_path):
+    df = pd.DataFrame(grid[grid_type])
+    gdf = hrt.df_convert_to_gdf(df, geom_col_type='wkb', src_crs='28992')
+    hrt.gdf_write_to_geopackage(gdf, filepath=output_path)
+    
+    
+class Grid:
+    def __init__(self, grid_folder=None, sqlite_path=None, dem_path=None):
+        
+        self.folder = grid_folder
+        self.sqlite_path = sqlite_path
+        self.dem_path = dem_path
+        
+            
+        if sqlite_path and dem_path:
+            #using output here results in error, so we use the returned dict
+            grid = make_gridadmin(sqlite_path, dem_path) 
+            self.nodes = hrt.df_convert_to_gdf(pd.DataFrame(grid["nodes"]), geom_col_type='wkb', src_crs='28992')
+            self.lines  = hrt.df_convert_to_gdf(pd.DataFrame(grid["lines"]), geom_col_type='wkb', src_crs='28992')
+            self.cells = hrt.df_convert_to_gdf(pd.DataFrame(grid["cells"]), geom_col_type='wkb', src_crs='28992')
+            
+
+        if not grid_folder and (sqlite_path and dem_path):
+            self.grid_dir = tempfile.TemporaryDirectory()
+            self.folder = self.grid_dir.name
+            make_gridadmin(sqlite_path, dem_path, self.folder + "/gridadmin.h5") 
+        
+        if self.folder:
+            self.admin_path = self.folder + "/gridadmin.h5"
+            self.grid_path = self.folder + "/results_3di.nc"
+            
+            if os.path.exists(self.grid_path):
+                self.grid = GridH5ResultAdmin(self.admin_path, self.grid_path)
+                
+            if os.path.exists(self.admin_path):
+                self.admin = GridH5Admin(self.admin_path)
+    
+    def read_1d2d_lines(self):
+        return read_1d2d_lines(self.admin)
+    
+    def import_levees(self):
+        return import_levees(self.admin)
+    
+
+
 def read_1d2d_lines(results):
     """Uitlezen 1d2d lijnelementen
     Alle 1d2d lijnelementen in het model.
     """
     try:
         # Creates geodataframe with geometries of 1d2d subset of nodes in 3di results
-        print(type(results))
-
         coords = hrt.threedi.line_geometries_to_coords(
             results.lines.subset(one_d_two_d).line_geometries
         )
@@ -96,7 +150,8 @@ def read_1d2d_lines(results):
         ] = oned_conn_nodes_init_wlvl_list
 
         # Add storage area from connection nodes to the table
-        storage_area_lst = [a.decode(UTF8) for a in oned_conn_nodes_storage_area_list]
+        storage_area_lst = oned_conn_nodes_storage_area_list
+        #storage_area_lst = [a.decode(UTF8) for a in oned_conn_nodes_storage_area_list]
         one_d_two_d_lines_gdf.loc[
             one_d_two_d_lines_gdf[one_d_node_id_col].isin(oned_conn_nodes_id_list),
             storage_area_col,

@@ -1,5 +1,6 @@
 import geopandas as gpd
 from shapely import wkt
+from shapely import wkb
 import os
 from hhnk_research_tools.variables import WKT, GPKG_DRIVER
 from hhnk_research_tools.variables import (
@@ -29,7 +30,12 @@ def _set_geometry_by_type(df, geom_col_type, col=DEF_GEOMETRY_COL):
             df[col] = df[col].apply(wkt.loads)
         except Exception as e:
             raise e from None
-
+            
+    if geom_col_type == "wkb":
+        try:
+            df[col] = df[col].apply(wkb.loads)
+        except Exception as e:
+            raise e from None
 
 # TODO convert_df_to_gdf en create_gdf_from_df zijn geworden; convert_df_to_gdf
 # TODO make this more logical, it now handles two types of geometry_cols under the same variable.
