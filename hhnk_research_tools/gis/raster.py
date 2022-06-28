@@ -7,14 +7,14 @@ import pandas as pd
 from scipy import ndimage
 
 class Raster:
-    def __init__(self, source_path):
+    def __init__(self, source_path, min_block_size=1024):
         self.source_path = source_path
         self.source = source_path #calls self.source.setter(source_path)
         self.band_count = self.source.RasterCount
         self._array = None
         self.nodata = self.source.GetRasterBand(1).GetNoDataValue()
         self.metadata = None
-
+        self.min_block_size=min_block_size
 
     @property
     def array(self):
@@ -31,16 +31,23 @@ class Raster:
         # self.source.GetRasterBand(band_nr).WriteArray(window[0],window[1],raster_array)
 
     def _read_array(self, band=None, window=None):
-        """window=[x0, y0, x1, y1]"""
+        """window=[x0, y0, x1, y1]--oud.
+        window=[x0, y0, xsize, ysize]"""
         if band == None:
             band = self.source.GetRasterBand(1) #TODO band is not closed properly
 
         if window is not None:
+            # raster_array = band.ReadAsArray(
+            #     xoff=int(window[0]),
+            #     yoff=int(window[1]),
+            #     win_xsize=int(window[2] - window[0]),
+            #     win_ysize=int(window[3] - window[1]))
+
             raster_array = band.ReadAsArray(
-                xoff=int(window[0]),
-                yoff=int(window[1]),
-                win_xsize=int(window[2] - window[0]),
-                win_ysize=int(window[3] - window[1]))
+                xoff=window[0],
+                yoff=window[1],
+                win_xsize=window[2],
+                win_ysize=window[3])
         else:
             raster_array = band.ReadAsArray()
 
@@ -135,8 +142,14 @@ class Raster:
 
         block_height, block_width = band.GetBlockSize()
 
+        if (block_height < self.min_block_size) or (block_width < self.min_block_size):
+            block_height=self.min_block_size
+            block_width=self.min_block_size
+
         ncols = int(np.floor(band.XSize / block_width))
         nrows = int(np.floor(band.YSize / block_height))
+
+
 
         #Create arrays with index of where windows end. These are square blocks. 
         xparts = np.linspace(0, block_width*ncols, ncols+1).astype(int)
@@ -157,6 +170,8 @@ class Raster:
             for iy in range(nrows):
                 i += 1
                 blocks_df.loc[i, :] = np.array((ix, iy, [xparts[ix], yparts[iy], xparts[ix+1], yparts[iy+1]]), dtype=object)
+
+        blocks_df['window_readarray'] = blocks_df['window'].apply(lambda x: [int(x[0]), int(x[1]), int(x[2]-x[0]), int(x[3]-x[1])])
 
         band.FlushCache()  # close file after writing
         band = None
@@ -191,9 +206,11 @@ class Raster:
         pass
 
     def __iter__(self):
-        blocks_df = self.generate_blocks()
-        for idx, block_row in blocks_df.iterrows():
-            window=block_row['window']
+        if not hasattr(self,'blocks'):
+            _ = self.generate_blocks()
+
+        for idx, block_row in self.blocks.iterrows():
+            window=block_row['window_readarray']
             block = self._read_array(window=window)
             yield window, block
             

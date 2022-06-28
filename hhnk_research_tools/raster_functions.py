@@ -7,6 +7,7 @@ from hhnk_research_tools.variables import DEF_TRGT_CRS
 from hhnk_research_tools.variables import GDAL_DATATYPE, GEOTIFF
 from hhnk_research_tools.variables import GEOTIFF, GDAL_DATATYPE
 from hhnk_research_tools.general_functions import ensure_file_path
+import os
 
 # Loading
 def _get_array_from_bands(gdal_file, band_count, window, raster_source):
@@ -262,3 +263,28 @@ def save_raster_array_to_tiff(
         target_ds = None
     except Exception as e:
         raise e
+
+        
+def build_vrt(raster_folder, vrt_name='combined_rasters', bandlist=[1], bounds=None, overwrite=False):
+    """create vrt from all rasters in a folder.
+    bounds=(xmin, ymin, xmax, ymax)
+    bandList doesnt work as expected."""
+    output_path = os.path.join(raster_folder, f'{vrt_name}.vrt')
+    
+    if os.path.exists(output_path) and not overwrite:
+        print(f'vrt already exists: {output_path}')
+        return
+
+    tifs_list = [os.path.join(raster_folder, i) for i in os.listdir(raster_folder) if i.endswith('.tif') or i.endswith('.tiff')]
+
+
+    vrt_options = gdal.BuildVRTOptions(resolution='highest',
+                                       separate=False,
+                                       resampleAlg='nearest',
+                                       addAlpha=True,
+                                       outputBounds=bounds,
+                                       bandList=bandlist,)
+    ds = gdal.BuildVRT(output_path, tifs_list, options=vrt_options)
+    ds.FlushCache()
+    if not os.path.exists(output_path):
+        print('Something went wrong, vrt not created.')
