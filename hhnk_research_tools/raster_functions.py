@@ -145,6 +145,7 @@ def gdf_to_raster(
     datatype=GDAL_DATATYPE,
     compression="DEFLATE",
     tiled="YES",
+    read_array=True,
 ):
     """Dem is used as format raster. The new raster gets meta data from the DEM. A gdf is turned into ogr layer and is
     then rasterized.
@@ -173,8 +174,11 @@ def gdf_to_raster(
                 f"TILED={tiled}",
             ],
         )
-        raster_array = new_raster.ReadAsArray()
-        return raster_array
+        if read_array:
+            raster_array = new_raster.ReadAsArray()
+            return raster_array
+        else:
+            return None
     except Exception as e:
         raise e
 
@@ -281,10 +285,45 @@ def build_vrt(raster_folder, vrt_name='combined_rasters', bandlist=[1], bounds=N
     vrt_options = gdal.BuildVRTOptions(resolution='highest',
                                        separate=False,
                                        resampleAlg='nearest',
-                                       addAlpha=True,
+                                       addAlpha=False,
                                        outputBounds=bounds,
                                        bandList=bandlist,)
     ds = gdal.BuildVRT(output_path, tifs_list, options=vrt_options)
     ds.FlushCache()
     if not os.path.exists(output_path):
         print('Something went wrong, vrt not created.')
+
+
+
+def create_meta(minx, maxx, miny, maxy, res, proj='epsg:28992') -> dict:
+    """
+    only works for epsg:28992. 
+    example input:
+    minx=113891
+    maxy=535912
+    maxx=120760
+    miny=534177
+    res=0.5
+    """
+    projections = {'epsg:28992':'PROJCS["Amersfoort / RD New",GEOGCS["Amersfoort",DATUM["Amersfoort",SPHEROID["Bessel 1841",6377397.155,299.1528128,AUTHORITY["EPSG","7004"]],TOWGS84[565.2369,50.0087,465.658,-0.406857,0.350733,-1.87035,4.0812],AUTHORITY["EPSG","6289"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4289"]],PROJECTION["Oblique_Stereographic"],PARAMETER["latitude_of_origin",52.15616055555555],PARAMETER["central_meridian",5.38763888888889],PARAMETER["scale_factor",0.9999079],PARAMETER["false_easting",155000],PARAMETER["false_northing",463000],UNIT["metre",1,AUTHORITY["EPSG","9001"]],AXIS["X",EAST],AXIS["Y",NORTH],AUTHORITY["EPSG","28992"]]'}
+    
+    meta = {'proj': projections[proj],
+         'georef': (int(np.floor(minx)), res, 0.0, int(np.ceil(maxy)), 0.0, -res),
+         'pixel_width': res,
+         'x_min': int(np.floor(minx)),
+         'y_max': int(np.ceil(maxy)),
+         'x_max': int(np.ceil(maxx)),
+         'y_min': int(np.floor(miny))}
+    meta = {**meta, 
+          'x_res': int((meta['x_max']-meta['x_min'])/res),
+         'y_res': int((meta['y_max']-meta['y_min'])/res)} 
+    return meta
+    
+def create_meta_from_gdf(gdf, res) -> dict:
+    """Create metadata that can be used in raster creation based on gdf bounds. 
+    Projection is 28992 default, only option.""" 
+    gdf_local=gdf.copy()
+    gdf_local['temp'] = 0
+    bounds = gdf_local.dissolve('temp').bounds.iloc[0]
+
+    return create_meta(**bounds, res=res)

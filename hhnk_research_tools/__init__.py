@@ -31,6 +31,8 @@ from hhnk_research_tools.raster_functions import (
     gdf_to_raster,
     create_new_raster_file,
     save_raster_array_to_tiff,
+    build_vrt,
+    create_meta_from_gdf,
 )
 
 # TODO how does this versioning work?
