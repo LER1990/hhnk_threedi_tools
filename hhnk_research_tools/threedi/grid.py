@@ -132,6 +132,7 @@ def read_1d2d_lines(results):
         )
 
         # Add information about node type
+        one_d_two_d_lines_gdf[node_type_col]=None #if frame is empty this prevents .loc from producing an error.
         one_d_two_d_lines_gdf.loc[
             one_d_two_d_lines_gdf[one_d_node_id_col].isin(oned_conn_nodes_id_list),
             node_type_col,

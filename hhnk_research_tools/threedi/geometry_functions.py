@@ -1,6 +1,6 @@
 import numpy as np
 from shapely.geometry import Point, LineString
-
+import geopandas as gpd
 
 def coordinates_to_points(nodes):
     """Input is r.nodes"""
@@ -9,6 +9,15 @@ def coordinates_to_points(nodes):
     # convert to shapely format so we can create a geodataframe
     crds = [Point(crd) for crd in crds_lst]
     return crds
+
+
+def grid_nodes_to_gdf(results):
+    try:
+        nodes_gdf_crds = coordinates_to_points(results.nodes)
+        nodes_gdf = gpd.GeoDataFrame(geometry=nodes_gdf_crds, crs=f"EPSG:28992")
+        return nodes_gdf
+    except Exception as e:
+        raise e from None
 
 
 def line_geometries_to_coords(lines):
