@@ -1,19 +1,18 @@
-
-import hhnk_research_tools as hrt
+# %%
 from osgeo import gdal
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 from scipy import ndimage
+import os
 
 class Raster:
     def __init__(self, source_path, min_block_size=1024):
         self.source_path = source_path
-        self.source = source_path #calls self.source.setter(source_path)
-        self.band_count = self.source.RasterCount
+        self.source_set=False #Tracks if the source exist on the system. 
+        self.source = self.source_path #calls self.source.setter(source_path)
+
         self._array = None
-        self.nodata = self.source.GetRasterBand(1).GetNoDataValue()
-        self.metadata = None
         self.min_block_size=min_block_size
 
     @property
@@ -84,42 +83,81 @@ class Raster:
 
     @property
     def source(self):
-        return self._source
-
-
+        if not self.source_set:
+            self.source=self.source_path
+            return self._source
+        else:
+            return self._source
     @source.setter
     def source(self, value):
-        self._source=gdal.Open(value)
+        """If source does not exist it will not be set.
+        Bit clunky. But it should work that if it exists it will only be set once. 
+        Otherwise it will not set.  """
+        if os.path.exists(self.source_path): #cannot use self.exists here.
+            #Needs to be first otherwise we end in a loop when settings metadata/nodata/band_count
+            self.source_set=True 
+
+            self._source=gdal.Open(value)
+            self.metadata = True #Calls self.metadata.setter
+            self.nodata=True
+            # self.band_count=self.source.RasterCount
+            
 
 
     @property
+    def exists(self):
+        if self.source_set: #check this first for speed.
+            return True
+        else:
+            path_exists = os.path.exists(self.source_path)
+            if not self.source_set:
+                if path_exists:
+                    self.source #Set the source.      
+            return path_exists
+
+
+    @property
+    def nodata(self):
+        if self.exists:
+            return self._nodata
+
+    @nodata.setter
+    def nodata(self, val) -> dict:
+        self._nodata = self.source.GetRasterBand(1).GetNoDataValue()
+
+    @property
+    def band_count(self):
+        if self.exists:
+            return self.source.RasterCount
+
+    @property
     def metadata(self):
-        return self._metadata
-
-
+        if self.exists:
+            return self._metadata
     @metadata.setter
     def metadata(self, val) -> dict:
-        meta = {}
-        meta["proj"] = self.source.GetProjection()
-        meta["georef"] = self.source.GetGeoTransform()
-        meta["pixel_width"] = meta["georef"][1]
-        meta["x_min"] = meta["georef"][0]
-        meta["y_max"] = meta["georef"][3]
-        meta["x_max"] = meta["x_min"] + meta["georef"][1] * self.source.RasterXSize
-        meta["y_min"] = meta["y_max"] + meta["georef"][5] * self.source.RasterYSize
-        meta["bounds"] = [meta["x_min"], meta["x_max"], meta["y_min"], meta["y_max"]]
-        # for use in threedi_scenario_downloader
-        meta["bounds_dl"] = {
-            "west": meta["x_min"],
-            "south": meta["y_min"],
-            "east": meta["x_max"],
-            "north": meta["y_max"],
-        }
-        meta["x_res"] = self.source.RasterXSize
-        meta["y_res"] = self.source.RasterYSize
-        meta["shape"] = [meta["y_res"], meta["x_res"]]
 
-        self._metadata = meta
+            meta = {}
+            meta["proj"] = self.source.GetProjection()
+            meta["georef"] = self.source.GetGeoTransform()
+            meta["pixel_width"] = meta["georef"][1]
+            meta["x_min"] = meta["georef"][0]
+            meta["y_max"] = meta["georef"][3]
+            meta["x_max"] = meta["x_min"] + meta["georef"][1] * self.source.RasterXSize
+            meta["y_min"] = meta["y_max"] + meta["georef"][5] * self.source.RasterYSize
+            meta["bounds"] = [meta["x_min"], meta["x_max"], meta["y_min"], meta["y_max"]]
+            # for use in threedi_scenario_downloader
+            meta["bounds_dl"] = {
+                "west": meta["x_min"],
+                "south": meta["y_min"],
+                "east": meta["x_max"],
+                "north": meta["y_max"],
+            }
+            meta["x_res"] = self.source.RasterXSize
+            meta["y_res"] = self.source.RasterYSize
+            meta["shape"] = [meta["y_res"], meta["x_res"]]
+
+            self._metadata = meta
 
     def plot(self):
         plt.imshow(self._array)
@@ -148,7 +186,6 @@ class Raster:
 
         ncols = int(np.floor(band.XSize / block_width))
         nrows = int(np.floor(band.YSize / block_height))
-
 
 
         #Create arrays with index of where windows end. These are square blocks. 
@@ -216,7 +253,18 @@ class Raster:
             
 
     def __repr__(self):
-        return f"""{self.__class__}
-Source: {self.source_path}
-Shape: {self.metadata['shape']}
-Pixelsize: {self.metadata['pixel_width']}"""
+        if self.exists:
+            return f"""{self.__class__}
+    Source: {self.source_path}, exists:{self.exists}
+    Shape: {self.metadata['shape']}
+    Pixelsize: {self.metadata['pixel_width']}"""
+        else:
+            return f"""{self.__class__}
+    Source: {self.source_path}, exists:{self.exists}"""
+
+if __name__ == '__main__':
+    dem_path = r"G:\02_Werkplaatsen\06_HYD\Projecten\HKC16015 Wateropgave 2.0\11. DCMB\hhnk-modelbuilder-master\data\fixed_data\DEM\DEM_AHN4_int.vrt"
+    r=Raster(dem_path)
+    print(r)
+
+# %%
