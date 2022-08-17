@@ -319,6 +319,7 @@ def create_meta(minx, maxx, miny, maxy, res, proj='epsg:28992') -> dict:
          'y_res': int((meta['y_max']-meta['y_min'])/res)} 
     return meta
     
+
 def create_meta_from_gdf(gdf, res) -> dict:
     """Create metadata that can be used in raster creation based on gdf bounds. 
     Projection is 28992 default, only option.""" 
@@ -327,3 +328,122 @@ def create_meta_from_gdf(gdf, res) -> dict:
     bounds = gdf_local.dissolve('temp').bounds.iloc[0]
 
     return create_meta(**bounds, res=res)
+
+
+def dx_dy_between_rasters(meta_big, meta_small):
+    """create window to subset a large 2-d array with a smaller rectangle. Usage:
+    shapes_array[dy_min:dy_max, dx_min:dx_max]
+    window=create_array_window_from_meta(meta_big, meta_small)
+    shapes_array[window]"""
+    if meta_small['pixel_width'] != meta_big['pixel_width']:
+        raise Exception(f"""Input rasters dont have same resolution. 
+                meta_big   = {meta_big['pixel_width']}m
+                meta_small = {meta_small['pixel_width']}m""")
+
+    dx_min = max(0, int((meta_small['x_min']-meta_big['x_min'])/meta_big['pixel_width']))
+    dy_min = max(0, int((meta_big['y_max']-meta_small['y_max'])/meta_big['pixel_width']))
+    dx_max = int(min(dx_min + meta_small['x_res'], meta_big['x_res']))
+    dy_max = int(min(dy_min + meta_small['y_res'], meta_big['y_res']))
+    return dx_min, dy_min
+
+
+class Raster_calculator():
+    """Make a custom calculation between two rasters by 
+    reading the blocks and applying a calculation
+    input raster should be of type hhnk_research_tools.gis.raster.Raster
+
+    raster1: hrt.Raster -> big raster
+    raster2: hrt.Raster -> smaller raster with full extent within big raster. Raster numbering is interchangeable as the scripts checks the bounds.
+    raster_out: hrt.Raster -> output, doesnt need to exists. self.create also creates it.
+    custom_run_window_function: function that takes window of small and big raster as input and does calculation with these arrays.
+    customize below function for this, can take more inputs.
+
+    def custom_run_window_function(self, window_small, window_big, band_out):
+        #Customize this function with a calculation
+        #Load windows
+        block_big = self.raster_big._read_array(window=window_big)
+        block_small = self.raster_small._read_array(window=window_small)
+
+        #Calculate output
+        block_out = None #replace with a calculation.
+
+        # Write to file
+        band_out.WriteArray(block_out, xoff=window_small[0], yoff=window_small[1])
+
+    
+    """
+    def __init__(self, raster1, raster2, raster_out, custom_run_window_function, verbose=False):
+
+        self.raster_big, self.raster_small = self._checkbounds(raster1, raster2) 
+        self.raster_out = raster_out
+
+        #dx dy between rasters.
+        self.dx_min, self.dy_min = dx_dy_between_rasters(meta_big=self.raster_big.metadata, meta_small=self.raster_small.metadata)
+        
+        self.blocks_df = self.raster_small.generate_blocks()
+        self.blocks_total = len(self.blocks_df)
+        self.custom_run_window_function = custom_run_window_function
+        self.verbose = verbose
+
+
+    def _checkbounds(self, raster1, raster2):
+        x1, x2, y1, y2=raster1.metadata['bounds']
+        xx1, xx2, yy1, yy2=raster1.metadata['bounds']
+        bounds_diff = x1 - xx1, y1 - yy1, xx2-x2, yy2 - y2 #subtract bounds
+        check_arr = np.array([i<=0 for i in bounds_diff]) #check if values <=0
+
+        #If all are true (or all false) we know that the rasters fully overlap. 
+        if raster1.metadata['pixel_width'] != raster2.metadata['pixel_width']:
+            raise Exception("""Rasters do not have equal resolution""")
+
+        if np.all(check_arr):
+            #In this case raster1 is the bigger raster.
+            return raster1, raster2
+        elif np.all(~check_arr):
+            #In this case raster2 is the bigger raster
+            return raster2, raster1
+        else:
+            raise Exception("""Raster bounds do not overlap. We cannot use this.""")
+        
+
+    def create(self, overwrite=False, nodata=0):
+        """Create empty output raster"""
+        #Check if function should continue.
+        cont=True
+        if not overwrite and os.path.exists(self.raster_out.source_path):
+            cont=False
+
+        if cont==True:
+            if self.verbose:
+                print(f"creating output raster: {self.raster_out.source_path}")
+            target_ds = create_new_raster_file(file_name=self.raster_out.source_path,
+                                                    nodata=nodata,
+                                                    meta=self.raster_small.metadata,)
+            target_ds = None
+        else:
+            if self.verbose:
+                print(f"output raster already exists: {self.raster_out.source_path}")
+
+
+    def run(self, **kwargs):
+        """loop over the small raster blocks, load both arrays and apply a custom function to it."""
+        target_ds=gdal.Open(self.raster_out.source_path, gdal.GA_Update)
+        band_out = target_ds.GetRasterBand(1)
+
+
+        for idx, block_row in self.blocks_df.iterrows():
+                #Load landuse 
+                window_small=block_row['window_readarray']
+
+                window_big = window_small.copy()
+                window_big[0] += self.dx_min
+                window_big[1] += self.dy_min
+
+                self.custom_run_window_function(self=self, window_small=window_small, window_big=window_big, band_out=band_out, **kwargs)
+                if self.verbose:
+                    print(f"{idx} / {self.blocks_total}", end= '\r')
+                # break
+                
+        band_out.FlushCache()  # close file after writing
+        band_out = None
+        target_ds = None
