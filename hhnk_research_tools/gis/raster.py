@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from scipy import ndimage
 import os
+import inspect
 
 class Raster:
     def __init__(self, source_path, min_block_size=1024):
@@ -100,6 +101,7 @@ class Raster:
             self._source=gdal.Open(value)
             self.metadata = True #Calls self.metadata.setter
             self.nodata=True
+
             # self.band_count=self.source.RasterCount
             
 
@@ -134,30 +136,34 @@ class Raster:
     def metadata(self):
         if self.exists:
             return self._metadata
+    # @metadata.setter #Deprecated.
+    # def metadata(self, val) -> dict:
+            
+    #         meta = {}
+    #         meta["proj"] = self.source.GetProjection()
+    #         meta["georef"] = self.source.GetGeoTransform()
+    #         meta["pixel_width"] = meta["georef"][1]
+    #         meta["x_min"] = meta["georef"][0]
+    #         meta["y_max"] = meta["georef"][3]
+    #         meta["x_max"] = meta["x_min"] + meta["georef"][1] * self.source.RasterXSize
+    #         meta["y_min"] = meta["y_max"] + meta["georef"][5] * self.source.RasterYSize
+    #         meta["bounds"] = [meta["x_min"], meta["x_max"], meta["y_min"], meta["y_max"]]
+    #         # for use in threedi_scenario_downloader
+    #         meta["bounds_dl"] = {
+    #             "west": meta["x_min"],
+    #             "south": meta["y_min"],
+    #             "east": meta["x_max"],
+    #             "north": meta["y_max"],
+    #         }
+    #         meta["x_res"] = self.source.RasterXSize
+    #         meta["y_res"] = self.source.RasterYSize
+    #         meta["shape"] = [meta["y_res"], meta["x_res"]]
+
+    #         self._metadata = meta
+
     @metadata.setter
-    def metadata(self, val) -> dict:
-
-            meta = {}
-            meta["proj"] = self.source.GetProjection()
-            meta["georef"] = self.source.GetGeoTransform()
-            meta["pixel_width"] = meta["georef"][1]
-            meta["x_min"] = meta["georef"][0]
-            meta["y_max"] = meta["georef"][3]
-            meta["x_max"] = meta["x_min"] + meta["georef"][1] * self.source.RasterXSize
-            meta["y_min"] = meta["y_max"] + meta["georef"][5] * self.source.RasterYSize
-            meta["bounds"] = [meta["x_min"], meta["x_max"], meta["y_min"], meta["y_max"]]
-            # for use in threedi_scenario_downloader
-            meta["bounds_dl"] = {
-                "west": meta["x_min"],
-                "south": meta["y_min"],
-                "east": meta["x_max"],
-                "north": meta["y_max"],
-            }
-            meta["x_res"] = self.source.RasterXSize
-            meta["y_res"] = self.source.RasterYSize
-            meta["shape"] = [meta["y_res"], meta["x_res"]]
-
-            self._metadata = meta
+    def metadata(self, val):
+        self._metadata = RasterMetadata(gdal_src=self._source)
 
     def plot(self):
         plt.imshow(self._array)
@@ -165,12 +171,11 @@ class Raster:
 
     @property
     def shape(self):
-        return self.metadata['shape']
-
+        return self.metadata.shape
 
     @property
     def pixelarea(self):
-        return abs(self.metadata['georef'][1] * self.metadata['georef'][5])
+        return self.metadata.pixelarea
 
 
     def generate_blocks(self):
@@ -256,14 +261,139 @@ class Raster:
         if self.exists:
             return f"""{self.__class__}
     Source: {self.source_path}, exists:{self.exists}
-    Shape: {self.metadata['shape']}
-    Pixelsize: {self.metadata['pixel_width']}"""
+    Shape: {self.metadata.shape}
+    Pixelsize: {self.metadata.pixel_width}"""
         else:
             return f"""{self.__class__}
     Source: {self.source_path}, exists:{self.exists}"""
 
+
+class RasterMetadata():
+    """Metadata object of a raster. Resolution can be changed
+    so that a new raster with another resolution can be created.
+    
+    Metadata can be created by supplying either: 
+    1. gdal_src
+    2. res, bounds
+    """
+    def __init__(self, gdal_src=None, res=None, bounds_dict=None, proj='epsg:28992'):
+        """gdal_src = gdal.Open(raster_source)
+        bounds = {minx:, maxx:, miny:, maxy:}
+        Projection only implemented for epsg:28992"""
+
+        if gdal_src is not None:
+            self.proj = gdal_src.GetProjection()
+            self.georef = gdal_src.GetGeoTransform()
+
+            self.x_res = gdal_src.RasterXSize
+            self.y_res = gdal_src.RasterYSize
+
+        elif res is not None and bounds_dict is not None:
+            projections = {'epsg:28992':'PROJCS["Amersfoort / RD New",GEOGCS["Amersfoort",DATUM["Amersfoort",SPHEROID["Bessel 1841",6377397.155,299.1528128,AUTHORITY["EPSG","7004"]],TOWGS84[565.2369,50.0087,465.658,-0.406857,0.350733,-1.87035,4.0812],AUTHORITY["EPSG","6289"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4289"]],PROJECTION["Oblique_Stereographic"],PARAMETER["latitude_of_origin",52.15616055555555],PARAMETER["central_meridian",5.38763888888889],PARAMETER["scale_factor",0.9999079],PARAMETER["false_easting",155000],PARAMETER["false_northing",463000],UNIT["metre",1,AUTHORITY["EPSG","9001"]],AXIS["X",EAST],AXIS["Y",NORTH],AUTHORITY["EPSG","28992"]]'}
+            
+            self.proj=projections[proj]
+            self.georef = (int(np.floor(bounds_dict['minx'])), res, 0.0, int(np.ceil(bounds_dict['maxy'])), 0.0, -res)
+            self.x_res = int((int(np.ceil(bounds_dict['maxx']))-int(np.floor(bounds_dict['minx'])))/res)
+            self.y_res = int((int(np.ceil(bounds_dict['maxy']))-int(np.floor(bounds_dict['miny'])))/res)
+
+        else:
+            raise Exception('Metadata class called without proper input.')
+    @property
+    def pixel_width(self):
+        return self.georef[1]
+
+    @property
+    def x_min(self):
+        return self.georef[0]
+
+    @property
+    def y_max(self):
+        return self.georef[3]
+
+    @property
+    def x_max(self):
+        return self.x_min + self.georef[1] * self.x_res
+
+    @property
+    def y_min(self):
+        return self.y_max + self.georef[5] * self.y_res
+
+    @property
+    def bounds(self):
+        return [self.x_min, self.x_max, self.y_min, self.y_max]
+
+    @property
+    def bounds_dl(self):
+        return {
+            "west": self.x_min,
+            "south": self.y_min,
+            "east": self.x_max,
+            "north": self.y_max,
+        }
+
+    @property
+    def shape(self):
+        return [self.y_res, self.x_res]
+
+    @property
+    def pixelarea(self):
+        return abs(self.metadata.georef[1] * self.metadata.georef[5])
+    
+    @property
+    def projection(self):
+        try:
+            proj_str = self.proj.split('AUTHORITY')[-1][2:-3].split('","')
+            return f"{proj_str[0]}:{proj_str[1]}"
+        except:
+            return None
+
+    def _update_georef(self, resolution):
+        def res_str(georef_i):
+            """make sure negative values are kept."""
+            if georef_i == self.pixel_width:
+                return resolution
+            if georef_i == -self.pixel_width:
+                return -resolution
+                
+        georef_new = list(self.georef)
+        georef_new[1] = res_str(georef_new[1])
+        georef_new[5] = res_str(georef_new[5])
+        return tuple(georef_new)
+
+
+    def update_resolution(self, resolution_new):
+        """Create new resolution metdata, only works for refining now."""
+        resolution_current = self.pixel_width
+        if (resolution_current / resolution_new).is_integer():
+            self.x_res = int((resolution_current/resolution_new) *  self.x_res)
+            self.y_res = int((resolution_current/resolution_new) *  self.y_res)
+            self.georef = self._update_georef(resolution_new)
+            print(f'updated metadata resolution from {resolution_current}m to {resolution_new}m')
+        else:
+            raise Exception(f'New resolution ({resolution_new}) can currently only be smaller than old resolution ({resolution_current})')
+
+    def __repr__(self):
+        funcs = '.'+' .'.join([i for i in dir(self) if not i.startswith('_') and hasattr(inspect.getattr_static(self,i), '__call__')]) #getattr resulted in RecursionError. https://stackoverflow.com/questions/1091259/how-to-test-if-a-class-attribute-is-an-instance-method
+        variables = '.'+' .'.join([i for i in dir(self) if not i.startswith('__') and not hasattr(inspect.getattr_static(self,i)
+                        , '__call__')])
+        repr_str = f"""functions: {funcs}
+variables: {variables}"""
+        return f""".projection : {self.projection} 
+.georef : {self.georef}
+.bounds : {self.bounds}
+.pixel_width : {self.pixel_width}
+----
+{repr_str}"""
+
+    def __getitem__(self, item):
+        """metadata was a dict previously. This makes it that items from
+        the class can be accessed like a dict."""
+        return getattr(self, item)
+
+
 if __name__ == '__main__':
     dem_path = r"G:\02_Werkplaatsen\06_HYD\Projecten\HKC16015 Wateropgave 2.0\11. DCMB\hhnk-modelbuilder-master\data\fixed_data\DEM\DEM_AHN4_int.vrt"
+
     r=Raster(dem_path)
     print(r)
 
