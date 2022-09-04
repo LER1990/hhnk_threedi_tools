@@ -43,10 +43,10 @@ class Raster:
             #     win_ysize=int(window[3] - window[1]))
 
             raster_array = band.ReadAsArray(
-                xoff=window[0],
-                yoff=window[1],
-                win_xsize=window[2],
-                win_ysize=window[3])
+                xoff=int(window[0]),
+                yoff=int(window[1]),
+                win_xsize=int(window[2]),
+                win_ysize=int(window[3]))
         else:
             raster_array = band.ReadAsArray()
 

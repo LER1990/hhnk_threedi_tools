@@ -50,5 +50,6 @@ setup(
         "geopandas>=0.6.0",  # Was 0.7.0
         "threedigrid>=1.0.16",  # Was 1.0.25
         "xarray",
+        "threedigrid_builder",
     ],
 )
