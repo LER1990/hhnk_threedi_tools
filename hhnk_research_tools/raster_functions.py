@@ -1,13 +1,15 @@
-from osgeo import gdal
+# %%
+from osgeo import gdal, ogr
 import numpy as np
 import json
-from osgeo import ogr
-from shapely.geometry import LineString
 from hhnk_research_tools.variables import DEF_TRGT_CRS
 from hhnk_research_tools.variables import GDAL_DATATYPE, GEOTIFF
 from hhnk_research_tools.variables import GEOTIFF, GDAL_DATATYPE
 from hhnk_research_tools.general_functions import ensure_file_path
+from hhnk_research_tools.gis.raster import Raster, RasterMetadata
+from pathlib import Path
 import os
+
 
 # Loading
 def _get_array_from_bands(gdal_file, band_count, window, raster_source):
@@ -58,30 +60,32 @@ def _get_array_from_bands(gdal_file, band_count, window, raster_source):
         raise e
 
 
-def _get_gdal_metadata(gdal_file) -> dict:
-    try:
-        meta = {}
-        meta["proj"] = gdal_file.GetProjection()
-        meta["georef"] = gdal_file.GetGeoTransform()
-        meta["pixel_width"] = meta["georef"][1]
-        meta["x_min"] = meta["georef"][0]
-        meta["y_max"] = meta["georef"][3]
-        meta["x_max"] = meta["x_min"] + meta["georef"][1] * gdal_file.RasterXSize
-        meta["y_min"] = meta["y_max"] + meta["georef"][5] * gdal_file.RasterYSize
-        meta["bounds"] = [meta["x_min"], meta["x_max"], meta["y_min"], meta["y_max"]]
-        # for use in threedi_scenario_downloader
-        meta["bounds_dl"] = {
-            "west": meta["x_min"],
-            "south": meta["y_min"],
-            "east": meta["x_max"],
-            "north": meta["y_max"],
-        }
-        meta["x_res"] = gdal_file.RasterXSize
-        meta["y_res"] = gdal_file.RasterYSize
-        meta["shape"] = [meta["y_res"], meta["x_res"]]
-        return meta
-    except Exception as e:
-        raise e
+
+# def _get_gdal_metadata(gdal_file) -> dict:
+#     """Wietse: deprecated since 2022-08-31"""
+#     try:
+#         meta = {}
+#         meta["proj"] = gdal_file.GetProjection()
+#         meta["georef"] = gdal_file.GetGeoTransform()
+#         meta["pixel_width"] = meta["georef"][1]
+#         meta["x_min"] = meta["georef"][0]
+#         meta["y_max"] = meta["georef"][3]
+#         meta["x_max"] = meta["x_min"] + meta["georef"][1] * gdal_file.RasterXSize
+#         meta["y_min"] = meta["y_max"] + meta["georef"][5] * gdal_file.RasterYSize
+#         meta["bounds"] = [meta["x_min"], meta["x_max"], meta["y_min"], meta["y_max"]]
+#         # for use in threedi_scenario_downloader
+#         meta["bounds_dl"] = {
+#             "west": meta["x_min"],
+#             "south": meta["y_min"],
+#             "east": meta["x_max"],
+#             "north": meta["y_max"],
+#         }
+#         meta["x_res"] = gdal_file.RasterXSize
+#         meta["y_res"] = gdal_file.RasterYSize
+#         meta["shape"] = [meta["y_res"], meta["x_res"]]
+#         return meta
+#     except Exception as e:
+#         raise e
 
 
 def load_gdal_raster(raster_source, window=None, return_array=True, band_count=None):
@@ -91,19 +95,19 @@ def load_gdal_raster(raster_source, window=None, return_array=True, band_count=N
     returns raster_array, no_data, metadata
     """
     try:
-        gdal_file = gdal.Open(raster_source)
-        if gdal_file:
+        gdal_src = gdal.Open(raster_source)
+        if gdal_src:
             if return_array:
                 if band_count==None:
-                    band_count = gdal_file.RasterCount
+                    band_count = gdal_src.RasterCount
                 raster_array = _get_array_from_bands(
-                    gdal_file, band_count, window, raster_source
+                    gdal_src, band_count, window, raster_source
                 )
             else:
                 raster_array = None
             # are they always same even if more bands?
-            no_data = gdal_file.GetRasterBand(1).GetNoDataValue()
-            metadata = _get_gdal_metadata(gdal_file)
+            no_data = gdal_src.GetRasterBand(1).GetNoDataValue()
+            metadata = RasterMetadata(gdal_src=gdal_src)
             return raster_array, no_data, metadata
     except Exception as e:
         raise e
@@ -219,15 +223,15 @@ def create_new_raster_file(
     try:
         target_ds = gdal.GetDriverByName(driver).Create(
             file_name,
-            meta["x_res"],
-            meta["y_res"],
+            meta.x_res,
+            meta.y_res,
             num_bands,
             datatype,
             options=[f"COMPRESS={compression}", f"TILED={tiled}"],
         )
-        target_ds.SetGeoTransform(meta["georef"])
+        target_ds.SetGeoTransform(meta.georef)
         _set_band_data(target_ds, num_bands, nodata)
-        target_ds.SetProjection(meta["proj"])
+        target_ds.SetProjection(meta.proj)
         return target_ds
     except Exception as e:
         raise e
@@ -270,6 +274,7 @@ def save_raster_array_to_tiff(
 
         
 def build_vrt(raster_folder, vrt_name='combined_rasters', bandlist=[1], bounds=None, overwrite=False):
+    #TODO check resolution of all rasters in folder. if not equal then no vrt.
     """create vrt from all rasters in a folder.
     bounds=(xmin, ymin, xmax, ymax)
     bandList doesnt work as expected."""
@@ -282,6 +287,11 @@ def build_vrt(raster_folder, vrt_name='combined_rasters', bandlist=[1], bounds=N
     tifs_list = [os.path.join(raster_folder, i) for i in os.listdir(raster_folder) if i.endswith('.tif') or i.endswith('.tiff')]
 
 
+    for r in tifs_list:
+        if Raster(r).metadata.pixel_width==1:
+            print(Path(r.source_path).stem)
+
+
     vrt_options = gdal.BuildVRTOptions(resolution='highest',
                                        separate=False,
                                        resampleAlg='nearest',
@@ -290,44 +300,19 @@ def build_vrt(raster_folder, vrt_name='combined_rasters', bandlist=[1], bounds=N
                                        bandList=bandlist,)
     ds = gdal.BuildVRT(output_path, tifs_list, options=vrt_options)
     ds.FlushCache()
+    del tifs_list
+
     if not os.path.exists(output_path):
         print('Something went wrong, vrt not created.')
 
-
-
-def create_meta(minx, maxx, miny, maxy, res, proj='epsg:28992') -> dict:
-    """
-    only works for epsg:28992. 
-    example input:
-    minx=113891
-    maxy=535912
-    maxx=120760
-    miny=534177
-    res=0.5
-    """
-    projections = {'epsg:28992':'PROJCS["Amersfoort / RD New",GEOGCS["Amersfoort",DATUM["Amersfoort",SPHEROID["Bessel 1841",6377397.155,299.1528128,AUTHORITY["EPSG","7004"]],TOWGS84[565.2369,50.0087,465.658,-0.406857,0.350733,-1.87035,4.0812],AUTHORITY["EPSG","6289"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4289"]],PROJECTION["Oblique_Stereographic"],PARAMETER["latitude_of_origin",52.15616055555555],PARAMETER["central_meridian",5.38763888888889],PARAMETER["scale_factor",0.9999079],PARAMETER["false_easting",155000],PARAMETER["false_northing",463000],UNIT["metre",1,AUTHORITY["EPSG","9001"]],AXIS["X",EAST],AXIS["Y",NORTH],AUTHORITY["EPSG","28992"]]'}
-    
-    meta = {'proj': projections[proj],
-         'georef': (int(np.floor(minx)), res, 0.0, int(np.ceil(maxy)), 0.0, -res),
-         'pixel_width': res,
-         'x_min': int(np.floor(minx)),
-         'y_max': int(np.ceil(maxy)),
-         'x_max': int(np.ceil(maxx)),
-         'y_min': int(np.floor(miny))}
-    meta = {**meta, 
-          'x_res': int((meta['x_max']-meta['x_min'])/res),
-         'y_res': int((meta['y_max']-meta['y_min'])/res)} 
-    return meta
-    
 
 def create_meta_from_gdf(gdf, res) -> dict:
     """Create metadata that can be used in raster creation based on gdf bounds. 
     Projection is 28992 default, only option.""" 
     gdf_local=gdf.copy()
     gdf_local['temp'] = 0
-    bounds = gdf_local.dissolve('temp').bounds.iloc[0]
-
-    return create_meta(**bounds, res=res)
+    bounds_dict = gdf_local.dissolve('temp').bounds.iloc[0]
+    return RasterMetadata(res=res, bounds_dict=bounds_dict)
 
 
 def dx_dy_between_rasters(meta_big, meta_small):
@@ -335,15 +320,15 @@ def dx_dy_between_rasters(meta_big, meta_small):
     shapes_array[dy_min:dy_max, dx_min:dx_max]
     window=create_array_window_from_meta(meta_big, meta_small)
     shapes_array[window]"""
-    if meta_small['pixel_width'] != meta_big['pixel_width']:
+    if meta_small.pixel_width != meta_big.pixel_width:
         raise Exception(f"""Input rasters dont have same resolution. 
-                meta_big   = {meta_big['pixel_width']}m
-                meta_small = {meta_small['pixel_width']}m""")
+                meta_big   = {meta_big.pixel_width}m
+                meta_small = {meta_small.pixel_width}m""")
 
-    dx_min = max(0, int((meta_small['x_min']-meta_big['x_min'])/meta_big['pixel_width']))
-    dy_min = max(0, int((meta_big['y_max']-meta_small['y_max'])/meta_big['pixel_width']))
-    dx_max = int(min(dx_min + meta_small['x_res'], meta_big['x_res']))
-    dy_max = int(min(dy_min + meta_small['y_res'], meta_big['y_res']))
+    dx_min = max(0, int((meta_small.x_min-meta_big.x_min)/meta_big.pixel_width))
+    dy_min = max(0, int((meta_big.y_max-meta_small.y_max)/meta_big.pixel_width))
+    dx_max = int(min(dx_min + meta_small.x_res, meta_big.x_res))
+    dy_max = int(min(dy_min + meta_small.y_res, meta_big.y_res))
     return dx_min, dy_min
 
 
@@ -358,7 +343,7 @@ class Raster_calculator():
     custom_run_window_function: function that takes window of small and big raster as input and does calculation with these arrays.
     customize below function for this, can take more inputs.
 
-    def custom_run_window_function(self, window_small, window_big, band_out):
+    def custom_run_window_function(self, window_small, window_big, band_out, **kwargs):
         #Customize this function with a calculation
         #Load windows
         block_big = self.raster_big._read_array(window=window_big)
@@ -387,13 +372,13 @@ class Raster_calculator():
 
 
     def _checkbounds(self, raster1, raster2):
-        x1, x2, y1, y2=raster1.metadata['bounds']
-        xx1, xx2, yy1, yy2=raster1.metadata['bounds']
+        x1, x2, y1, y2=raster1.metadata.bounds
+        xx1, xx2, yy1, yy2=raster1.metadata.bounds
         bounds_diff = x1 - xx1, y1 - yy1, xx2-x2, yy2 - y2 #subtract bounds
         check_arr = np.array([i<=0 for i in bounds_diff]) #check if values <=0
 
         #If all are true (or all false) we know that the rasters fully overlap. 
-        if raster1.metadata['pixel_width'] != raster2.metadata['pixel_width']:
+        if raster1.metadata.pixel_width != raster2.metadata.pixel_width:
             raise Exception("""Rasters do not have equal resolution""")
 
         if np.all(check_arr):
