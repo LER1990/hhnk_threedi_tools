@@ -329,7 +329,7 @@ def dx_dy_between_rasters(meta_big, meta_small):
     dy_min = max(0, int((meta_big.y_max-meta_small.y_max)/meta_big.pixel_width))
     dx_max = int(min(dx_min + meta_small.x_res, meta_big.x_res))
     dy_max = int(min(dy_min + meta_small.y_res, meta_big.y_res))
-    return dx_min, dy_min
+    return dx_min, dy_min, dx_max, dy_max
 
 
 class Raster_calculator():
@@ -432,3 +432,23 @@ class Raster_calculator():
         band_out.FlushCache()  # close file after writing
         band_out = None
         target_ds = None
+
+
+def reproject(src:Raster, target_res:float, output_path:str):
+        """
+        src : hrt.Raster
+        output_path : str
+        meta_new : hrt.core"""
+        #https://svn.osgeo.org/gdal/trunk/autotest/alg/reproject.py
+        # drv = gdal.GetDriverByName( 'GTiff' )
+        # drv.Delete(output_path)
+
+        src.metadata.update_resolution(target_res)
+
+        src_ds = src.source
+        dst_ds = create_new_raster_file(file_name=output_path,
+                    nodata=src.nodata,
+                    meta=src.metadata)
+
+        gdal.ReprojectImage(src_ds, dst_ds, src_wkt='EPSG:28992')
+        

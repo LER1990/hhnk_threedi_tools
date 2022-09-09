@@ -1,6 +1,6 @@
 import hhnk_research_tools.variables as variables
 
-from hhnk_research_tools.gis.raster import Raster
+from hhnk_research_tools.gis.raster import Raster, RasterMetadata
 
 import hhnk_research_tools.threedi as threedi
 
