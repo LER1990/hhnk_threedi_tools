@@ -3,13 +3,21 @@ from osgeo import gdal
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
+import geopandas as gpd
 from scipy import ndimage
 import os
 import inspect
+from shapely import geometry
+from pathlib import Path
+
+import hhnk_research_tools as hrt
+
 
 class Raster:
     def __init__(self, source_path, min_block_size=1024):
         self.source_path = source_path
+
+        
         self.source_set=False #Tracks if the source exist on the system. 
         self.source = self.source_path #calls self.source.setter(source_path)
 
@@ -25,6 +33,19 @@ class Raster:
             print('Array not loaded. Call Raster.get_array(window) first')
             return self._array
 
+    @property
+    def source_path(self):
+        return self._source_path
+    @source_path.setter
+    def source_path(self, value):
+        if type(value)==str:
+            value = Path(value)
+        self._source_path = value
+
+    @property
+    def pl(self):
+        return self._source_path
+
     @array.setter
     def array(self, raster_array, window=None, band_nr=1):
         self._array = raster_array
@@ -32,7 +53,8 @@ class Raster:
 
     def _read_array(self, band=None, window=None):
         """window=[x0, y0, x1, y1]--oud.
-        window=[x0, y0, xsize, ysize]"""
+        window=[x0, y0, xsize, ysize]
+        x0, y0 is left top corner!!"""
         if band == None:
             band = self.source.GetRasterBand(1) #TODO band is not closed properly
 
@@ -98,7 +120,7 @@ class Raster:
             #Needs to be first otherwise we end in a loop when settings metadata/nodata/band_count
             self.source_set=True 
 
-            self._source=gdal.Open(value)
+            self._source=gdal.Open(str(value))
             self.metadata = True #Calls self.metadata.setter
             self.nodata=True
 
@@ -136,30 +158,7 @@ class Raster:
     def metadata(self):
         if self.exists:
             return self._metadata
-    # @metadata.setter #Deprecated.
-    # def metadata(self, val) -> dict:
-            
-    #         meta = {}
-    #         meta["proj"] = self.source.GetProjection()
-    #         meta["georef"] = self.source.GetGeoTransform()
-    #         meta["pixel_width"] = meta["georef"][1]
-    #         meta["x_min"] = meta["georef"][0]
-    #         meta["y_max"] = meta["georef"][3]
-    #         meta["x_max"] = meta["x_min"] + meta["georef"][1] * self.source.RasterXSize
-    #         meta["y_min"] = meta["y_max"] + meta["georef"][5] * self.source.RasterYSize
-    #         meta["bounds"] = [meta["x_min"], meta["x_max"], meta["y_min"], meta["y_max"]]
-    #         # for use in threedi_scenario_downloader
-    #         meta["bounds_dl"] = {
-    #             "west": meta["x_min"],
-    #             "south": meta["y_min"],
-    #             "east": meta["x_max"],
-    #             "north": meta["y_max"],
-    #         }
-    #         meta["x_res"] = self.source.RasterXSize
-    #         meta["y_res"] = self.source.RasterYSize
-    #         meta["shape"] = [meta["y_res"], meta["x_res"]]
 
-    #         self._metadata = meta
 
     @metadata.setter
     def metadata(self, val):
@@ -178,7 +177,7 @@ class Raster:
         return self.metadata.pixelarea
 
 
-    def generate_blocks(self):
+    def generate_blocks(self) -> pd.DataFrame:
         """Generate blocks with the blocksize of the band. 
         These blocks can be used as window to load the raster iteratively."""
         band = self.source.GetRasterBand(1)
@@ -222,6 +221,25 @@ class Raster:
         return blocks_df
 
 
+    def _generate_blocks_geometry_row(self, window):
+        minx=self.metadata.x_min
+        maxy=self.metadata.y_max
+
+        #account for pixel size
+        minx += window[0] *self.metadata.pixel_width
+        maxy += window[1] * self.metadata.pixel_height
+        maxx = minx + window[2] *self.metadata.pixel_width
+        miny = maxy + window[3] * self.metadata.pixel_height
+        
+        return geometry.box(minx=minx, miny=miny, maxx=maxx, maxy=maxy)
+    
+    def generate_blocks_geometry(self) -> gpd.GeoDataFrame:
+        """Create blocks with shapely geometry"""
+        self.generate_blocks()
+        blocks_df =gpd.GeoDataFrame(self.blocks, geometry=self.blocks["window_readarray"].apply(self._generate_blocks_geometry_row), crs=self.metadata.projection)
+        self.blocks = blocks_df
+        return blocks_df
+
     def sum_labels(self, labels_raster, labels_index):
         """Calculate the sum of the rastervalues per label."""
         if labels_raster.shape != self.shape:
@@ -243,6 +261,19 @@ class Raster:
             else:
                 accum += result
         return accum
+
+
+    def iter_window(self, min_block_size=None):
+        """Iterate of the raster using blocks, only returning the window, not the values."""
+        if not hasattr(self,'blocks'):
+            if min_block_size is not None:
+                 self.min_block_size = min_block_size
+                
+            _ = self.generate_blocks_geometry()
+
+        for idx, block_row in self.blocks.iterrows():
+            window=block_row['window_readarray']
+            yield idx, window, block_row
 
     def to_file():
         pass
@@ -266,6 +297,28 @@ class Raster:
         else:
             return f"""{self.__class__}
     Source: {self.source_path}, exists:{self.exists}"""
+
+
+
+    def create(self, metadata, nodata, overwrite=False):
+        """Create empty raster
+        metadata : RasterMetadata instance
+        nodata: int
+        """
+        #Check if function should continue.
+        cont=True
+        if not overwrite and self.source_path.exists():
+            cont=False
+
+        if cont==True:
+            print(f"creating output raster: {self.source_path}")
+            target_ds = hrt.create_new_raster_file(file_name=str(self.source_path),
+                                                    nodata=nodata,
+                                                    meta=metadata,)
+            target_ds = None
+        else:
+            print(f"output raster already exists: {self.source_path}")
+        self.exists #Update raster now it exists
 
 
 class RasterMetadata():
@@ -303,6 +356,10 @@ class RasterMetadata():
         return self.georef[1]
 
     @property
+    def pixel_height(self):
+        return self.georef[5]
+
+    @property
     def x_min(self):
         return self.georef[0]
 
@@ -337,7 +394,7 @@ class RasterMetadata():
 
     @property
     def pixelarea(self):
-        return abs(self.metadata.georef[1] * self.metadata.georef[5])
+        return abs(self.georef[1] * self.georef[5])
     
     @property
     def projection(self):

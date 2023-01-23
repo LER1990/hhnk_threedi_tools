@@ -60,34 +60,6 @@ def _get_array_from_bands(gdal_file, band_count, window, raster_source):
         raise e
 
 
-
-# def _get_gdal_metadata(gdal_file) -> dict:
-#     """Wietse: deprecated since 2022-08-31"""
-#     try:
-#         meta = {}
-#         meta["proj"] = gdal_file.GetProjection()
-#         meta["georef"] = gdal_file.GetGeoTransform()
-#         meta["pixel_width"] = meta["georef"][1]
-#         meta["x_min"] = meta["georef"][0]
-#         meta["y_max"] = meta["georef"][3]
-#         meta["x_max"] = meta["x_min"] + meta["georef"][1] * gdal_file.RasterXSize
-#         meta["y_min"] = meta["y_max"] + meta["georef"][5] * gdal_file.RasterYSize
-#         meta["bounds"] = [meta["x_min"], meta["x_max"], meta["y_min"], meta["y_max"]]
-#         # for use in threedi_scenario_downloader
-#         meta["bounds_dl"] = {
-#             "west": meta["x_min"],
-#             "south": meta["y_min"],
-#             "east": meta["x_max"],
-#             "north": meta["y_max"],
-#         }
-#         meta["x_res"] = gdal_file.RasterXSize
-#         meta["y_res"] = gdal_file.RasterYSize
-#         meta["shape"] = [meta["y_res"], meta["x_res"]]
-#         return meta
-#     except Exception as e:
-#         raise e
-
-
 def load_gdal_raster(raster_source, window=None, return_array=True, band_count=None):
     """
     Loads a raster (tif) and returns an array of its values, its no_data value and
@@ -222,7 +194,7 @@ def create_new_raster_file(
     """
     try:
         target_ds = gdal.GetDriverByName(driver).Create(
-            file_name,
+            str(file_name),
             meta.x_res,
             meta.y_res,
             num_bands,
@@ -326,7 +298,13 @@ def dx_dy_between_rasters(meta_big, meta_small):
                 meta_small = {meta_small.pixel_width}m""")
 
     dx_min = max(0, int((meta_small.x_min-meta_big.x_min)/meta_big.pixel_width))
-    dy_min = max(0, int((meta_big.y_max-meta_small.y_max)/meta_big.pixel_width))
+    dy_min = int((meta_big.y_max-meta_small.y_max)/meta_big.pixel_width)
+
+    if dx_min < 0:
+        raise Exception(f"dx_min smaller than 0 ({dx_min})")
+    if dy_min < 0:
+        raise Exception(f"dy_min smaller than 0 ({dy_min})")
+
     dx_max = int(min(dx_min + meta_small.x_res, meta_big.x_res))
     dy_max = int(min(dy_min + meta_small.y_res, meta_big.y_res))
     return dx_min, dy_min, dx_max, dy_max
@@ -373,7 +351,7 @@ class Raster_calculator():
 
     def _checkbounds(self, raster1, raster2):
         x1, x2, y1, y2=raster1.metadata.bounds
-        xx1, xx2, yy1, yy2=raster1.metadata.bounds
+        xx1, xx2, yy1, yy2=raster2.metadata.bounds
         bounds_diff = x1 - xx1, y1 - yy1, xx2-x2, yy2 - y2 #subtract bounds
         check_arr = np.array([i<=0 for i in bounds_diff]) #check if values <=0
 
