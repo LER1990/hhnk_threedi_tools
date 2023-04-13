@@ -249,6 +249,8 @@ class Raster:
 
         for window, block in self:
             block[block==self.nodata] = 0
+            block[pd.isna(block)] = 0
+
             block_label = labels_raster._read_array(window=window)
 
             #Calculate sum per label (region)

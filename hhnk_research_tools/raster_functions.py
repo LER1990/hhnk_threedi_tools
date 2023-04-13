@@ -178,12 +178,13 @@ def create_new_raster_file(
     meta,
     driver=GEOTIFF,
     datatype=GDAL_DATATYPE,
-    compression="DEFLATE",
     num_bands=1,
-    tiled="YES",
+    options=None #Use default when None.
 ):
     """
     ONLY FOR SINGLE BAND
+    https://gdal.org/drivers/raster/gtiff.html#creation-options
+    https://kokoalberti.com/articles/geotiff-compression-optimization-guide/ 
     Create new empty gdal raster using metadata from raster from sqlite (dem)
     driver='GTiff'
     driver='MEM'
@@ -191,15 +192,32 @@ def create_new_raster_file(
     LZW - highest compression ratio, highest processing power
     DEFLATE
     PACKBITS - lowest compression ratio, lowest processing power
+
+    Best compression options for Int16:
+    [f"COMPRESS=ZSTD", f"TILED=True", "PREDICTOR=2", "ZSTD_LEVEL=1"]
+
+    Best compression options for Float32:
+    [f"COMPRESS=LERC_ZSTD", f"TILED=True", "PREDICTOR=2", "ZSTD_LEVEL=1", "MAX_Z_ERROR=0.001"]
+
     """
     try:
+        if options is None:
+            # if datatype==gdal.GDT_Float32:
+            # options=[f"COMPRESS=LERC_DEFLATE", f"TILED=YES", "PREDICTOR=2", "ZSTD_LEVEL=1", "MAX_Z_ERROR=0.001"]
+            # elif datatype==gdal.GDT_Int16:
+            # options=[f"COMPRESS=LERC_ZSTD", f"TILED=YES", "PREDICTOR=2", "ZSTD_LEVEL=1", "MAX_Z_ERROR=0.001"]
+            options=[f"COMPRESS=ZSTD", f"TILED=YES", "PREDICTOR=2", "ZSTD_LEVEL=1"]
+
+            # else:
+            #     options = [f"COMPRESS=DEFLATE", f"TILED=YES", "PREDICTOR=2", "ZSTD_LEVEL=1"]
+
         target_ds = gdal.GetDriverByName(driver).Create(
             str(file_name),
             meta.x_res,
             meta.y_res,
             num_bands,
             datatype,
-            options=[f"COMPRESS={compression}", f"TILED={tiled}"],
+            options=options,
         )
         target_ds.SetGeoTransform(meta.georef)
         _set_band_data(target_ds, num_bands, nodata)
@@ -341,7 +359,7 @@ class Raster_calculator():
         self.raster_out = raster_out
 
         #dx dy between rasters.
-        self.dx_min, self.dy_min = dx_dy_between_rasters(meta_big=self.raster_big.metadata, meta_small=self.raster_small.metadata)
+        self.dx_min, self.dy_min, dx_max, dy_max = dx_dy_between_rasters(meta_big=self.raster_big.metadata, meta_small=self.raster_small.metadata)
         
         self.blocks_df = self.raster_small.generate_blocks()
         self.blocks_total = len(self.blocks_df)
@@ -390,7 +408,7 @@ class Raster_calculator():
 
     def run(self, **kwargs):
         """loop over the small raster blocks, load both arrays and apply a custom function to it."""
-        target_ds=gdal.Open(self.raster_out.source_path, gdal.GA_Update)
+        target_ds=gdal.Open(str(self.raster_out.source_path), gdal.GA_Update)
         band_out = target_ds.GetRasterBand(1)
 
 
