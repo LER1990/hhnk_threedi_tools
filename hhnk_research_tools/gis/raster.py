@@ -11,10 +11,13 @@ from shapely import geometry
 from pathlib import Path
 
 import hhnk_research_tools as hrt
+from hhnk_research_tools.folder_file_classes.file_class import File
 
 
-class Raster:
+
+class Raster(File):
     def __init__(self, source_path, min_block_size=1024):
+        super().__init__(source_path)
         self.source_path = source_path
 
         
@@ -41,10 +44,6 @@ class Raster:
         if type(value)==str:
             value = Path(value)
         self._source_path = value
-
-    @property
-    def pl(self):
-        return self._source_path
 
     @array.setter
     def array(self, raster_array, window=None, band_nr=1):

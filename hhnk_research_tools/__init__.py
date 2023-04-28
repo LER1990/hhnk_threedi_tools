@@ -1,5 +1,8 @@
 import hhnk_research_tools.variables as variables
 
+from hhnk_research_tools.folder_file_classes.file_class import File
+
+
 from hhnk_research_tools.gis.raster import Raster, RasterMetadata
 
 import hhnk_research_tools.threedi as threedi
@@ -37,9 +40,9 @@ from hhnk_research_tools.raster_functions import (
     Raster_calculator,
 )
 
-from hhnk_research_tools.folder_file_classes import (
+
+from hhnk_research_tools.folder_file_classes.folder_file_classes import (
     Folder,
-    File,
     FileGDB,
     Sqlite,
     ThreediResult,
@@ -48,7 +51,7 @@ from hhnk_research_tools.folder_file_classes import (
 # TODO how does this versioning work?
 # Threedigrid version number is automatic updated with zest.releaser. Geopandas uses versioneer.py.
 # the version number in setup.py is updated using the find_version()
-__version__ = '2023.01'
+__version__ = '2023.2'
 
 __doc__ = """
 General toolbox for loading, converting and saving serval datatypes.
