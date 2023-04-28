@@ -11,6 +11,8 @@ from pathlib import Path
 import os
 
 
+DEFAULT_CREATE_OPTIONS = [f"COMPRESS=ZSTD", f"TILED=YES", "PREDICTOR=2", "ZSTD_LEVEL=1"]
+
 # Loading
 def _get_array_from_bands(gdal_file, band_count, window, raster_source):
     try:
@@ -119,8 +121,7 @@ def gdf_to_raster(
     epsg=DEF_TRGT_CRS,
     driver=GEOTIFF,
     datatype=GDAL_DATATYPE,
-    compression="DEFLATE",
-    tiled="YES",
+    create_options=DEFAULT_CREATE_OPTIONS,
     read_array=True,
 ):
     """Dem is used as format raster. The new raster gets meta data from the DEM. A gdf is turned into ogr layer and is
@@ -144,11 +145,7 @@ def gdf_to_raster(
             new_raster,
             [1],
             polygon,
-            options=[
-                f"ATTRIBUTE={value_field}",
-                f"COMPRESS={compression}",
-                f"TILED={tiled}",
-            ],
+            options=[f"ATTRIBUTE={value_field}"] + create_options,
         )
         if read_array:
             raster_array = new_raster.ReadAsArray()
@@ -179,7 +176,7 @@ def create_new_raster_file(
     driver=GEOTIFF,
     datatype=GDAL_DATATYPE,
     num_bands=1,
-    options=None #Use default when None.
+    create_options=None,
 ):
     """
     ONLY FOR SINGLE BAND
@@ -201,12 +198,12 @@ def create_new_raster_file(
 
     """
     try:
-        if options is None:
+        if create_options is None:
             # if datatype==gdal.GDT_Float32:
             # options=[f"COMPRESS=LERC_DEFLATE", f"TILED=YES", "PREDICTOR=2", "ZSTD_LEVEL=1", "MAX_Z_ERROR=0.001"]
             # elif datatype==gdal.GDT_Int16:
             # options=[f"COMPRESS=LERC_ZSTD", f"TILED=YES", "PREDICTOR=2", "ZSTD_LEVEL=1", "MAX_Z_ERROR=0.001"]
-            options=[f"COMPRESS=ZSTD", f"TILED=YES", "PREDICTOR=2", "ZSTD_LEVEL=1"]
+            create_options=DEFAULT_CREATE_OPTIONS
 
             # else:
             #     options = [f"COMPRESS=DEFLATE", f"TILED=YES", "PREDICTOR=2", "ZSTD_LEVEL=1"]
@@ -217,7 +214,7 @@ def create_new_raster_file(
             meta.y_res,
             num_bands,
             datatype,
-            options=options,
+            options=create_options,
         )
         target_ds.SetGeoTransform(meta.georef)
         _set_band_data(target_ds, num_bands, nodata)
@@ -233,7 +230,7 @@ def save_raster_array_to_tiff(
     nodata,
     metadata,
     datatype=GDAL_DATATYPE,
-    compression="DEFLATE",
+    create_options=None,
     num_bands=1,
 ):
     """
@@ -254,7 +251,7 @@ def save_raster_array_to_tiff(
             nodata=nodata,
             meta=metadata,
             datatype=datatype,
-            compression=compression,
+            create_options=create_options,
         )  # create new raster
         for i in range(1, num_bands + 1):
             target_ds.GetRasterBand(i).WriteArray(raster_array)  # fill file with data
