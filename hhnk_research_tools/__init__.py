@@ -37,6 +37,14 @@ from hhnk_research_tools.raster_functions import (
     Raster_calculator,
 )
 
+from hhnk_research_tools.folder_file_classes import (
+    Folder,
+    File,
+    FileGDB,
+    Sqlite,
+    ThreediResult,
+)
+
 # TODO how does this versioning work?
 # Threedigrid version number is automatic updated with zest.releaser. Geopandas uses versioneer.py.
 # the version number in setup.py is updated using the find_version()
