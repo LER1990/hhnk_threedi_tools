@@ -45,7 +45,11 @@ from hhnk_research_tools.folder_file_classes.folder_file_classes import (
     Folder,
     FileGDB,
     Sqlite,
+)
+from hhnk_research_tools.folder_file_classes.threedi_schematisation import (
+    ThreediSchematisation,
     ThreediResult,
+    RevisionsDir,
 )
 
 # TODO how does this versioning work?

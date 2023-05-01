@@ -7,9 +7,7 @@ import geopandas as gpd
 import hhnk_research_tools as hrt
 from hhnk_research_tools.folder_file_classes.file_class import File
 
-# Third-party imports
-from threedigrid.admin.gridadmin import GridH5Admin
-from threedigrid.admin.gridresultadmin import GridH5ResultAdmin
+
 
 #TODO refactor en alle classes los behandelen.
 
@@ -176,20 +174,3 @@ class Sqlite(File):
             return None
 
 
-class ThreediResult(Folder):
-    """Use .grid to get GridH5ResultAdmin and .admin to get GridH5Admin"""
-
-    def __init__(self, base):
-        super().__init__(base)
-
-        # Files
-        self.add_file("grid_path", "results_3di.nc")
-        self.add_file("admin_path", "gridadmin.h5")
-
-    @property
-    def grid(self):
-        return GridH5ResultAdmin(self.admin_path.file_path, self.grid_path.file_path)
-
-    @property
-    def admin(self):
-        return GridH5Admin(self.admin_path.file_path)
