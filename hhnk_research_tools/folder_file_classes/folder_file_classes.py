@@ -32,7 +32,10 @@ class Folder:
 
     @property
     def content(self):
-        return os.listdir(self.base)
+        if self.exists:
+            return os.listdir(self.base)
+        else:
+            return []
 
     @property
     def path(self):
@@ -114,6 +117,24 @@ class Folder:
         self.olayers[objectname] = layer
         setattr(self, objectname, layer)
 
+
+    def unlink_contents(self, names=[], rmfiles=True, rmdirs=False):
+        """unlink all content when names is an empty list. Otherwise just remove the names."""
+        if not names:
+            names=self.content
+        for name in names:
+            pathname = self.pl / name
+            try:
+                if pathname.exists:
+                    if pathname.is_dir():
+                        if rmdirs:
+                            pathname.rmdir()
+                    else:
+                        if rmfiles:
+                            pathname.unlink()
+            except Exception as e:
+                print(pathname, e)
+
     def __str__(self):
         return self.base
 
@@ -125,9 +146,9 @@ class Folder:
 variables: {variables}"""
         return f"""{self.name} @ {self.path}
 Exists: {self.exists}
-        Folders:\t{self.structure}
-        Files:\t{list(self.files.keys())}
-        Layers:\t{list(self.olayers.keys())}
+            Folders:\t{self.structure}
+            Files:\t{list(self.files.keys())}
+            Layers:\t{list(self.olayers.keys())}
 {repr_str}
                 """
     

@@ -5,6 +5,7 @@ from pathlib import Path
 import hhnk_research_tools as hrt
 from hhnk_research_tools.folder_file_classes.folder_file_classes import Folder, Sqlite
 from hhnk_research_tools.gis.raster import Raster
+from hhnk_research_tools.folder_file_classes.file_class import File
 
 # Third-party imports
 from threedigrid.admin.gridadmin import GridH5Admin
@@ -121,7 +122,7 @@ class ThreediSchematisation(Folder):
                     raster_path = os.path.join(self.caller.base, raster_name)
             else:
                 raster_path = ""
-            return Raster(raster_path)
+            return File(raster_path)
 
 
         def __repr__(self):
