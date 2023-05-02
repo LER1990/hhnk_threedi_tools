@@ -1,5 +1,6 @@
 from pathlib import Path
 from hhnk_research_tools.folder_file_classes.folder_file_classes import FileGDB
+import geopandas as gpd
 
 def ensure_file_path(filepath):
     """
