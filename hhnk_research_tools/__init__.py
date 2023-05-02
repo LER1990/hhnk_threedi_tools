@@ -27,7 +27,10 @@ from hhnk_research_tools.dataframe_functions import (
     gdf_write_to_csv,
 )
 
-from hhnk_research_tools.general_functions import ensure_file_path
+from hhnk_research_tools.general_functions import (
+    ensure_file_path,
+    convert_gdb_to_gpkg,
+)
 
 from hhnk_research_tools.raster_functions import (
     load_gdal_raster,
