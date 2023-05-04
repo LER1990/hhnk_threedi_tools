@@ -279,7 +279,7 @@ class Raster(File):
             window=block_row['window_readarray']
             yield idx, window, block_row
 
-    def to_file():
+    def to_file(self):
         pass
 
     def __iter__(self):
