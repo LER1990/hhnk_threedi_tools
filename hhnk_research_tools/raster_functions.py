@@ -123,6 +123,7 @@ def gdf_to_raster(
     datatype=GDAL_DATATYPE,
     create_options=DEFAULT_CREATE_OPTIONS,
     read_array=True,
+    overwrite=False
 ):
     """Dem is used as format raster. The new raster gets meta data from the DEM. A gdf is turned into ogr layer and is
     then rasterized.
@@ -134,24 +135,28 @@ def gdf_to_raster(
         # make sure folders exist
         if raster_out != '': #empty str when driver='MEM'
             ensure_file_path(raster_out)
+
         new_raster = create_new_raster_file(
             file_name=raster_out,
             nodata=nodata,
             meta=metadata,
             driver=driver,
             datatype=datatype,
+            overwrite=overwrite
         )
-        gdal.RasterizeLayer(
-            new_raster,
-            [1],
-            polygon,
-            options=[f"ATTRIBUTE={value_field}"] + create_options,
-        )
-        if read_array:
-            raster_array = new_raster.ReadAsArray()
-            return raster_array
-        else:
-            return None
+
+        if new_raster is not None: #is None when raster already exists and was not overwritten.
+            gdal.RasterizeLayer(
+                new_raster,
+                [1],
+                polygon,
+                options=[f"ATTRIBUTE={value_field}"] + create_options,
+            )
+            if read_array:
+                raster_array = new_raster.ReadAsArray()
+                return raster_array
+            else:
+                return None
     except Exception as e:
         raise e
 
@@ -224,6 +229,7 @@ def create_new_raster_file(
             datatype,
             options=create_options,
         )
+        
         target_ds.SetGeoTransform(meta.georef)
         _set_band_data(target_ds, num_bands, nodata)
         target_ds.SetProjection(meta.proj)
@@ -453,6 +459,7 @@ def reproject(src:Raster, target_res:float, output_path:str):
         dst_ds = create_new_raster_file(file_name=output_path,
                     nodata=src.nodata,
                     meta=src.metadata)
-
-        gdal.ReprojectImage(src_ds, dst_ds, src_wkt='EPSG:28992')
+        
+        if dst_ds is not None:
+            gdal.ReprojectImage(src_ds, dst_ds, src_wkt='EPSG:28992')
         

@@ -343,6 +343,7 @@ class Raster(File):
             raster_sum+=np.nansum(block)
         return raster_sum
 
+
 class RasterMetadata():
     """Metadata object of a raster. Resolution can be changed
     so that a new raster with another resolution can be created.
