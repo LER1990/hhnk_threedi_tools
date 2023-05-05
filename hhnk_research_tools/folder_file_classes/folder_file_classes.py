@@ -16,7 +16,7 @@ class Folder:
     """Base folder class for creating, deleting and see if folder exists"""
 
     def __init__(self, base, create=False):
-        self.base = base
+        self.base = str(base)
         self.pl = Path(base)  # pathlib path
 
         self.files = {}
@@ -89,9 +89,9 @@ class Folder:
     def full_path(self, name):
         """returns the full path of a file or a folder when only a name is known"""
         if "/" in name:
-            return str(self.pl) + name
+            return Path(str(self.pl) + name)
         else:
-            return str(self.pl / name)
+            return self.pl / name
 
     def add_file(self, objectname, filename, ftype="file"):
         """ftype options = ['file', 'filegdb', 'raster', 'sqlite'] """

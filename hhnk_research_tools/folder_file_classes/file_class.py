@@ -4,12 +4,12 @@ import inspect
 
 class File:
     def __init__(self, file_path):
-        self.file_path = file_path
+        self.base = str(file_path)
         self.pl = Path(file_path)
 
     @property
     def exists(self):
-        if self.file_path == "":
+        if self.base == "":
             return False
         else:
             return self.pl.exists()
@@ -36,7 +36,7 @@ class File:
 
     @property
     def path(self):
-        return self.file_path
+        return self.base
 
     def unlink_if_exists(self):
         """Remove file if it exists"""
@@ -44,7 +44,7 @@ class File:
             self.pl.unlink(missing_ok=False)
 
     def __str__(self):
-        return self.file_path
+        return self.base
 
     def __repr__(self):
         if self.exists:
@@ -57,5 +57,5 @@ class File:
         , '__call__')])
         repr_str = f"""functions: {funcs}
 variables: {variables}"""
-        return f"""{self.name} @ {self.file_path} ({exists})
+        return f"""{self.name} @ {self.base} ({exists})
 {repr_str}"""

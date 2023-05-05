@@ -177,6 +177,7 @@ def create_new_raster_file(
     datatype=GDAL_DATATYPE,
     num_bands=1,
     create_options=None,
+    overwrite=False,
 ):
     """
     ONLY FOR SINGLE BAND
@@ -207,6 +208,13 @@ def create_new_raster_file(
 
             # else:
             #     options = [f"COMPRESS=DEFLATE", f"TILED=YES", "PREDICTOR=2", "ZSTD_LEVEL=1"]
+
+        if Path(file_name).exists():
+            if overwrite is False:
+                return
+            else:
+                Path(file_name).unlink()
+        
 
         target_ds = gdal.GetDriverByName(driver).Create(
             str(file_name),

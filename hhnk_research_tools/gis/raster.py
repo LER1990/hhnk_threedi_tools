@@ -55,7 +55,7 @@ class Raster(File):
         window=[x0, y0, xsize, ysize]
         x0, y0 is left top corner!!"""
         if band == None:
-            gdal_src = self.open_gdal_source()
+            gdal_src = self.open_gdal_source_read()
             band = gdal_src.GetRasterBand(1) #TODO band is not closed properly
 
         if window is not None:
@@ -80,7 +80,7 @@ class Raster(File):
 
     def get_array(self, window=None):
         try:
-            gdal_src = self.open_gdal_source()
+            gdal_src = self.open_gdal_source_read()
             if self.band_count == 1:
                 raster_array = self._read_array(band=gdal_src.GetRasterBand(1), 
                                                 window=window)
@@ -109,9 +109,9 @@ class Raster(File):
     def source(self):
         if not self.source_set:
             self.source=True #call source.setter
-            return self.open_gdal_source()
+            return self.open_gdal_source_read()
         else:
-            return self.open_gdal_source()
+            return self.open_gdal_source_read()
     @source.setter
     def source(self, value):
         """If source does not exist it will not be set.
@@ -123,19 +123,26 @@ class Raster(File):
             # print(f"setting source {self.file_path}")
 
             # self._source=gdal.Open(str(self.source_path), gdal.GA_ReadOnly)
-            gdal_src = self.open_gdal_source()
+            gdal_src = self.open_gdal_source_read()
 
             self._metadata = RasterMetadata(gdal_src=gdal_src)
             self._nodata = gdal_src.GetRasterBand(1).GetNoDataValue()
             self._band_count = gdal_src.RasterCount
 
 
-    def open_gdal_source(self):
+    def open_gdal_source_read(self):
         """usage;
-        with self.open_gdal_source() as gdal_src: doesnt work.
+        with self.open_gdal_source_read() as gdal_src: doesnt work.
         just dont write it to the class, and it should be fine..
         """
         return gdal.Open(str(self.source_path), gdal.GA_ReadOnly)
+
+
+    def open_gdal_source_write(self):
+        """
+        open source with write access
+        """
+        return gdal.Open(str(self.source_path), gdal.GA_Update)
 
 
     @property
@@ -182,7 +189,7 @@ class Raster(File):
     def generate_blocks(self) -> pd.DataFrame:
         """Generate blocks with the blocksize of the band. 
         These blocks can be used as window to load the raster iteratively."""
-        gdal_src = self.open_gdal_source()
+        gdal_src = self.open_gdal_source_read()
         band = gdal_src.GetRasterBand(1)
 
         block_height, block_width = band.GetBlockSize()
@@ -305,30 +312,26 @@ class Raster(File):
 
 
 
-    def create(self, metadata, nodata, overwrite=False):
+    def create(self, metadata, nodata, verbose=False, overwrite=False):
         """Create empty raster
         metadata : RasterMetadata instance
         nodata: int
         """
         #Check if function should continue.
-        cont=True
-        if not overwrite and self.source_path.exists():
-            cont=False
-
-        if cont==True:
+        if verbose:
             print(f"creating output raster: {self.source_path}")
-            target_ds = hrt.create_new_raster_file(file_name=str(self.source_path),
-                                                    nodata=nodata,
-                                                    meta=metadata,)
-            target_ds = None
+        target_ds = hrt.create_new_raster_file(file_name=str(self.source_path),
+                                                nodata=nodata,
+                                                meta=metadata,
+                                                overwrite=overwrite,)
+        target_ds = None
 
-            #Reset source, if raster is deleted and recreated with different resolution
-            #this would otherwise cause issues. 
-            self.source_set=None
-            self.source=None
+        #Reset source, if raster is deleted and recreated with different resolution
+        #this would otherwise cause issues. 
+        self.source_set=None
+        self.source=None
 
-        else:
-            print(f"output raster already exists: {self.source_path}")
+
         self.exists #Update raster now it exists
 
 
