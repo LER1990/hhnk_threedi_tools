@@ -78,14 +78,17 @@ class Raster(File):
 
         return raster_array
 
-    def get_array(self, window=None):
+    def get_array(self, window=None, band_count=None):
         try:
+            if band_count is None:
+                band_count = self.band_count
+
             gdal_src = self.open_gdal_source_read()
-            if self.band_count == 1:
+            if band_count == 1:
                 raster_array = self._read_array(band=gdal_src.GetRasterBand(1), 
                                                 window=window)
 
-            elif self.band_count == 3:
+            elif band_count == 3:
                 red_array = self._read_array(band=gdal_src.GetRasterBand(1), 
                                                 window=window)
                 green_array = self._read_array(band=gdal_src.GetRasterBand(2), 
