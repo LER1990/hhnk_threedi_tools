@@ -3,9 +3,9 @@ import inspect
 
 
 class File:
-    def __init__(self, file_path):
-        self.base = str(file_path)
-        self.pl = Path(file_path)
+    def __init__(self, base):
+        self.base = str(base)
+        self.pl = Path(base)
 
     @property
     def exists(self):
@@ -23,7 +23,7 @@ class File:
             return None
 
     @property
-    def path_if_exists(self):
+    def path_if_exists(self) -> str:
         """return filepath if the file exists otherwise return None"""
         if self.exists:
             return str(self.pl)

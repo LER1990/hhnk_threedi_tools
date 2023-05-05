@@ -153,40 +153,23 @@ Exists: {self.exists}
                 """
     
 
-
-
-
 class FileGDB(File):
-    def __init__(self, file_path):
-        super().__init__(file_path)
+    def __init__(self, base):
+        super().__init__(base)
 
     def load(self, layer=None):
         if layer == None:
             layer = input("Select layer:")
-        return gpd.read_file(self.file_path, layer=layer)
+        return gpd.read_file(self.path, layer=layer)
 
     def layers(self):
         """Return available layers in file gdb"""
-        return fiona.listlayers(self.file_path)
-
-#TODO deprecated, gis.raster ipv deze gebruiken.
-# class Raster(File):
-#     def __init__(self, raster_path):
-#         super().__init__(raster_path)
-
-#     def load(self, return_array=True):
-#         if self.exists:
-#             self.array, self.nodata, self.metadata = hrt.load_gdal_raster(
-#                 raster_source=self.file_path, return_array=return_array
-#             )
-#             return self.array, self.nodata, self.metadata
-#         else:
-#             print("Doesn't exist")
+        return fiona.listlayers(self.path)
 
 
 class Sqlite(File):
-    def __init__(self, file_path):
-        super().__init__(file_path)
+    def __init__(self, base):
+        super().__init__(base)
 
     def connect(self):
         if os.path.exists(self.path):

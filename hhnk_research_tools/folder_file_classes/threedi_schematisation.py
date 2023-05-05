@@ -147,11 +147,11 @@ class ThreediResult(Folder):
 
     @property
     def grid(self):
-        return GridH5ResultAdmin(self.admin_path.file_path, self.grid_path.file_path)
+        return GridH5ResultAdmin(self.admin_path.base, self.grid_path.base)
 
     @property
     def admin(self):
-        return GridH5Admin(self.admin_path.file_path)
+        return GridH5Admin(self.admin_path.base)
 
 
 class RevisionsDir(Folder):
