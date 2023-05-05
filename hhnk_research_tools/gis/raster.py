@@ -335,6 +335,14 @@ class Raster(File):
         self.exists #Update raster now it exists
 
 
+    def sum(self):
+        """calculate sum of raster"""
+        raster_sum = 0
+        for window, block in self:
+            block[block==self.nodata] = np.nan
+            raster_sum+=np.nansum(block)
+        return raster_sum
+
 class RasterMetadata():
     """Metadata object of a raster. Resolution can be changed
     so that a new raster with another resolution can be created.

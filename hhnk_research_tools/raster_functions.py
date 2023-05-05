@@ -196,7 +196,6 @@ def create_new_raster_file(
 
     Best compression options for Float32:
     [f"COMPRESS=LERC_ZSTD", f"TILED=True", "PREDICTOR=2", "ZSTD_LEVEL=1", "MAX_Z_ERROR=0.001"]
-
     """
     try:
         if create_options is None:
@@ -209,11 +208,12 @@ def create_new_raster_file(
             # else:
             #     options = [f"COMPRESS=DEFLATE", f"TILED=YES", "PREDICTOR=2", "ZSTD_LEVEL=1"]
 
-        if Path(file_name).exists():
-            if overwrite is False:
-                return
-            else:
-                Path(file_name).unlink()
+        if driver != "MEM":
+            if Path(file_name).exists():
+                if overwrite is False:
+                    return None
+                else:
+                    Path(file_name).unlink()
         
 
         target_ds = gdal.GetDriverByName(driver).Create(
@@ -240,6 +240,7 @@ def save_raster_array_to_tiff(
     datatype=GDAL_DATATYPE,
     create_options=None,
     num_bands=1,
+    overwrite=False,
 ):
     """
     ONLY FOR SINGLE BAND
@@ -260,10 +261,12 @@ def save_raster_array_to_tiff(
             meta=metadata,
             datatype=datatype,
             create_options=create_options,
+            overwrite=overwrite,
         )  # create new raster
-        for i in range(1, num_bands + 1):
-            target_ds.GetRasterBand(i).WriteArray(raster_array)  # fill file with data
-        target_ds = None
+        if target_ds is not None: #is None when raster already exists and was not overwritten.
+            for i in range(1, num_bands + 1):
+                target_ds.GetRasterBand(i).WriteArray(raster_array)  # fill file with data
+            target_ds = None
     except Exception as e:
         raise e
 
