@@ -184,6 +184,19 @@ class Raster(File):
     @property
     def pixelarea(self):
         return self.metadata.pixelarea
+    
+    
+    def statistics(self, approve_ok=True, force=True):
+        """approve_ok: reads stats from xml if available.
+        force: calculates stats, might be slow.
+        returns [min, max, mean, std]"""
+        raster_src = self.open_gdal_source_read()
+        stats = raster_src.GetRasterBand(1).GetStatistics(approve_ok, force) #[min, max, mean, std]
+        return {"min":stats[0],
+                "max":stats[1],
+                "mean":stats[2],
+                "std":stats[3],
+                }
 
 
     def generate_blocks(self) -> pd.DataFrame:
