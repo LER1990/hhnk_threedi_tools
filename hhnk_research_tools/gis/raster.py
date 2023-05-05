@@ -120,6 +120,7 @@ class Raster(File):
         if os.path.exists(self.source_path): #cannot use self.exists here.
             #Needs to be first otherwise we end in a loop when settings metadata/nodata/band_count
             self.source_set=True 
+            # print(f"setting source {self.file_path}")
 
             # self._source=gdal.Open(str(self.source_path), gdal.GA_ReadOnly)
             gdal_src = self.open_gdal_source()
@@ -320,6 +321,12 @@ class Raster(File):
                                                     nodata=nodata,
                                                     meta=metadata,)
             target_ds = None
+
+            #Reset source, if raster is deleted and recreated with different resolution
+            #this would otherwise cause issues. 
+            self.source_set=None
+            self.source=None
+
         else:
             print(f"output raster already exists: {self.source_path}")
         self.exists #Update raster now it exists
