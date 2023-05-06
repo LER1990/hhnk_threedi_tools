@@ -71,8 +71,7 @@ def sql_create_update_case_statement(
         raise e from None
 
 
-# TODO was: construct_select_query
-def sql_construct_select_query(table, columns=None) -> str:
+def sql_construct_select_query(table_name, columns=None) -> str:
     """
     This functions constructs sql queries that select either all
     or specified columns from a table.
@@ -80,7 +79,7 @@ def sql_construct_select_query(table, columns=None) -> str:
     Columns has to be a list. If a list item is a tuple, it will be interpreted as:
     (column, alias). In other cases, we assume the item to be a valid column name.
     """
-    base_query = "SELECT {columns} \nFROM {table}"
+    base_query = "SELECT {columns} \nFROM {table_name}"
     try:
         if columns is not None:
             selection_lst = []
@@ -92,14 +91,14 @@ def sql_construct_select_query(table, columns=None) -> str:
                         selection_lst.append(key)
             elif type(columns) == list:
                 selection_lst = columns
-            query = base_query.format(columns=",\n".join(selection_lst), table=table)
+            query = base_query.format(columns=",\n".join(selection_lst), table_name=table_name)
         else:
-            query = base_query.format(columns="*", table=table)
+            query = base_query.format(columns="*", table_name=table_name)
         return query
     except Exception as e:
         raise e from None
 
-
+#TODO REMOVE
 def create_sqlite_connection(database_path):
     """Create connection to database. On windows with conda envs this requires the mod_spatialaite extension
     to be installed explicitly. The location of this extension is stored in
@@ -130,7 +129,8 @@ def create_sqlite_connection(database_path):
         raise e from None
 
 
-# TODO was: table_exists
+
+#TODO REMOVE
 def sql_table_exists(database_path, table_name):
     """
     Checks if a table name exists in the specified database
@@ -143,6 +143,7 @@ def sql_table_exists(database_path, table_name):
         raise e from None
 
 
+#TODO REMOVE
 def execute_sql_selection(
     query, conn=None, database_path=None, **kwargs
 ) -> pd.DataFrame:
@@ -262,6 +263,7 @@ def sqlite_replace_or_add_table(
             conn.close()
 
 
+#TODO REMOVE
 # TODO was: get_table_as_df
 def sqlite_table_to_df(database_path, table_name, columns=None) -> pd.DataFrame:
     conn = None
@@ -277,6 +279,7 @@ def sqlite_table_to_df(database_path, table_name, columns=None) -> pd.DataFrame:
             conn.close()
 
 
+#TODO REMOVE
 # TODO was: gdf_from_sql
 def sqlite_table_to_gdf(
     query, id_col, to_gdf=True, conn=None, database_path=None

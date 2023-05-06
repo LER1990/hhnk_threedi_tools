@@ -3,7 +3,8 @@ import os
 from pathlib import Path
 
 import hhnk_research_tools as hrt
-from hhnk_research_tools.folder_file_classes.folder_file_classes import Folder, Sqlite
+from hhnk_research_tools.folder_file_classes.folder_file_classes import Folder
+from hhnk_research_tools.folder_file_classes.sqlite import Sqlite
 from hhnk_research_tools.gis.raster import Raster
 from hhnk_research_tools.folder_file_classes.file_class import File
 

@@ -48,8 +48,11 @@ from hhnk_research_tools.raster_functions import (
 from hhnk_research_tools.folder_file_classes.folder_file_classes import (
     Folder,
     FileGDB,
+)
+from hhnk_research_tools.folder_file_classes.sqlite import (
     Sqlite,
 )
+
 from hhnk_research_tools.folder_file_classes.threedi_schematisation import (
     ThreediSchematisation,
     ThreediResult,

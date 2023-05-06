@@ -214,16 +214,3 @@ class FileGDBLayer():
 
     def load(self):
         return gpd.read_file(self.parent.path, layer=self.name)
-
-
-class Sqlite(File):
-    def __init__(self, base):
-        super().__init__(base)
-
-    def connect(self):
-        if os.path.exists(self.path):
-            return hrt.create_sqlite_connection(self.path)
-        else:
-            return None
-
-
