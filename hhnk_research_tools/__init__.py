@@ -40,7 +40,7 @@ from hhnk_research_tools.raster_functions import (
     build_vrt,
     create_meta_from_gdf,
     dx_dy_between_rasters,
-    Raster_calculator,
+    RasterCalculator,
     reproject,
 )
 

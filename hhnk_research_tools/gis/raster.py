@@ -17,6 +17,10 @@ from hhnk_research_tools.folder_file_classes.file_class import File
 
 class Raster(File):
     def __init__(self, source_path, min_block_size=1024):
+
+        if type(source_path) in [Raster, File]:
+            source_path = source_path.path
+
         super().__init__(source_path)
         self.source_path = source_path
 

@@ -25,7 +25,7 @@ def convert_gdb_to_gpkg(gdb:FileGDB, gpkg:FileGDB, overwrite=False, verbose=True
                 gpkg.unlink_if_exists()
             if verbose:
                 print(f"Write gpkg to {gpkg.path}")
-            for layer in gdb.layers():
+            for layer in gdb.available_layers():
                 if verbose:
                     print(f"    {layer}")
                 gdf = gpd.read_file(gdb.path, layer=layer)

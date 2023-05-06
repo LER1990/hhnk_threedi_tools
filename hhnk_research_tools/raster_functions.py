@@ -9,6 +9,7 @@ from hhnk_research_tools.general_functions import ensure_file_path
 from hhnk_research_tools.gis.raster import Raster, RasterMetadata
 from pathlib import Path
 import os
+import types
 
 
 DEFAULT_CREATE_OPTIONS = [f"COMPRESS=ZSTD", f"TILED=YES", "PREDICTOR=2", "ZSTD_LEVEL=1"]
@@ -123,7 +124,7 @@ def gdf_to_raster(
     datatype=GDAL_DATATYPE,
     create_options=DEFAULT_CREATE_OPTIONS,
     read_array=True,
-    overwrite=False
+    overwrite=False,
 ):
     """Dem is used as format raster. The new raster gets meta data from the DEM. A gdf is turned into ogr layer and is
     then rasterized.
@@ -131,6 +132,9 @@ def gdf_to_raster(
     nodata=0, meta=meta, epsg=28992, driver='GTiff')
     """
     try:
+        if type(raster_out) == Raster:
+            raster_out=raster_out.path
+
         ogr_ds, polygon = _gdf_to_ogr(gdf, epsg)
         # make sure folders exist
         if raster_out != '': #empty str when driver='MEM'
@@ -342,22 +346,25 @@ def dx_dy_between_rasters(meta_big, meta_small):
     return dx_min, dy_min, dx_max, dy_max
 
 
-class Raster_calculator():
+class RasterCalculator():
     """Make a custom calculation between two rasters by 
     reading the blocks and applying a calculation
     input raster should be of type hhnk_research_tools.gis.raster.Raster
 
     raster1: hrt.Raster -> big raster
-    raster2: hrt.Raster -> smaller raster with full extent within big raster. Raster numbering is interchangeable as the scripts checks the bounds.
-    raster_out: hrt.Raster -> output, doesnt need to exists. self.create also creates it.
-    custom_run_window_function: function that takes window of small and big raster as input and does calculation with these arrays.
+    raster2: hrt.Raster -> smaller raster with full extent within big raster. 
+        Raster numbering is interchangeable as the scripts checks the bounds.
+    raster_out: hrt.Raster -> output, doesnt need to exist. self.create also creates it.
+    custom_run_window_function: function that takes window of small and big raster 
+        as input and does calculation with these arrays.
     customize below function for this, can take more inputs.
 
-    def custom_run_window_function(self, window_small, window_big, band_out, **kwargs):
+    def custom_run_window_function(self, raster1_window, raster2_window, band_out, **kwargs):
+        #hrt.Raster_calculator custom_run_window_function
         #Customize this function with a calculation
         #Load windows
-        block_big = self.raster_big._read_array(window=window_big)
-        block_small = self.raster_small._read_array(window=window_small)
+        block1 = self.raster1._read_array(window=raster1_window)
+        block2 = self.raster2._read_array(window=raster2_window)
 
         #Calculate output
         block_out = None #replace with a calculation.
@@ -367,9 +374,18 @@ class Raster_calculator():
 
     
     """
-    def __init__(self, raster1, raster2, raster_out, custom_run_window_function, verbose=False):
+    def __init__(self, 
+                 raster1:Raster, 
+                 raster2:Raster, 
+                 raster_out:Raster, 
+                 custom_run_window_function, 
+                 output_nodata,
+                 verbose=False):
 
-        self.raster_big, self.raster_small = self._checkbounds(raster1, raster2) 
+        self.raster1 = raster1
+        self.raster2 = raster2
+
+        self.raster_big, self.raster_small, self.raster_mapping = self._checkbounds(raster1, raster2) 
         self.raster_out = raster_out
 
         #dx dy between rasters.
@@ -377,7 +393,8 @@ class Raster_calculator():
         
         self.blocks_df = self.raster_small.generate_blocks()
         self.blocks_total = len(self.blocks_df)
-        self.custom_run_window_function = custom_run_window_function
+        self.custom_run_window_function = types.MethodType(custom_run_window_function, self)
+        self.output_nodata = output_nodata
         self.verbose = verbose
 
 
@@ -393,55 +410,65 @@ class Raster_calculator():
 
         if np.all(check_arr):
             #In this case raster1 is the bigger raster.
-            return raster1, raster2
+            return raster1, raster2, {"raster1":"big", "raster2":"small"}
         elif np.all(~check_arr):
             #In this case raster2 is the bigger raster
-            return raster2, raster1
+            return raster2, raster1, {"raster1":"small", "raster2":"big"}
         else:
             raise Exception("""Raster bounds do not overlap. We cannot use this.""")
         
 
-    def create(self, overwrite=False, nodata=0):
-        """Create empty output raster"""
+    def create(self, overwrite=False) -> bool:
+        """Create empty output raster
+        returns bool wether the rest of the function should continue"""
         #Check if function should continue.
         cont=True
-        if not overwrite and os.path.exists(self.raster_out.source_path):
+        if not overwrite and self.raster_out.pl.exists():
             cont=False
 
         if cont==True:
             if self.verbose:
-                print(f"creating output raster: {self.raster_out.source_path}")
-            target_ds = create_new_raster_file(file_name=self.raster_out.source_path,
-                                                    nodata=nodata,
+                print(f"creating output raster: {self.raster_out.path}")
+            target_ds = create_new_raster_file(file_name=self.raster_out.path,
+                                                    nodata=self.output_nodata,
                                                     meta=self.raster_small.metadata,)
             target_ds = None
         else:
             if self.verbose:
-                print(f"output raster already exists: {self.raster_out.source_path}")
+                print(f"output raster already exists: {self.raster_out.path}")
+        return cont
 
 
-    def run(self, **kwargs):
+    def run(self, overwrite=False, **kwargs):
         """loop over the small raster blocks, load both arrays and apply a custom function to it."""
-        target_ds=gdal.Open(str(self.raster_out.source_path), gdal.GA_Update)
-        band_out = target_ds.GetRasterBand(1)
+        cont = self.create(overwrite=overwrite)
 
+        if cont:
+            target_ds=self.raster_out.open_gdal_source_write()
+            band_out = target_ds.GetRasterBand(1)
 
-        for idx, block_row in self.blocks_df.iterrows():
-                #Load landuse 
-                window_small=block_row['window_readarray']
+            for idx, block_row in self.blocks_df.iterrows():
+                    #Load landuse 
+                    window = {}
+                    window["small"]=block_row['window_readarray']
 
-                window_big = window_small.copy()
-                window_big[0] += self.dx_min
-                window_big[1] += self.dy_min
+                    window["big"] = window["small"].copy()
+                    window["big"][0] += self.dx_min
+                    window["big"][1] += self.dy_min
 
-                self.custom_run_window_function(self=self, window_small=window_small, window_big=window_big, band_out=band_out, **kwargs)
-                if self.verbose:
-                    print(f"{idx} / {self.blocks_total}", end= '\r')
-                # break
-                
-        band_out.FlushCache()  # close file after writing
-        band_out = None
-        target_ds = None
+                    windows = {"raster1":window[self.raster_mapping["raster1"]],
+                            "raster2":window[self.raster_mapping["raster2"]]}
+
+                    self.custom_run_window_function(windows=windows,
+                                                    band_out=band_out, 
+                                                    **kwargs)
+                    if self.verbose:
+                        print(f"{idx} / {self.blocks_total}", end= '\r')
+                    # break
+                    
+            band_out.FlushCache()  # close file after writing
+            band_out = None
+            target_ds = None
 
 
 def reproject(src:Raster, target_res:float, output_path:str):
