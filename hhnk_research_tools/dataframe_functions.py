@@ -37,7 +37,7 @@ def _set_geometry_by_type(df, geom_col_type, col=DEF_GEOMETRY_COL):
         except Exception as e:
             raise e from None
 
-# TODO convert_df_to_gdf en create_gdf_from_df zijn geworden; convert_df_to_gdf
+# TODO convert_df_to_gdf en create_gdf_from_df zijn geworden; df_convert_to_gdf
 # TODO make this more logical, it now handles two types of geometry_cols under the same variable.
 def df_convert_to_gdf(
     df,

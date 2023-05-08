@@ -55,7 +55,8 @@ class File:
         , '__call__')])
         variables = '.'+' .'.join([i for i in dir(self) if not i.startswith('__') and not hasattr(inspect.getattr_static(self,i)
         , '__call__')])
-        repr_str = f"""functions: {funcs}
+        repr_str = f"""type: {type(self)}
+functions: {funcs}
 variables: {variables}"""
         return f"""{self.name} @ {self.base} ({exists})
 {repr_str}"""

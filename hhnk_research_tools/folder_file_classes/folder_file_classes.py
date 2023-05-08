@@ -6,6 +6,7 @@ import fiona
 import geopandas as gpd
 import hhnk_research_tools as hrt
 from hhnk_research_tools.folder_file_classes.file_class import File
+from hhnk_research_tools.folder_file_classes.sqlite_class import Sqlite
 
 
 
@@ -148,7 +149,7 @@ class Folder:
         repr_str = f"""functions: {funcs}
 variables: {variables}"""
         return f"""{self.name} @ {self.path}
-Exists: {self.exists}
+Exists: {self.exists} -- Type: {type(self)}
     Folders:\t{self.structure}
     Files:\t{list(self.files.keys())}
     Layers:\t{list(self.olayers.keys())}
@@ -166,7 +167,11 @@ class FileGDB(File):
 
     def load(self, layer=None):
         if layer == None:
-            layer = input("Select layer:")
+            avail_layers = self.available_layers()
+            if len(avail_layers) == 1:
+                layer= avail_layers[0]
+            else:
+                layer = input(f"Select layer [{avail_layers}]:")
         return gpd.read_file(self.path, layer=layer)
 
 
@@ -182,6 +187,7 @@ class FileGDB(File):
         """Add multiple layers"""
         for name in names:
             self.add_layer(name)
+
 
     def available_layers(self):
         """Return available layers in file gdb"""

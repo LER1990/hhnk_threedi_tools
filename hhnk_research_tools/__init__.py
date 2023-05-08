@@ -48,8 +48,9 @@ from hhnk_research_tools.raster_functions import (
 from hhnk_research_tools.folder_file_classes.folder_file_classes import (
     Folder,
     FileGDB,
+    FileGDBLayer,
 )
-from hhnk_research_tools.folder_file_classes.sqlite import (
+from hhnk_research_tools.folder_file_classes.sqlite_class import (
     Sqlite,
 )
 

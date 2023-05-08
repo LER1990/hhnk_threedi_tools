@@ -56,9 +56,14 @@ class Sqlite(File):
             raise e from None
         
 
-    def read_table(self, table_name, id_col=None, columns=None):
+    def read_table(self, table_name:str, id_col:str=None, columns:list=[]):
         """read table as (geo)dataframe. If there is a geometry column
-        then it will load as a gdf in epsg 28992"""
+        then it will load as a gdf in epsg 28992.
+        Run .list_tables to get an overview over available (v2) tables
+        table_name: table in sqlite
+        id_col: sets the index of the dataframe to this column
+        columns: filter columns that are returned
+        """
         conn = None
         try:
             conn = self.connect()
@@ -80,7 +85,7 @@ class Sqlite(File):
             if columns:
                 df=df[columns]
             if id_col:
-                df.set_index(id_col, drop=False, inplace=True)
+                df.set_index(id_col, drop=True, inplace=True)
 
             return df
         except KeyError as e:
@@ -102,6 +107,8 @@ class Sqlite(File):
             if conn is None:
                 conn = self.connect()
             db = pd.read_sql(query, conn, **kwargs)
+            if "geometry" in db.keys():
+                db = hrt.df_convert_to_gdf(db)
             return db
         except Exception as e:
             raise e from None
@@ -165,12 +172,3 @@ if __name__ == "__main__":
 
     df = self.read_table(table_name=table_name, columns=["id","geometry"])
     display(df)
-# %%
-from hhnk_research_tools.dataframe_functions import df_convert_to_gdf
-
-df_convert_to_gdf(df=df, src_crs=DEF_SRC_CRS)
-
-
-
-
-# %%
