@@ -199,10 +199,11 @@ class Raster(File):
         returns [min, max, mean, std]"""
         raster_src = self.open_gdal_source_read()
         stats = raster_src.GetRasterBand(1).GetStatistics(approve_ok, force) #[min, max, mean, std]
-        return {"min":stats[0],
-                "max":stats[1],
-                "mean":stats[2],
-                "std":stats[3],
+        d=6 #decimals
+        return {"min":np.round(stats[0], d),
+                "max":np.round(stats[1],d),
+                "mean":np.round(stats[2],d),
+                "std":np.round(stats[3],d),
                 }
 
 
