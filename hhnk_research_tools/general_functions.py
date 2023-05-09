@@ -12,11 +12,7 @@ def ensure_file_path(filepath):
     except Exception as e:
         raise e from None
 
-# %%
-from pathlib import Path
-a=Path("te")
-print(f"{a}a")
-#%%
+
 def convert_gdb_to_gpkg(gdb:FileGDB, gpkg:FileGDB, overwrite=False, verbose=True):
     """Convert input filegdb to geopackage"""
 
