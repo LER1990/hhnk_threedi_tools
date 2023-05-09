@@ -12,22 +12,61 @@ def ensure_file_path(filepath):
     except Exception as e:
         raise e from None
 
-
+# %%
+from pathlib import Path
+a=Path("te")
+print(f"{a}a")
+#%%
 def convert_gdb_to_gpkg(gdb:FileGDB, gpkg:FileGDB, overwrite=False, verbose=True):
     """Convert input filegdb to geopackage"""
-    if gdb.exists:
-        if gpkg.exists and not overwrite:
+
+    if gdb.pl.exists():
+        if check_create_new_file(output_file=gpkg.pl, overwrite=overwrite):
             if verbose:
-                print(f"Already exists: {gpkg.path}")
-            return 
-        else:
-            if overwrite:
-                gpkg.unlink_if_exists()
-            if verbose:
-                print(f"Write gpkg to {gpkg.path}")
+                print(f"Write gpkg to {gpkg.pl}")
             for layer in gdb.available_layers():
                 if verbose:
                     print(f"    {layer}")
-                gdf = gpd.read_file(gdb.path, layer=layer)
+                gdf = gpd.read_file(str(gdb.pl), layer=layer)
 
-                gdf.to_file(gpkg.path, layer=layer, driver="GPKG")
+                gdf.to_file(str(gpkg.pl), layer=layer, driver="GPKG")
+
+
+def check_create_new_file(output_file:str, overwrite:bool=False, input_files:list=[]) -> bool:
+    """
+    Check if we should continue to create a new file. 
+
+    output_file:
+    overwrite: When overwriting is True the output_file will be removed.  
+    input_files: if input files are provided the edit time of the input will be 
+                 compared to the output. If edit time is after the output, it will
+                 recreate the output.
+    """
+    create=False
+    output_file = Path(output_file)
+
+    #Als geen suffix (dus geen file), dan error
+    if not output_file.suffix:
+        raise TypeError(f"{output_file} is not a file.")
+    
+    # Rasterize regions
+    if not output_file.exists():
+        create = True
+    else:
+        if overwrite:
+            output_file.unlink()
+            create=True
+
+        if input_files:
+            # Check edit times. To see if raster needs to be updated.
+            output_mtime = output_file.stat().st_mtime
+
+            for input_file in input_files:
+                if input_file.exists():
+                    input_mtime = Path(input_file).stat().st_mtime
+                    
+                    if input_mtime > output_mtime:
+                        output_file.unlink()
+                        create = True
+                        break
+    return create

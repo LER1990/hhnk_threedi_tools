@@ -5,7 +5,7 @@ import json
 from hhnk_research_tools.variables import DEF_TRGT_CRS
 from hhnk_research_tools.variables import GDAL_DATATYPE, GEOTIFF
 from hhnk_research_tools.variables import GEOTIFF, GDAL_DATATYPE
-from hhnk_research_tools.general_functions import ensure_file_path
+from hhnk_research_tools.general_functions import ensure_file_path, check_create_new_file
 from hhnk_research_tools.gis.raster import Raster, RasterMetadata
 from pathlib import Path
 import os
@@ -217,27 +217,22 @@ def create_new_raster_file(
             # else:
             #     options = [f"COMPRESS=DEFLATE", f"TILED=YES", "PREDICTOR=2", "ZSTD_LEVEL=1"]
 
-        if driver != "MEM":
-            if Path(file_name).exists():
-                if overwrite is False:
-                    return None
-                else:
-                    Path(file_name).unlink()
-        
+        if check_create_new_file(output_file=file_name, 
+                                    overwrite=overwrite) or driver == "MEM":
 
-        target_ds = gdal.GetDriverByName(driver).Create(
-            str(file_name),
-            meta.x_res,
-            meta.y_res,
-            num_bands,
-            datatype,
-            options=create_options,
-        )
-        
-        target_ds.SetGeoTransform(meta.georef)
-        _set_band_data(target_ds, num_bands, nodata)
-        target_ds.SetProjection(meta.proj)
-        return target_ds
+            target_ds = gdal.GetDriverByName(driver).Create(
+                str(file_name),
+                meta.x_res,
+                meta.y_res,
+                num_bands,
+                datatype,
+                options=create_options,
+            )
+            
+            target_ds.SetGeoTransform(meta.georef)
+            _set_band_data(target_ds, num_bands, nodata)
+            target_ds.SetProjection(meta.proj)
+            return target_ds
     except Exception as e:
         raise e
 
