@@ -74,12 +74,13 @@ class Folder:
     def show(self):
         print(self.__repr__())
 
-    def create(self, parents=False):
+    def create(self, parents=False, verbose=False):
         """Create folder, if parents==False path wont be
         created if parent doesnt exist."""
         if not parents:
             if not self.pl.parent.exists():
-                print(f"{self.path} not created, parent doesnt exist.")
+                if verbose:
+                    print(f"{self.path} not created, parent doesnt exist.")
                 return
         self.pl.mkdir(parents=parents, exist_ok=True)
 
@@ -162,7 +163,7 @@ class FileGDB(File):
         super().__init__(base)
 
         self.layerlist=[]
-        self.layers=FileGDBLayers
+        self.layers=FileGDBLayers()
 
 
     def load(self, layer=None):
