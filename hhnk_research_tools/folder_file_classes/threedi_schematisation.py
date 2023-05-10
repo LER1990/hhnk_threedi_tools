@@ -83,7 +83,7 @@ class ThreediSchematisation(Folder):
 
     class ThreediRasters(Folder):
         def __init__(self, base, caller):
-            super().__init__(os.path.join(base, "rasters", create=True))
+            super().__init__(os.path.join(base, "rasters"), create=True)
             self.caller = caller
 
             self.dem = self.get_raster_path(
