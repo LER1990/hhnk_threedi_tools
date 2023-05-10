@@ -1,5 +1,8 @@
 import hhnk_research_tools.variables as variables
 
+from hhnk_research_tools.folder_file_classes.file_class import File
+
+
 from hhnk_research_tools.gis.raster import Raster, RasterMetadata
 
 import hhnk_research_tools.threedi as threedi
@@ -24,7 +27,11 @@ from hhnk_research_tools.dataframe_functions import (
     gdf_write_to_csv,
 )
 
-from hhnk_research_tools.general_functions import ensure_file_path
+from hhnk_research_tools.general_functions import (
+    ensure_file_path,
+    convert_gdb_to_gpkg,
+    check_create_new_file,
+)
 
 from hhnk_research_tools.raster_functions import (
     load_gdal_raster,
@@ -34,13 +41,30 @@ from hhnk_research_tools.raster_functions import (
     build_vrt,
     create_meta_from_gdf,
     dx_dy_between_rasters,
-    Raster_calculator,
+    RasterCalculator,
+    reproject,
+)
+
+
+from hhnk_research_tools.folder_file_classes.folder_file_classes import (
+    Folder,
+    FileGDB,
+    FileGDBLayer,
+)
+from hhnk_research_tools.folder_file_classes.sqlite_class import (
+    Sqlite,
+)
+
+from hhnk_research_tools.folder_file_classes.threedi_schematisation import (
+    ThreediSchematisation,
+    ThreediResult,
+    RevisionsDir,
 )
 
 # TODO how does this versioning work?
 # Threedigrid version number is automatic updated with zest.releaser. Geopandas uses versioneer.py.
 # the version number in setup.py is updated using the find_version()
-__version__ = '2023.01'
+__version__ = '2023.2'
 
 __doc__ = """
 General toolbox for loading, converting and saving serval datatypes.

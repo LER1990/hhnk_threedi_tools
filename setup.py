@@ -28,7 +28,7 @@ def find_version(*file_paths):
 setup(
     name="hhnk_research_tools",
     version=find_version("hhnk_research_tools", "__init__.py"),
-    description='HHNK tools for working with 3di',
+    description='General tools for analysis, data manipulation and threedi interaction for analysis of water systems',
     url='https://github.com/HHNK/hhnk-research-tools',
     author='Wietse van Gerwen',
     author_email='w.vangerwen@hhnk.nl',
@@ -43,13 +43,13 @@ setup(
     packages=find_packages(),
     python_requires=">=3.7",
     install_requires=[
-        "numpy>=1.17.0",  # Was 1.19.1
-        "Shapely>=1.6.4",  # Was 1.7.0
-        "gdal>=2.4.0",  # Was 3.1.4
-        "pandas>=0.25.3",  # Was 1.0.1
-        "geopandas>=0.6.0",  # Was 0.7.0
-        "threedigrid>=1.0.16",  # Was 1.0.25
-        "xarray",
-        "threedigrid_builder",
+        # "numpy>=1.17.0",  # Was 1.19.1
+        # "Shapely>=1.6.4",  # Was 1.7.0
+        # "gdal>=2.4.0",  # Was 3.1.4
+        # "pandas>=0.25.3",  # Was 1.0.1
+        # "geopandas>=0.6.0",  # Was 0.7.0
+        # "threedigrid>=1.0.16",  # Was 1.0.25
+        # "xarray",
+        # "threedigrid_builder",
     ],
 )

@@ -46,7 +46,7 @@ def extract_boundary_from_polygon(polygon, df_geo_col):
     """Extract the boundaries from a multipolygon.
     This way the intersection with the boundaries can be found."""
     try:
-        lines_gdf = polygon.explode()
+        lines_gdf = polygon.explode(index_parts=True)
         lines_gdf[df_geo_col] = lines_gdf[df_geo_col].boundary
     except Exception as e:
         raise e from None

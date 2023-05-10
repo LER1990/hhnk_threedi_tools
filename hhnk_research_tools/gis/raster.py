@@ -11,15 +11,22 @@ from shapely import geometry
 from pathlib import Path
 
 import hhnk_research_tools as hrt
+from hhnk_research_tools.folder_file_classes.file_class import File
 
 
-class Raster:
+
+class Raster(File):
     def __init__(self, source_path, min_block_size=1024):
+
+        if type(source_path) in [Raster, File]:
+            source_path = source_path.path
+
+        super().__init__(source_path)
         self.source_path = source_path
 
         
         self.source_set=False #Tracks if the source exist on the system. 
-        self.source = self.source_path #calls self.source.setter(source_path)
+        # self.source = True #calls self.source.setter(source_path)
 
         self._array = None
         self.min_block_size=min_block_size
@@ -42,10 +49,6 @@ class Raster:
             value = Path(value)
         self._source_path = value
 
-    @property
-    def pl(self):
-        return self._source_path
-
     @array.setter
     def array(self, raster_array, window=None, band_nr=1):
         self._array = raster_array
@@ -56,7 +59,8 @@ class Raster:
         window=[x0, y0, xsize, ysize]
         x0, y0 is left top corner!!"""
         if band == None:
-            band = self.source.GetRasterBand(1) #TODO band is not closed properly
+            gdal_src = self.open_gdal_source_read()
+            band = gdal_src.GetRasterBand(1) #TODO band is not closed properly
 
         if window is not None:
             # raster_array = band.ReadAsArray(
@@ -78,18 +82,22 @@ class Raster:
 
         return raster_array
 
-    def get_array(self, window=None):
+    def get_array(self, window=None, band_count=None):
         try:
-            if self.band_count == 1:
-                raster_array = self._read_array(band=self.source.GetRasterBand(1), 
+            if band_count is None:
+                band_count = self.band_count
+
+            gdal_src = self.open_gdal_source_read()
+            if band_count == 1:
+                raster_array = self._read_array(band=gdal_src.GetRasterBand(1), 
                                                 window=window)
 
-            elif self.band_count == 3:
-                red_array = self._read_array(band=self.source.GetRasterBand(1), 
+            elif band_count == 3:
+                red_array = self._read_array(band=gdal_src.GetRasterBand(1), 
                                                 window=window)
-                green_array = self._read_array(band=self.source.GetRasterBand(2), 
+                green_array = self._read_array(band=gdal_src.GetRasterBand(2), 
                                                 window=window)   
-                blue_array = self._read_array(band=self.source.GetRasterBand(3), 
+                blue_array = self._read_array(band=gdal_src.GetRasterBand(3), 
                                 window=window)                                                                            
 
                 raster_array = np.dstack((red_array, green_array, blue_array))
@@ -107,10 +115,10 @@ class Raster:
     @property
     def source(self):
         if not self.source_set:
-            self.source=self.source_path
-            return self._source
+            self.source=True #call source.setter
+            return self.open_gdal_source_read()
         else:
-            return self._source
+            return self.open_gdal_source_read()
     @source.setter
     def source(self, value):
         """If source does not exist it will not be set.
@@ -119,13 +127,29 @@ class Raster:
         if os.path.exists(self.source_path): #cannot use self.exists here.
             #Needs to be first otherwise we end in a loop when settings metadata/nodata/band_count
             self.source_set=True 
+            # print(f"setting source {self.file_path}")
 
-            self._source=gdal.Open(str(value))
-            self.metadata = True #Calls self.metadata.setter
-            self.nodata=True
+            # self._source=gdal.Open(str(self.source_path), gdal.GA_ReadOnly)
+            gdal_src = self.open_gdal_source_read()
 
-            # self.band_count=self.source.RasterCount
-            
+            self._metadata = RasterMetadata(gdal_src=gdal_src)
+            self._nodata = gdal_src.GetRasterBand(1).GetNoDataValue()
+            self._band_count = gdal_src.RasterCount
+
+
+    def open_gdal_source_read(self):
+        """usage;
+        with self.open_gdal_source_read() as gdal_src: doesnt work.
+        just dont write it to the class, and it should be fine..
+        """
+        return gdal.Open(str(self.source_path), gdal.GA_ReadOnly)
+
+
+    def open_gdal_source_write(self):
+        """
+        open source with write access
+        """
+        return gdal.Open(str(self.source_path), gdal.GA_Update)
 
 
     @property
@@ -144,25 +168,17 @@ class Raster:
     def nodata(self):
         if self.exists:
             return self._nodata
-
-    @nodata.setter
-    def nodata(self, val) -> dict:
-        self._nodata = self.source.GetRasterBand(1).GetNoDataValue()
-
+        
     @property
     def band_count(self):
         if self.exists:
-            return self.source.RasterCount
+            return self._band_count
 
     @property
     def metadata(self):
         if self.exists:
             return self._metadata
-
-
-    @metadata.setter
-    def metadata(self, val):
-        self._metadata = RasterMetadata(gdal_src=self._source)
+        
 
     def plot(self):
         plt.imshow(self._array)
@@ -175,12 +191,27 @@ class Raster:
     @property
     def pixelarea(self):
         return self.metadata.pixelarea
+    
+    
+    def statistics(self, approve_ok=True, force=True):
+        """approve_ok: reads stats from xml if available.
+        force: calculates stats, might be slow.
+        returns [min, max, mean, std]"""
+        raster_src = self.open_gdal_source_read()
+        stats = raster_src.GetRasterBand(1).GetStatistics(approve_ok, force) #[min, max, mean, std]
+        d=6 #decimals
+        return {"min":np.round(stats[0], d),
+                "max":np.round(stats[1],d),
+                "mean":np.round(stats[2],d),
+                "std":np.round(stats[3],d),
+                }
 
 
     def generate_blocks(self) -> pd.DataFrame:
         """Generate blocks with the blocksize of the band. 
         These blocks can be used as window to load the raster iteratively."""
-        band = self.source.GetRasterBand(1)
+        gdal_src = self.open_gdal_source_read()
+        band = gdal_src.GetRasterBand(1)
 
         block_height, block_width = band.GetBlockSize()
 
@@ -249,6 +280,8 @@ class Raster:
 
         for window, block in self:
             block[block==self.nodata] = 0
+            block[pd.isna(block)] = 0
+
             block_label = labels_raster._read_array(window=window)
 
             #Calculate sum per label (region)
@@ -275,7 +308,7 @@ class Raster:
             window=block_row['window_readarray']
             yield idx, window, block_row
 
-    def to_file():
+    def to_file(self):
         pass
 
     def __iter__(self):
@@ -300,25 +333,36 @@ class Raster:
 
 
 
-    def create(self, metadata, nodata, overwrite=False):
+    def create(self, metadata, nodata, verbose=False, overwrite=False):
         """Create empty raster
         metadata : RasterMetadata instance
         nodata: int
         """
         #Check if function should continue.
-        cont=True
-        if not overwrite and self.source_path.exists():
-            cont=False
-
-        if cont==True:
+        if verbose:
             print(f"creating output raster: {self.source_path}")
-            target_ds = hrt.create_new_raster_file(file_name=str(self.source_path),
-                                                    nodata=nodata,
-                                                    meta=metadata,)
-            target_ds = None
-        else:
-            print(f"output raster already exists: {self.source_path}")
+        target_ds = hrt.create_new_raster_file(file_name=str(self.source_path),
+                                                nodata=nodata,
+                                                meta=metadata,
+                                                overwrite=overwrite,)
+        target_ds = None
+
+        #Reset source, if raster is deleted and recreated with different resolution
+        #this would otherwise cause issues. 
+        self.source_set=None
+        self.source=None
+
+
         self.exists #Update raster now it exists
+
+
+    def sum(self):
+        """calculate sum of raster"""
+        raster_sum = 0
+        for window, block in self:
+            block[block==self.nodata] = np.nan
+            raster_sum+=np.nansum(block)
+        return raster_sum
 
 
 class RasterMetadata():
