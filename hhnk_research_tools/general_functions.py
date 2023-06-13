@@ -28,7 +28,7 @@ def convert_gdb_to_gpkg(gdb:FileGDB, gpkg:FileGDB, overwrite=False, verbose=True
                 gdf.to_file(str(gpkg.pl), layer=layer, driver="GPKG")
 
 
-def check_create_new_file(output_file:str, overwrite:bool=False, input_files:list=[]) -> bool:
+def check_create_new_file(output_file:str, overwrite:bool=False, input_files:list=[], allow_emptypath=False) -> bool:
     """
     Check if we should continue to create a new file. 
 
@@ -42,8 +42,9 @@ def check_create_new_file(output_file:str, overwrite:bool=False, input_files:lis
     output_file = Path(output_file)
 
     #Als geen suffix (dus geen file), dan error
-    if not output_file.suffix:
-        raise TypeError(f"{output_file} is not a file.")
+    if not allow_emptypath: #
+        if not output_file.suffix:
+            raise TypeError(f"{output_file} is not a file.")
     
     # Rasterize regions
     if not output_file.exists():

@@ -217,8 +217,13 @@ def create_new_raster_file(
             # else:
             #     options = [f"COMPRESS=DEFLATE", f"TILED=YES", "PREDICTOR=2", "ZSTD_LEVEL=1"]
 
+        if driver=="MEM":
+            allow_emptypath=True
+        else:
+            allow_emptypath=False
         if check_create_new_file(output_file=file_name, 
-                                    overwrite=overwrite) or driver == "MEM":
+                                    overwrite=overwrite,
+                                    allow_emptypath=allow_emptypath) or driver == "MEM":
 
             target_ds = gdal.GetDriverByName(driver).Create(
                 str(file_name),
