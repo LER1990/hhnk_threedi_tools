@@ -10,6 +10,9 @@ from hhnk_research_tools.threedi.read_api_file import (
     read_api_file
 ) 
 
+import hhnk_research_tools.waterschadeschatter as waterschadeschatter
+import hhnk_research_tools.waterschadeschatter.resources
+
 from hhnk_research_tools.sql_functions import (
     sql_create_update_case_statement,
     sql_construct_select_query,

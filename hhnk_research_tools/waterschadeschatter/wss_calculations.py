@@ -8,12 +8,10 @@ import numpy as np
 if str(Path(os.getcwd()).parent.parent) not in sys.path:
     sys.path.append(str(Path(os.getcwd()).parent))
 
-import hhnk_research_tools.waterschadeschatter.wss_main as wss_main
-
 DMG_NODATA = 0 #let op staat dubbel, ook in wss_main.
 
 
-def calculate_damage(caller:wss_main.Waterschadeschatter, 
+def calculate_damage(caller, #wss_main.Waterschadeschatter, 
                      lu_block:np.array, 
                      depth_block, 
                      indices, 
