@@ -1,6 +1,8 @@
 from pathlib import Path
 from hhnk_research_tools.folder_file_classes.folder_file_classes import FileGDB
 import geopandas as gpd
+import sys
+import importlib
 
 def ensure_file_path(filepath):
     """
@@ -67,3 +69,24 @@ def check_create_new_file(output_file:str, overwrite:bool=False, input_files:lis
                         create = True
                         break
     return create
+
+
+def load_source(name: str, path: str):
+    """
+    Load python file as module. 
+    
+    Replacement for deprecated imp.load_source()
+    Inspiration from https://github.com/cuthbertLab/music21/blob/master/music21/test/commonTest.py"""
+    spec = importlib.util.spec_from_file_location(name, str(path))
+    if spec is None or spec.loader is None:
+        raise FileNotFoundError(f'No such file or directory: {path!r}')
+    if name in sys.modules:
+        module = sys.modules[name]
+    else:
+        module = importlib.util.module_from_spec(spec)
+        if module is None:
+            raise FileNotFoundError(f'No such file or directory: {path!r}')
+        sys.modules[name] = module
+    spec.loader.exec_module(module)
+
+    return module

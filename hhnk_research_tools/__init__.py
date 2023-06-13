@@ -2,11 +2,13 @@ import hhnk_research_tools.variables as variables
 
 from hhnk_research_tools.folder_file_classes.file_class import File
 
-
 from hhnk_research_tools.gis.raster import Raster, RasterMetadata
 
 import hhnk_research_tools.threedi as threedi
 
+from hhnk_research_tools.threedi.read_api_file import (
+    read_api_file
+) 
 
 from hhnk_research_tools.sql_functions import (
     sql_create_update_case_statement,
@@ -31,6 +33,7 @@ from hhnk_research_tools.general_functions import (
     ensure_file_path,
     convert_gdb_to_gpkg,
     check_create_new_file,
+    load_source,
 )
 
 from hhnk_research_tools.raster_functions import (
