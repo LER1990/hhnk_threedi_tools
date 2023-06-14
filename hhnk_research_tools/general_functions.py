@@ -3,6 +3,8 @@ from hhnk_research_tools.folder_file_classes.folder_file_classes import FileGDB
 import geopandas as gpd
 import sys
 import importlib
+from uuid import uuid4
+
 
 def ensure_file_path(filepath):
     """
@@ -90,3 +92,8 @@ def load_source(name: str, path: str):
     spec.loader.exec_module(module)
 
     return module
+
+
+def get_uuid(chars=8):
+    """max chars = 36"""
+    return str(uuid4())[:chars]

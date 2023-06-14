@@ -15,6 +15,7 @@ import types
 DEFAULT_CREATE_OPTIONS = [f"COMPRESS=ZSTD", f"TILED=YES", "PREDICTOR=2", "ZSTD_LEVEL=1"]
 
 # Loading
+#TODO deprecate? replaced by hrt.Raster
 def _get_array_from_bands(gdal_file, band_count, window, raster_source):
     try:
         if band_count == 1:
@@ -63,6 +64,7 @@ def _get_array_from_bands(gdal_file, band_count, window, raster_source):
         raise e
 
 
+#TODO deprecate? replaced by hrt.Raster
 def load_gdal_raster(raster_source, window=None, return_array=True, band_count=None):
     """
     Loads a raster (tif) and returns an array of its values, its no_data value and

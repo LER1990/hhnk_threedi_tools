@@ -7,10 +7,8 @@ if __name__ == "__main__":
 from pathlib import Path
 import importlib.resources as pkg_resources  # Load resource from package
 
+
 import hhnk_research_tools as hrt
-
-
-print(hrt.__file__)
 from hhnk_research_tools.waterschadeschatter import wss_main
 from tests.config import TEST_DIRECTORY
 
@@ -21,7 +19,7 @@ def test_wss():
     
         landuse_file = TEST_DIRECTORY/'landuse_test.tif'
         depth_file = TEST_DIRECTORY/'depth_test.tif'
-        output_file = hrt.Raster(TEST_DIRECTORY/r'output/schade_test.tif')
+        output_file = hrt.Raster(TEST_DIRECTORY/fr'output/schade_test_{hrt.get_uuid()}.tif')
 
 
         wss_settings = {'inundation_period': 48, #uren

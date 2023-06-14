@@ -37,6 +37,7 @@ from hhnk_research_tools.general_functions import (
     convert_gdb_to_gpkg,
     check_create_new_file,
     load_source,
+    get_uuid,
 )
 
 from hhnk_research_tools.raster_functions import (
