@@ -152,6 +152,14 @@ class Raster(File):
         return gdal.Open(str(self.source_path), gdal.GA_Update)
 
 
+    def unlink_if_exists(self):
+        """Remove file if it exists
+        overwrites function from File class"""
+        super().unlink_if_exists()
+        if not self.pl.exists():
+            self.source_set=False
+
+
     @property
     def exists(self):
         if self.source_set: #check this first for speed.
@@ -264,12 +272,13 @@ class Raster(File):
         
         return geometry.box(minx=minx, miny=miny, maxx=maxx, maxy=maxy)
     
+
     def generate_blocks_geometry(self) -> gpd.GeoDataFrame:
         """Create blocks with shapely geometry"""
-        self.generate_blocks()
-        blocks_df =gpd.GeoDataFrame(self.blocks, geometry=self.blocks["window_readarray"].apply(self._generate_blocks_geometry_row), crs=self.metadata.projection)
-        self.blocks = blocks_df
-        return blocks_df
+        self.blocks = self.generate_blocks()
+        self.blocks =gpd.GeoDataFrame(self.blocks, geometry=self.blocks["window_readarray"].apply(self._generate_blocks_geometry_row), crs=self.metadata.projection)
+        return self.blocks
+
 
     def sum_labels(self, labels_raster, labels_index):
         """Calculate the sum of the rastervalues per label."""
@@ -298,7 +307,7 @@ class Raster(File):
 
     def iter_window(self, min_block_size=None):
         """Iterate of the raster using blocks, only returning the window, not the values."""
-        if not hasattr(self,'blocks'):
+        if not hasattr(self,'blocks') or min_block_size is not None:
             if min_block_size is not None:
                  self.min_block_size = min_block_size
                 
@@ -308,8 +317,10 @@ class Raster(File):
             window=block_row['window_readarray']
             yield idx, window, block_row
 
+
     def to_file(self):
         pass
+
 
     def __iter__(self):
         if not hasattr(self,'blocks'):
@@ -330,7 +341,6 @@ class Raster(File):
         else:
             return f"""{self.__class__}
     Source: {self.source_path}, exists:{self.exists}"""
-
 
 
     def create(self, metadata, nodata, verbose=False, overwrite=False):
@@ -375,7 +385,7 @@ class RasterMetadata():
     """
     def __init__(self, gdal_src=None, res=None, bounds_dict=None, proj='epsg:28992'):
         """gdal_src = gdal.Open(raster_source)
-        bounds = {minx:, maxx:, miny:, maxy:}
+        bounds = {"minx":, "maxx":, "miny":, "maxy":}
         Projection only implemented for epsg:28992"""
 
         if gdal_src is not None:

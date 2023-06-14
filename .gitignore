@@ -5,3 +5,8 @@ hhnk_research_tools.egg-info
 .vscode
 .ipynb_checkpoints
 local_settings.py
+*.aux.xml
+
+# Pytests
+.coverage
+coverage.xml
