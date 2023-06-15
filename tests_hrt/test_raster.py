@@ -62,7 +62,7 @@ class TestRaster:
 
 
     def test_create(self):
-        out_raster = Raster(OUTPUT_DIR/"test_create.tif")
+        out_raster = Raster(OUTPUT_DIR/f"test_create_{hrt.get_uuid()}.tif")
 
         #remove raster
         out_raster.unlink_if_exists()
