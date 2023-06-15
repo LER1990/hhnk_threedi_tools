@@ -10,7 +10,7 @@ import importlib.resources as pkg_resources  # Load resource from package
 
 import hhnk_research_tools as hrt
 from hhnk_research_tools.waterschadeschatter import wss_main
-from tests.config import TEST_DIRECTORY
+from tests_hrt.config import TEST_DIRECTORY, OUTPUT_DIR
 
 def test_wss():
         
@@ -19,7 +19,7 @@ def test_wss():
     
         landuse_file = TEST_DIRECTORY/'landuse_test.tif'
         depth_file = TEST_DIRECTORY/'depth_test.tif'
-        output_file = hrt.Raster(TEST_DIRECTORY/fr'output/schade_test_{hrt.get_uuid()}.tif')
+        output_file = hrt.Raster(OUTPUT_DIR/fr'schade_test_{hrt.get_uuid()}.tif')
 
 
         wss_settings = {'inundation_period': 48, #uren

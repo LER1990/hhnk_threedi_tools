@@ -13,7 +13,7 @@ import types
 
 print(hrt.__file__)
 from hhnk_research_tools.gis.raster import Raster
-from tests.config import TEST_DIRECTORY
+from tests_hrt.config import TEST_DIRECTORY, OUTPUT_DIR
 
 
 # %%        
@@ -62,7 +62,7 @@ class TestRaster:
 
 
     def test_create(self):
-        out_raster = Raster(TEST_DIRECTORY/r"output/test_create.tif")
+        out_raster = Raster(OUTPUT_DIR/"test_create.tif")
 
         #remove raster
         out_raster.unlink_if_exists()

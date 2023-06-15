@@ -1,1 +1,1 @@
-python -m pytest --cov-report term-missing --cov=hhnk_research_tools ../tests/
+python -m pytest --cov-report term-missing --cov=hhnk_research_tools ../tests_hrt/
