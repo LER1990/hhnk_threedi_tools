@@ -10,7 +10,8 @@ from hhnk_research_tools.threedi.read_api_file import (
     read_api_file
 ) 
 
-import hhnk_research_tools.waterschadeschatter as waterschadeschatter
+from hhnk_research_tools.waterschadeschatter.wss_main import Waterschadeschatter
+
 import hhnk_research_tools.waterschadeschatter.resources
 
 from hhnk_research_tools.sql_functions import (
@@ -38,6 +39,7 @@ from hhnk_research_tools.general_functions import (
     check_create_new_file,
     load_source,
     get_uuid,
+    get_pkg_resource_path,
 )
 
 from hhnk_research_tools.raster_functions import (

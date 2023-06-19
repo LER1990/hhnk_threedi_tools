@@ -14,8 +14,8 @@ from tests_hrt.config import TEST_DIRECTORY, OUTPUT_DIR
 
 def test_wss():
         
-        with pkg_resources.path(hrt.waterschadeschatter.resources, "cfg_lizard.cfg") as p:
-            cfg_file = p.absolute().as_posix()
+        cfg_file = hrt.get_pkg_resource_path(package_resource=hrt.waterschadeschatter.resources, 
+                                     name="cfg_lizard.cfg")
     
         landuse_file = TEST_DIRECTORY/'landuse_test.tif'
         depth_file = TEST_DIRECTORY/'depth_test.tif'

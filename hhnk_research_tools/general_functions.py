@@ -3,6 +3,7 @@ from hhnk_research_tools.folder_file_classes.folder_file_classes import FileGDB
 import geopandas as gpd
 import sys
 import importlib
+import importlib.resources as pkg_resources  # Load resource from package
 from uuid import uuid4
 
 
@@ -97,3 +98,8 @@ def load_source(name: str, path: str):
 def get_uuid(chars=8):
     """max chars = 36"""
     return str(uuid4())[:chars]
+
+
+def get_pkg_resource_path(package_resource, name):
+    with pkg_resources.path(package_resource, name) as p:
+        return p.absolute().as_posix()

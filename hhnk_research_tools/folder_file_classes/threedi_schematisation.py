@@ -100,6 +100,11 @@ class ThreediSchematisation(Folder):
                 table_name="v2_simple_infiltration", col_name="infiltration_rate_file"
             )
 
+            landuse = [i for i in self.pl.glob("landuse_*.tif")]
+            if len(landuse)==0:
+                landuse = [""]
+            self.landuse = File(landuse[0])
+
 
         def get_raster_path(self, table_name, col_name):
             """Read the sqlite to check which rasters are used in the model.
@@ -132,7 +137,8 @@ class ThreediSchematisation(Folder):
     storage - {self.storage.name}
     friction - {self.friction.name}
     infiltration - {self.infiltration.name}
-        """
+    landuse - {self.landuse.name}
+"""
 
 
 class ThreediResult(Folder):

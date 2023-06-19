@@ -40,7 +40,7 @@ setup(
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],
-    packages=find_packages(),
+    packages=find_packages(exclude=["tests_hrt"]),
     python_requires=">=3.7",
     install_requires=[
         # "numpy>=1.17.0",  # Was 1.19.1
@@ -52,4 +52,7 @@ setup(
         # "xarray",
         # "threedigrid_builder",
     ],
+    # package_dir={"": r"waterschadeschatter/resources"},
+    package_data={"": ["*.cfg"]},
+    include_package_data=True,
 )
