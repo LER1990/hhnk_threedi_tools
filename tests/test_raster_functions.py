@@ -9,7 +9,7 @@ import numpy as np
 
 import geopandas as gpd
 import hhnk_research_tools as hrt
-from tests_hrt.config import TEST_DIRECTORY, OUTPUT_DIR
+from tests.config import TEST_DIRECTORY, OUTPUT_DIR
 
 # %%
 class TestRasterFunctions():
