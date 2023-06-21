@@ -4,10 +4,10 @@ import codecs
 import re
 import os
 
-here = os.path.abspath(os.path.dirname(__file__))
 
 
 def read(*parts):
+    here = os.path.abspath(os.path.dirname(__file__))
     with codecs.open(os.path.join(here, *parts), "r") as fp:
         return fp.read()
 
