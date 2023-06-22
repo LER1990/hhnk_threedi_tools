@@ -47,16 +47,14 @@ class File:
         return self.base
 
     def __repr__(self):
-        if self.exists:
-            exists = "exists"
-        else:
-            exists = "doesn't exist"
         funcs = '.'+' .'.join([i for i in dir(self) if not i.startswith('__') and hasattr(inspect.getattr_static(self,i)
         , '__call__')])
         variables = '.'+' .'.join([i for i in dir(self) if not i.startswith('__') and not hasattr(inspect.getattr_static(self,i)
         , '__call__')])
-        repr_str = f"""type: {type(self)}
+        repr_str = \
+f"""{self.pl.name} @ {self.base}
+exists: {self.exists}
+type: {type(self)}
 functions: {funcs}
 variables: {variables}"""
-        return f"""{self.name} @ {self.base} ({exists})
-{repr_str}"""
+        return repr_str
