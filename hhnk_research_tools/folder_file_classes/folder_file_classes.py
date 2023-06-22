@@ -128,7 +128,7 @@ class Folder:
         for name in names:
             pathname = self.pl / name
             try:
-                if pathname.exists:
+                if pathname.exists():
                     #FIXME rmdir is only allowed for empty dirs
                     #can use shutil.rmtree, but this can be dangerous, 
                     #not sure if we should support that here.
