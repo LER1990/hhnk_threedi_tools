@@ -20,7 +20,7 @@ class Sqlite(File):
 
 
     def connect(self):
-        if self.pl.exists():
+        if self.exists():
             return self.create_sqlite_connection()
         else:
             return None

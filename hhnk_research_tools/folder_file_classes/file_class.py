@@ -2,20 +2,23 @@ from pathlib import Path
 import inspect
 
 
-class File(type(Path()), Path):
+# class File(type(Path()), Path):
+class File():
     def __init__(self, base):
-        # super().__init__(base)
-        self.path=base
+        self.path = Path(base)
+
+
+    @property
+    def str(self):
+        return str(self.path)
 
 
     def exists(self):
-        """monkeypatch exists, dont return true on empty path."""
-        if self.path == "":
+        """dont return true on empty path."""
+        if self.path == ".":
             return False
         else:
-            return super().exists()
-
-
+            return self.path.exists()
 
     # @property
     # def path_if_exists(self) -> str:
@@ -27,7 +30,7 @@ class File(type(Path()), Path):
 
     # @property
     # def name(self):
-    #     return self.pl.stem
+    #     return self.stem
 
 
 

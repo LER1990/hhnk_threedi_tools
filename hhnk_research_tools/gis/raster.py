@@ -156,7 +156,7 @@ class Raster(File):
         """Remove file if it exists
         overwrites function from File class"""
         super().unlink_if_exists()
-        if not self.pl.exists():
+        if not self.exists():
             self.source_set=False
 
 

@@ -52,7 +52,7 @@ class Waterschadeschatter():
 
     def validate(self):
         """check if input exists"""
-        for filepath in [self.lu_raster.pl, self.depth_raster.pl]:
+        for filepath in [self.lu_raster, self.depth_raster]:
             if not os.path.exists(filepath):
                 raise Exception(f"could not find input file in: {filepath}")
 
@@ -79,7 +79,7 @@ class Waterschadeschatter():
             if overwrite is False:
                 return
             else:
-                output_raster.pl.unlink()
+                output_raster.unlink()
 
         #Create output raster
         output_raster.create(metadata=self.depth_raster.metadata,

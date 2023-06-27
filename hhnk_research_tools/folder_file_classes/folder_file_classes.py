@@ -13,12 +13,11 @@ from hhnk_research_tools.folder_file_classes.sqlite_class import Sqlite
 #TODO refactor en alle classes los behandelen.
 
 
-class Folder:
+class Folder():
     """Base folder class for creating, deleting and see if folder exists"""
 
     def __init__(self, base, create=False):
-        self.base = str(base)
-        self.pl = Path(base)  # pathlib path
+        self.path = Path(base)
 
         self.files = {}
         self.olayers = {}
@@ -27,73 +26,76 @@ class Folder:
         if create:
             self.create(parents=False)
 
+    #TODO hernoemen?
+    @property
+    def base(self):
+        return str(self.path)
+    
+
     @property
     def structure(self):
         return ""
 
+    #TODO oude content gaf alleen namen terug, nu volledig Path naar file
     @property
     def content(self):
-        if self.exists:
-            return os.listdir(self.base)
-        else:
-            return []
+        return [i for i in self.path.glob("*")]
 
-    @property
-    def path(self):
-        return self.base
+    #TODO name uitfaseren. dit is stem. 
+    # @property
+    # def name(self):
+    #     return self.stem
 
-    @property
-    def name(self):
-        return self.pl.stem
-
+    #TODO uitfaseren, dit is .path.name
     @property
     def folder(self):
-        return os.path.basename(self.base)
+        return self.path.name
+        # return os.path.basename(self.base)
 
-    @property
+    #TODO was property, omschrijven naar functie
     def exists(self):
-        return self.pl.exists()
-
-    @property
-    def pl_if_exists(self):
-        """return filepath if the file exists otherwise return None"""
-        if self.exists:
-            return self.pl
+        """dont return true on empty path."""
+        if self.path == ".":
+            return False
         else:
-            return None
+            return self.path.exists()
+
 
     @property
     def path_if_exists(self):
         """return filepath if the file exists otherwise return None"""
-        if self.exists:
-            return str(self.pl)
+        if self.exists():
+            return str(self.path)
         else:
             return None
 
+    #TODO uitfaseren, is dit nodig?
     @property
     def show(self):
         print(self.__repr__())
+
 
     def create(self, parents=False, verbose=False):
         """Create folder, if parents==False path wont be
         created if parent doesnt exist."""
         if not parents:
-            if not self.pl.parent.exists():
+            if not self.path.parent.exists():
                 if verbose:
-                    print(f"{self.path} not created, parent doesnt exist.")
+                    print(f"{self.path} not created, parent does not exist.")
                 return
-        self.pl.mkdir(parents=parents, exist_ok=True)
+        self.path.mkdir(parents=parents, exist_ok=True)
+
 
     def find_ext(self, ext):
         """finds files with a certain extension"""
-        return glob.glob(self.base + f"/*.{ext}")
+        # return glob.glob(self.base + f"/*.{ext}")
+        return self.path.glob(f"*.{ext}")
 
+
+    #TODO uitzoeken of name met '/' start. Dat mag niet.
     def full_path(self, name):
         """returns the full path of a file or a folder when only a name is known"""
-        if "/" in name:
-            return Path(str(self.pl) + name)
-        else:
-            return self.pl / name
+        return self.path / name
 
     def add_file(self, objectname, filename, ftype="file"):
         """ftype options = ['file', 'filegdb', 'gpkg', 'raster', 'sqlite'] """
@@ -126,7 +128,7 @@ class Folder:
         if not names:
             names=self.content
         for name in names:
-            pathname = self.pl / name
+            pathname = self.path / name
             try:
                 if pathname.exists():
                     #FIXME rmdir is only allowed for empty dirs
@@ -143,23 +145,26 @@ class Folder:
 
 
     def __str__(self):
-        return self.base
+        return str(self.path)
 
 
     def __repr__(self):
         funcs = '.'+' .'.join([i for i in dir(self) if not i.startswith('__') and hasattr(inspect.getattr_static(self,i), '__call__')]) #getattr resulted in RecursionError. https://stackoverflow.com/questions/1091259/how-to-test-if-a-class-attribute-is-an-instance-method
         variables = '.'+' .'.join([i for i in dir(self) if not i.startswith('__') and not hasattr(inspect.getattr_static(self,i)
                 , '__call__')])
-        repr_str = f"""functions: {funcs}
-variables: {variables}"""
-        return f"""{self.name} @ {self.path}
-Exists: {self.exists} -- Type: {type(self)}
+
+        repr_str = \
+ f"""{self.path.name} @ {self.path}
+Exists: {self.exists()} -- Type: {type(self)}
     Folders:\t{self.structure}
     Files:\t{list(self.files.keys())}
     Layers:\t{list(self.olayers.keys())}
-{repr_str}
-                """
-    
+functions: {funcs}
+variables: {variables}"""
+        return repr_str
+
+
+
 
 class FileGDB(File):
     def __init__(self, base):
@@ -199,19 +204,19 @@ class FileGDB(File):
 
 
     def __repr__(self):
-        if self.exists:
-            exists = "exists"
-        else:
-            exists = "doesn't exist"
         funcs = '.'+' .'.join([i for i in dir(self) if not i.startswith('__') and hasattr(inspect.getattr_static(self,i)
         , '__call__')])
         variables = '.'+' .'.join([i for i in dir(self) if not i.startswith('__') and not hasattr(inspect.getattr_static(self,i)
         , '__call__')])
-        repr_str = f"""functions: {funcs}
+        repr_str = \
+f"""{self.path.name} @ {self.path}
+exists: {self.exists()}
+type: {type(self)}
+functions: {funcs}
 variables: {variables}
 layers (access through .layers.): {self.layerlist}"""
-        return f"""{self.name} @ {self.base} ({exists})
-{repr_str}"""
+        return repr_str
+
 
 
 class FileGDBLayers():

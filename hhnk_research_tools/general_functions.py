@@ -21,16 +21,16 @@ def ensure_file_path(filepath):
 def convert_gdb_to_gpkg(gdb:FileGDB, gpkg:FileGDB, overwrite=False, verbose=True):
     """Convert input filegdb to geopackage"""
 
-    if gdb.pl.exists():
-        if check_create_new_file(output_file=gpkg.pl, overwrite=overwrite):
+    if gdb.exists():
+        if check_create_new_file(output_file=gpkg, overwrite=overwrite):
             if verbose:
-                print(f"Write gpkg to {gpkg.pl}")
+                print(f"Write gpkg to {gpkg}")
             for layer in gdb.available_layers():
                 if verbose:
                     print(f"    {layer}")
-                gdf = gpd.read_file(str(gdb.pl), layer=layer)
+                gdf = gpd.read_file(str(gdb), layer=layer)
 
-                gdf.to_file(str(gpkg.pl), layer=layer, driver="GPKG")
+                gdf.to_file(str(gpkg), layer=layer, driver="GPKG")
 
 
 def check_create_new_file(output_file:str, overwrite:bool=False, input_files:list=[], allow_emptypath=False) -> bool:
@@ -100,6 +100,8 @@ def get_uuid(chars=8):
     return str(uuid4())[:chars]
 
 
-def get_pkg_resource_path(package_resource, name):
+#TODO htt uitzoeken of Path ipv str ook goed is.
+def get_pkg_resource_path(package_resource, name) -> Path:
     with pkg_resources.path(package_resource, name) as p:
-        return p.absolute().as_posix()
+        # return p.absolute().as_posix()
+        return p

@@ -425,7 +425,7 @@ class RasterCalculator():
         returns bool wether the rest of the function should continue"""
         #Check if function should continue.
         cont=True
-        if not overwrite and self.raster_out.pl.exists():
+        if not overwrite and self.raster_out.exists():
             cont=False
 
         if cont==True:
