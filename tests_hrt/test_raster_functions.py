@@ -9,7 +9,7 @@ import numpy as np
 
 import geopandas as gpd
 import hhnk_research_tools as hrt
-from tests.config import TEST_DIRECTORY, OUTPUT_DIR
+from tests_hrt.config import TEST_DIRECTORY, TEMP_DIR
 
 # %%
 class TestRasterFunctions():
@@ -19,7 +19,7 @@ class TestRasterFunctions():
 
 
     def test_gdf_to_raster_and_reproject(self):
-        output_raster = hrt.Raster(OUTPUT_DIR/f"gdf_to_raster_{hrt.get_uuid()}.tif")
+        output_raster = hrt.Raster(TEMP_DIR/f"gdf_to_raster_{hrt.get_uuid()}.tif")
         #gdf_to_raster
         arr = hrt.gdf_to_raster(gdf=self.gdf,
                           value_field="id",
@@ -50,7 +50,7 @@ class TestRasterFunctions():
 
 
     def test_save_raster_array_to_tiff_vrt(self):
-        output_folder = hrt.Folder(OUTPUT_DIR/f"vrt_test", create=True)
+        output_folder = hrt.Folder(TEMP_DIR/f"vrt_test", create=True)
         output_file = output_folder.pl/f"save_raster_array_to_tiff_{hrt.get_uuid()}.tif"
         arr = np.array([[1,2],[2,3]])
         hrt.save_raster_array_to_tiff(output_file = output_file,
