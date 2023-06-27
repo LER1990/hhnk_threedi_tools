@@ -2,59 +2,45 @@ from pathlib import Path
 import inspect
 
 
-class File:
+class File(type(Path()), Path):
     def __init__(self, base):
-        self.base = str(base)
-        self.pl = Path(base)
+        # super().__init__(base)
+        self.path=base
 
-    @property
+
     def exists(self):
-        if self.base == "":
+        """monkeypatch exists, dont return true on empty path."""
+        if self.path == "":
             return False
         else:
-            return self.pl.exists()
+            return super().exists()
 
-    @property
-    def pl_if_exists(self):
-        """return filepath if the file exists otherwise return None"""
-        if self.exists:
-            return self.pl
-        else:
-            return None
 
-    @property
-    def path_if_exists(self) -> str:
-        """return filepath if the file exists otherwise return None"""
-        if self.exists:
-            return str(self.pl)
-        else:
-            return None
 
-    @property
-    def name(self):
-        return self.pl.stem
+    # @property
+    # def path_if_exists(self) -> str:
+    #     """return filepath if the file exists otherwise return None"""
+    #     if self.exists():
+    #         return str(self)
+    #     else:
+    #         return None
 
-    @property
-    def path(self):
-        return self.base
+    # @property
+    # def name(self):
+    #     return self.pl.stem
 
-    def unlink_if_exists(self):
-        """Remove file if it exists"""
-        if self.exists:
-            self.pl.unlink(missing_ok=False)
 
-    def __str__(self):
-        return self.base
 
     def __repr__(self):
-        funcs = '.'+' .'.join([i for i in dir(self) if not i.startswith('__') and hasattr(inspect.getattr_static(self,i)
-        , '__call__')])
-        variables = '.'+' .'.join([i for i in dir(self) if not i.startswith('__') and not hasattr(inspect.getattr_static(self,i)
-        , '__call__')])
+        # funcs = '.'+' .'.join([i for i in dir(self) if not i.startswith('__') and hasattr(inspect.getattr_static(self,i)
+        # , '__call__')])
+        # variables = '.'+' .'.join([i for i in dir(self) if not i.startswith('__') and not hasattr(inspect.getattr_static(self,i)
+        # , '__call__')])
         repr_str = \
-f"""{self.pl.name} @ {self.base}
-exists: {self.exists}
+f"""{self.name} @ {self.path}
+exists: {self.exists()}
 type: {type(self)}
-functions: {funcs}
-variables: {variables}"""
+"""
+# functions: {funcs}
+# variables: {variables}
         return repr_str
