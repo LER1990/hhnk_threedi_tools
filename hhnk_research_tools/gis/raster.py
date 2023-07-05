@@ -343,7 +343,7 @@ class Raster(File):
     Source: {self.source_path}, exists:{self.exists}"""
 
 
-    def create(self, metadata, nodata, verbose=False, overwrite=False):
+    def create(self, metadata, nodata, datatype=None, create_options=None, verbose=False, overwrite=False):
         """Create empty raster
         metadata : RasterMetadata instance
         nodata: int
@@ -354,6 +354,8 @@ class Raster(File):
         target_ds = hrt.create_new_raster_file(file_name=str(self.source_path),
                                                 nodata=nodata,
                                                 meta=metadata,
+                                                datatype=datatype,
+                                                create_options=create_options,
                                                 overwrite=overwrite,)
         target_ds = None
 

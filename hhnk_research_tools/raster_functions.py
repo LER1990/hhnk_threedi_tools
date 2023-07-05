@@ -209,6 +209,8 @@ def create_new_raster_file(
     [f"COMPRESS=LERC_ZSTD", f"TILED=True", "PREDICTOR=2", "ZSTD_LEVEL=1", "MAX_Z_ERROR=0.001"]
     """
     try:
+        if datatype is None:
+            datatype=GDAL_DATATYPE
         if create_options is None:
             # if datatype==gdal.GDT_Float32:
             # options=[f"COMPRESS=LERC_DEFLATE", f"TILED=YES", "PREDICTOR=2", "ZSTD_LEVEL=1", "MAX_Z_ERROR=0.001"]
@@ -308,7 +310,9 @@ def build_vrt(raster_folder, vrt_name='combined_rasters', bandlist=[1], bounds=N
                                        addAlpha=False,
                                        outputBounds=bounds,
                                        bandList=bandlist,)
-    ds = gdal.BuildVRT(output_path, tifs_list, options=vrt_options)
+    ds = gdal.BuildVRT(destName=output_path, 
+                       srcDSOrSrcDSTab=tifs_list, 
+                       options=vrt_options)
     ds.FlushCache()
     del tifs_list
 
@@ -335,7 +339,9 @@ def dx_dy_between_rasters(meta_big, meta_small):
                 meta_big   = {meta_big.pixel_width}m
                 meta_small = {meta_small.pixel_width}m""")
 
-    dx_min = max(0, int((meta_small.x_min-meta_big.x_min)/meta_big.pixel_width))
+    #FIXME waarom stond dit op max(0, x) en geeft dan geen verdere problemen?
+    # dx_min = max(0, int((meta_small.x_min-meta_big.x_min)/meta_big.pixel_width))
+    dx_min = int((meta_small.x_min-meta_big.x_min)/meta_big.pixel_width)
     dy_min = int((meta_big.y_max-meta_small.y_max)/meta_big.pixel_width)
 
     if dx_min < 0:
