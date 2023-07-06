@@ -102,6 +102,12 @@ def get_uuid(chars=8):
 
 #TODO htt uitzoeken of Path ipv str ook goed is.
 def get_pkg_resource_path(package_resource, name) -> Path:
-    with pkg_resources.path(package_resource, name) as p:
-        # return p.absolute().as_posix()
-        return p
+    """return path to resource in a python package, so it can be loaded"""
+    # with pkg_resources.path(package_resource, name) as p:
+    #     # return p.absolute().as_posix()
+    #     return p
+    return pkg_resources.path(package_resource, name)
+    
+
+
+

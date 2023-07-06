@@ -1,6 +1,17 @@
 from pathlib import Path
 import inspect
 
+def get_functions(cls):
+    funcs = '.'+' .'.join([i for i in dir(cls) if not i.startswith('__') 
+                            and hasattr(inspect.getattr_static(cls,i)
+                            , '__call__')])
+    return funcs
+def get_variables(cls):
+    variables = '.'+' .'.join([i for i in dir(cls) if not i.startswith('__') 
+                            and not hasattr(inspect.getattr_static(cls,i)
+                            , '__call__')])
+    return variables
+
 
 # class File(type(Path()), Path):
 class File():
@@ -10,7 +21,6 @@ class File():
 
     @property
     def base(self):
-        # return str(self.path)
         return self.path.as_posix()
 
 
@@ -23,15 +33,11 @@ class File():
 
 
     def __repr__(self):
-        funcs = '.'+' .'.join([i for i in dir(self) if not i.startswith('__') and hasattr(inspect.getattr_static(self,i)
-        , '__call__')])
-        variables = '.'+' .'.join([i for i in dir(self) if not i.startswith('__') and not hasattr(inspect.getattr_static(self,i)
-        , '__call__')])
         repr_str = \
 f"""{self.path.name} @ {self.path}
 exists: {self.exists()}
 type: {type(self)}
-functions: {funcs}
-variables: {variables}
+functions: {get_functions(self)}
+variables: {get_variables(self)}
 """
         return repr_str

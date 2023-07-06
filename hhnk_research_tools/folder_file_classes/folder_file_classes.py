@@ -5,9 +5,9 @@ import glob
 import fiona
 import geopandas as gpd
 import hhnk_research_tools as hrt
-from hhnk_research_tools.folder_file_classes.file_class import File
+from hhnk_research_tools.folder_file_classes.file_class import File, get_functions, get_variables
 from hhnk_research_tools.folder_file_classes.sqlite_class import Sqlite
-
+import types
 
 
 #TODO refactor en alle classes los behandelen.
@@ -40,6 +40,11 @@ class Folder():
     @property
     def content(self):
         return [i for i in self.path.glob("*")]
+        #     if self.exists:
+        #     return os.listdir(self.base)
+        # else:
+        #     return []
+
 
     #TODO name uitfaseren. dit is stem. 
     # @property
@@ -145,18 +150,14 @@ class Folder():
 
 
     def __repr__(self):
-        funcs = '.'+' .'.join([i for i in dir(self) if not i.startswith('__') and hasattr(inspect.getattr_static(self,i), '__call__')]) #getattr resulted in RecursionError. https://stackoverflow.com/questions/1091259/how-to-test-if-a-class-attribute-is-an-instance-method
-        variables = '.'+' .'.join([i for i in dir(self) if not i.startswith('__') and not hasattr(inspect.getattr_static(self,i)
-                , '__call__')])
-
         repr_str = \
  f"""{self.path.name} @ {self.path}
 Exists: {self.exists()}
 type: {type(self)}
     Folders:\t{self.structure}
     Files:\t{list(self.files.keys())}
-functions: {funcs}
-variables: {variables}"""
+functions: {get_functions(self)}
+variables: {get_variables(self)}"""
         return repr_str
 
 
@@ -167,7 +168,7 @@ class FileGDB(File):
         super().__init__(base)
 
         self.layerlist=[]
-        self.layers=FileGDBLayers()
+        self.layers=types.SimpleNamespace() #empty class
 
 
     def load(self, layer=None):
@@ -177,7 +178,7 @@ class FileGDB(File):
                 layer= avail_layers[0]
             else:
                 layer = input(f"Select layer [{avail_layers}]:")
-        return gpd.read_file(self.path, layer=layer)
+        return gpd.read_file(self.base, layer=layer)
 
 
     def add_layer(self, name:str):
@@ -196,27 +197,20 @@ class FileGDB(File):
 
     def available_layers(self):
         """Return available layers in file gdb"""
-        return fiona.listlayers(self.path)
+        return fiona.listlayers(self.base)
 
 
     def __repr__(self):
-        funcs = '.'+' .'.join([i for i in dir(self) if not i.startswith('__') and hasattr(inspect.getattr_static(self,i)
-        , '__call__')])
-        variables = '.'+' .'.join([i for i in dir(self) if not i.startswith('__') and not hasattr(inspect.getattr_static(self,i)
-        , '__call__')])
         repr_str = \
 f"""{self.path.name} @ {self.path}
 exists: {self.exists()}
 type: {type(self)}
-functions: {funcs}
-variables: {variables}
-layers (access through .layers.): {self.layerlist}"""
+functions: {get_functions(self)}
+variables: {get_variables(self)}
+layers (access through .layers): {self.layerlist}"""
         return repr_str
 
 
-
-class FileGDBLayers():
-    pass
 
 class FileGDBLayer():
     def __init__(self, name:str,  parent:FileGDB):
@@ -224,4 +218,4 @@ class FileGDBLayer():
         self.parent=parent
 
     def load(self):
-        return gpd.read_file(self.parent.path, layer=self.name)
+        return gpd.read_file(self.parent.base, layer=self.name)

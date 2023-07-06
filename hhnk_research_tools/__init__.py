@@ -1,6 +1,10 @@
 import hhnk_research_tools.variables as variables
 
-from hhnk_research_tools.folder_file_classes.file_class import File
+from hhnk_research_tools.folder_file_classes.file_class import (
+    get_functions,
+    get_variables,
+    File,
+)
 
 from hhnk_research_tools.gis.raster import Raster, RasterMetadata
 

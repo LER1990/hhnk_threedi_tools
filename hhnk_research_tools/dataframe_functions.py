@@ -93,6 +93,7 @@ def df_add_geometry_to_gdf(df, geometry_col, crs=DEF_TRGT_CRS) -> gpd.GeoDataFra
 
 
 # Saving
+#TODO is dit nodig? Staat vooral nog in banklevels
 def gdf_write_to_geopackage(gdf, path=None, filename=None, filepath=None, driver=GPKG_DRIVER, index=False):
     """
     Functions outputs DataFrame of GeoDataFrame to .gpkg document
@@ -125,7 +126,7 @@ def gdf_write_to_geopackage(gdf, path=None, filename=None, filepath=None, driver
     except Exception as e:
         raise e from None
 
-
+#TODO is dit nog nodig? staat alleen in banklevels
 def gdf_write_to_csv(gdf, path=None, filename=None, filepath=None, mode="w", cols=None, index=False):
     """
     Functions outputs DataFrame of GeoDataFrame to .csv document
