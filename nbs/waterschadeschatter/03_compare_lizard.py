@@ -53,9 +53,9 @@ class Test_Folder(htt.core.folders.Folder):
     def __init__(self, base):
         super().__init__(base)
 
-        self.add_file('depth_lizard', 'depth_dmg.tif', ftype='raster')
-        self.add_file('dmg_lizard', 'dmg_lizard.tif', ftype='raster')
-        self.add_file('dmg_local', 'dmg_local.tif', ftype='raster')
+        self.add_file('depth_lizard', 'depth_dmg.tif')
+        self.add_file('dmg_lizard', 'dmg_lizard.tif')
+        self.add_file('dmg_local', 'dmg_local.tif')
         self.add_file('cfg_lizard', 'cfg_lizard.cfg')
 test_folder = Test_Folder(test_path)
 
@@ -166,15 +166,12 @@ class PgbFolder(htt.core.folders.Folder):
 
         for ws in ws_range:
             self.add_file(objectname=f"ws_{ws}",
-                            filename=f"ws_{ws}.tif",
-                            ftype='raster')
+                            filename=f"ws_{ws}.tif")
             self.add_file(objectname=f"depth_{ws}",
-                            filename=f"depth_{ws}.tif",
-                            ftype='raster')
+                            filename=f"depth_{ws}.tif")
             self.add_file(objectname=f"dmg_{ws}",
-                            filename=f"dmg_{ws}.tif",
-                            ftype='raster')
-
+                            filename=f"dmg_{ws}.tif")
+            
 output_dir = r"E:\github\wvangerwen\hhnk_schadeschatter\01_data\drainage_areas"
 pgb_folder = PgbFolder(base=os.path.join(output_dir, 'pgb_4770_04751-04'))
 landuse_file = r"\\srv57d1\geo_info\02_Werkplaatsen\06_HYD\Projecten\HKC21002 Schadecurven\07. SchadecurvenPy\03_gebieden\06_ad\03_downloads\landuse2019_tiles\ad_landuse2019.vrt"

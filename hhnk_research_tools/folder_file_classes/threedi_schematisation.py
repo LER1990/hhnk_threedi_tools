@@ -25,7 +25,7 @@ class ThreediSchematisation(Folder):
         super().__init__(os.path.join(base, name), create=create)
 
         # File
-        # self.add_file("database", self.model_path(), ftype='sqlite')
+        # self.add_file("database", self.model_path())
 
     @property
     def rasters(self):

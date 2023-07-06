@@ -61,14 +61,11 @@ class PgbFolder(htt.core.folders.Folder):
 
         for ws in ws_range:
             self.add_file(objectname=f"ws_{ws}",
-                            filename=f"ws_{ws}.tif",
-                            ftype='raster')
+                            filename=f"ws_{ws}.tif")
             self.add_file(objectname=f"depth_{ws}",
-                            filename=f"depth_{ws}.tif",
-                            ftype='raster')
+                            filename=f"depth_{ws}.tif")
             self.add_file(objectname=f"dmg_{ws}",
-                            filename=f"dmg_{ws}.tif",
-                            ftype='raster')
+                            filename=f"dmg_{ws}.tif")
 
 # %%
 

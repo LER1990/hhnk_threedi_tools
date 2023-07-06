@@ -25,7 +25,11 @@ file = fcl.File(file_path)
 # f.parent.files
 
 
-f = ffcl.Folder(TEMP_DIR)
 
+
+
+# def test_folder():
+folder = ffcl.Folder(TEMP_DIR)
+folder
 
 # %%

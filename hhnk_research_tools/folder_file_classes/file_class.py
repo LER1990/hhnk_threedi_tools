@@ -9,41 +9,29 @@ class File():
 
 
     @property
-    def str(self):
-        return str(self.path)
+    def base(self):
+        # return str(self.path)
+        return self.path.as_posix()
 
 
     def exists(self):
         """dont return true on empty path."""
-        if self.path == ".":
+        if self.base == ".":
             return False
         else:
             return self.path.exists()
 
-    # @property
-    # def path_if_exists(self) -> str:
-    #     """return filepath if the file exists otherwise return None"""
-    #     if self.exists():
-    #         return str(self)
-    #     else:
-    #         return None
-
-    # @property
-    # def name(self):
-    #     return self.stem
-
-
 
     def __repr__(self):
-        # funcs = '.'+' .'.join([i for i in dir(self) if not i.startswith('__') and hasattr(inspect.getattr_static(self,i)
-        # , '__call__')])
-        # variables = '.'+' .'.join([i for i in dir(self) if not i.startswith('__') and not hasattr(inspect.getattr_static(self,i)
-        # , '__call__')])
+        funcs = '.'+' .'.join([i for i in dir(self) if not i.startswith('__') and hasattr(inspect.getattr_static(self,i)
+        , '__call__')])
+        variables = '.'+' .'.join([i for i in dir(self) if not i.startswith('__') and not hasattr(inspect.getattr_static(self,i)
+        , '__call__')])
         repr_str = \
-f"""{self.name} @ {self.path}
+f"""{self.path.name} @ {self.path}
 exists: {self.exists()}
 type: {type(self)}
+functions: {funcs}
+variables: {variables}
 """
-# functions: {funcs}
-# variables: {variables}
         return repr_str

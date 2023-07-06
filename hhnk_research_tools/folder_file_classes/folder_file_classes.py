@@ -26,10 +26,11 @@ class Folder():
         if create:
             self.create(parents=False)
 
-    #TODO hernoemen?
+
     @property
     def base(self):
-        return str(self.path)
+        # return str(self.path)
+        return self.path.as_posix()
     
 
     @property
@@ -55,7 +56,7 @@ class Folder():
     #TODO was property, omschrijven naar functie
     def exists(self):
         """dont return true on empty path."""
-        if self.path == ".":
+        if self.base == ".":
             return False
         else:
             return self.path.exists()
@@ -97,22 +98,23 @@ class Folder():
         """returns the full path of a file or a folder when only a name is known"""
         return self.path / name
 
-    def add_file(self, objectname, filename, ftype="file"):
-        """ftype options = ['file', 'filegdb', 'gpkg', 'raster', 'sqlite'] """
+    #TODO ftype is niet meer. uit de suffix halen.
+    def add_file(self, objectname, filename):
+        """"""
         # if not os.path.exists(self.full_path(filename)) or
         if filename in [None, ""]:
-            filepath = ""
+            filepath = Path("")
         else:
             filepath = self.full_path(filename)
 
-        if ftype == "file":
-            new_file = File(filepath)
-        elif ftype in ["filegdb", "gpkg"]:
+        if filepath.suffix in [".gdb", ".gpkg", ".shp"]:
             new_file = FileGDB(filepath)
-        elif ftype == "raster":
+        elif filepath.suffix in [".tif", ".tiff", ".vrt"]:
             new_file = hrt.Raster(filepath)
-        elif ftype == "sqlite":
+        elif filepath.suffix in [".sqlite"]:
             new_file = Sqlite(filepath)
+        else:
+            new_file = File(filepath)
 
         self.files[objectname] = new_file
         setattr(self, objectname, new_file)
@@ -155,7 +157,8 @@ class Folder():
 
         repr_str = \
  f"""{self.path.name} @ {self.path}
-Exists: {self.exists()} -- Type: {type(self)}
+Exists: {self.exists()}
+type: {type(self)}
     Folders:\t{self.structure}
     Files:\t{list(self.files.keys())}
     Layers:\t{list(self.olayers.keys())}
