@@ -66,12 +66,12 @@ class TestRaster:
 
         #remove raster
         out_raster.unlink_if_exists()
-        assert not out_raster.exists
+        assert not out_raster.exists()
 
         #Create raster
         out_raster.create(metadata=self.raster.metadata,
                           nodata=self.raster.nodata)
-        assert out_raster.exists
+        assert out_raster.exists()
         
 
 class TestRasterMetadata():

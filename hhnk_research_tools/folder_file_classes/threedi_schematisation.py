@@ -111,7 +111,7 @@ class ThreediSchematisation(Folder):
             This only works for models from Klondike release onwards, where we only have
             one global settings row."""
 
-            if self.caller.database.exists:
+            if self.caller.database.exists():
                 df = hrt.sqlite_table_to_df(
                     database_path=self.caller.database.path, table_name=table_name
                 )

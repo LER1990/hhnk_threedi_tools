@@ -139,7 +139,7 @@ for index, row in gdf.iterrows():
                 ws_raster = hrt.Raster(getattr(pgb_folder, f'ws_{ws}').path)
                 depth_raster = hrt.Raster(getattr(pgb_folder, f'depth_{ws}').path)
 
-                if ws_raster.exists:
+                if ws_raster.exists():
                     depth_calc = hrt.Raster_calculator(raster1=dem_raster, 
                                                         raster2=ws_raster, 
                                                         raster_out=depth_raster, 

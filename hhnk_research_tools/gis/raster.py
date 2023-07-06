@@ -160,7 +160,6 @@ class Raster(File):
             self.source_set=False
 
 
-    @property
     def exists(self):
         if self.source_set: #check this first for speed.
             return True
@@ -174,17 +173,17 @@ class Raster(File):
 
     @property
     def nodata(self):
-        if self.exists:
+        if self.exists():
             return self._nodata
         
     @property
     def band_count(self):
-        if self.exists:
+        if self.exists():
             return self._band_count
 
     @property
     def metadata(self):
-        if self.exists:
+        if self.exists():
             return self._metadata
         
 
@@ -333,14 +332,14 @@ class Raster(File):
             
 
     def __repr__(self):
-        if self.exists:
+        if self.exists():
             return f"""{self.__class__}
-    Source: {self.source_path}, exists:{self.exists}
+    Source: {self.source_path}, exists:{self.exists()}
     Shape: {self.metadata.shape}
     Pixelsize: {self.metadata.pixel_width}"""
         else:
             return f"""{self.__class__}
-    Source: {self.source_path}, exists:{self.exists}"""
+    Source: {self.source_path}, exists:{self.exists()}"""
 
 
     def create(self, metadata, nodata, verbose=False, overwrite=False):
@@ -363,7 +362,7 @@ class Raster(File):
         self.source=None
 
 
-        self.exists #Update raster now it exists
+        self.exists() #Update raster now it exists
 
 
     def sum(self):

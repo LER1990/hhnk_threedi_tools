@@ -75,7 +75,7 @@ class Waterschadeschatter():
         Calculation type options: 'sum','direct','indirect'
         """
 
-        if output_raster.exists:
+        if output_raster.exists():
             if overwrite is False:
                 return
             else:

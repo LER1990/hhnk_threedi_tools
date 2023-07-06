@@ -52,9 +52,9 @@ class Folder():
     #     return self.stem
 
     #TODO uitfaseren, dit is .path.name
-    @property
-    def folder(self):
-        return self.path.name
+    # @property
+    # def folder(self):
+    #     return self.path.name
         # return os.path.basename(self.base)
 
     #TODO was property, omschrijven naar functie
