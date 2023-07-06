@@ -29,7 +29,6 @@ class Folder():
 
     @property
     def base(self):
-        # return str(self.path)
         return self.path.as_posix()
     
 
@@ -120,11 +119,6 @@ class Folder():
         setattr(self, objectname, new_file)
 
 
-    def add_layer(self, objectname, layer):
-        self.olayers[objectname] = layer
-        setattr(self, objectname, layer)
-
-
     def unlink_contents(self, names=[], rmfiles=True, rmdirs=False):
         """unlink all content when names is an empty list. Otherwise just remove the names."""
         if not names:
@@ -161,7 +155,6 @@ Exists: {self.exists()}
 type: {type(self)}
     Folders:\t{self.structure}
     Files:\t{list(self.files.keys())}
-    Layers:\t{list(self.olayers.keys())}
 functions: {funcs}
 variables: {variables}"""
         return repr_str
