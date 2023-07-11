@@ -128,6 +128,7 @@ class ThreediSchematisation(Folder):
                     raster_path = os.path.join(self.caller.base, raster_name)
             else:
                 raster_path = ""
+            #TODO check if hrt.Raster return is possible
             return File(raster_path)
 
 

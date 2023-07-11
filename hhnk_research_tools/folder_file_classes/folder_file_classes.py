@@ -30,7 +30,9 @@ class Folder():
     @property
     def base(self):
         return self.path.as_posix()
-    
+    @property
+    def name(self):
+        return self.path.name
 
     @property
     def structure(self):
@@ -57,7 +59,6 @@ class Folder():
     #     return self.path.name
         # return os.path.basename(self.base)
 
-    #TODO was property, omschrijven naar functie
     def exists(self):
         """dont return true on empty path."""
         if self.base == ".":
@@ -98,9 +99,15 @@ class Folder():
 
 
     #TODO uitzoeken of name met '/' start. Dat mag niet.
+    #TODO return Folder or File object
     def full_path(self, name):
         """returns the full path of a file or a folder when only a name is known"""
-        return self.path / name
+        p = self.path / name
+        if p.suffix == "":
+            return Folder()
+        else:
+            return File(p)
+        # return self.path / name
 
     #TODO ftype is niet meer. uit de suffix halen.
     def add_file(self, objectname, filename):

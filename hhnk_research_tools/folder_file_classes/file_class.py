@@ -1,5 +1,7 @@
 from pathlib import Path
 import inspect
+import json
+
 
 def get_functions(cls):
     funcs = '.'+' .'.join([i for i in dir(cls) if not i.startswith('__') 
@@ -22,6 +24,17 @@ class File():
     @property
     def base(self):
         return self.path.as_posix()
+    @property
+    def name(self):
+        return self.path.name
+    
+
+
+    def read_json(self):
+        if self.path.suffix==".json":
+            return json.loads(self.path.read_text())
+        else:
+            raise Exception(f"{self.name} is not a json.")
 
 
     def exists(self):
