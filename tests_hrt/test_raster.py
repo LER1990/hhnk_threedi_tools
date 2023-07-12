@@ -13,7 +13,7 @@ import types
 
 print(hrt.__file__)
 from hhnk_research_tools.gis.raster import Raster
-from tests.config import TEST_DIRECTORY, OUTPUT_DIR
+from tests_hrt.config import TEST_DIRECTORY, OUTPUT_DIR
 
 
 # %%        
