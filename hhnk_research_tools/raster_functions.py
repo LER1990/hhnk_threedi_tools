@@ -137,6 +137,8 @@ def gdf_to_raster(
         if type(raster_out) == Raster:
             raster_out=raster_out.path
 
+
+        gdf = gdf[[value_field, "geometry"]] #filter unnecessary columns
         ogr_ds, polygon = _gdf_to_ogr(gdf, epsg)
         # make sure folders exist
         if raster_out != '': #empty str when driver='MEM'
@@ -323,9 +325,13 @@ def build_vrt(raster_folder, vrt_name='combined_rasters', bandlist=[1], bounds=N
 def create_meta_from_gdf(gdf, res) -> dict:
     """Create metadata that can be used in raster creation based on gdf bounds. 
     Projection is 28992 default, only option.""" 
-    gdf_local=gdf.copy()
-    gdf_local['temp'] = 0
-    bounds_dict = gdf_local.dissolve('temp').bounds.iloc[0]
+    gdf_local=gdf[["geometry"]].copy()
+    bounds = gdf_local.bounds
+    bounds_dict={"minx":bounds["minx"].min().round(4), 
+                "miny":bounds["miny"].min().round(4),
+                "maxx":bounds["maxx"].max().round(4),
+                "maxy":bounds["maxy"].max().round(4),
+    }
     return RasterMetadata(res=res, bounds_dict=bounds_dict)
 
 
