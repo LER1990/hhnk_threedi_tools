@@ -99,6 +99,9 @@ class ThreediSchematisation(Folder):
             self.infiltration = self.get_raster_path(
                 table_name="v2_simple_infiltration", col_name="infiltration_rate_file"
             )
+            self.initial_wlvl_2d = self.get_raster_path(
+                table_name="v2_global_settings", col_name="initial_waterlevel_file"
+            )
 
             landuse = [i for i in self.pl.glob("landuse_*.tif")]
             if len(landuse)==0:
@@ -138,6 +141,7 @@ class ThreediSchematisation(Folder):
     friction - {self.friction.name}
     infiltration - {self.infiltration.name}
     landuse - {self.landuse.name}
+    initial_wlvl_2d - {self.initial_wlvl_2d.name}
 """
 
 
