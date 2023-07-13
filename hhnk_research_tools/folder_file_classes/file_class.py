@@ -22,11 +22,14 @@ class File():
 
 
     @property
-    def base(self):
+    def base(self): #full path to file
         return self.path.as_posix()
     @property
-    def name(self):
+    def name(self): #name with suffix
         return self.path.name
+    @property
+    def stem(self): #stem (without suffix)
+        return self.path.stem
     
 
 

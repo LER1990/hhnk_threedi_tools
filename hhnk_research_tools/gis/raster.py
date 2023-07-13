@@ -40,6 +40,7 @@ class Raster(File):
             print('Array not loaded. Call Raster.get_array(window) first')
             return self._array
 
+    #TODO deprecate this, same as .base
     @property
     def source_path(self):
         return self._source_path

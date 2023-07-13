@@ -102,7 +102,8 @@ class Folder():
     #TODO return Folder or File object
     def full_path(self, name):
         """returns the full path of a file or a folder when only a name is known"""
-        p = self.path / name
+        # p = self.path / name
+        p = self.path.joinpath(name) #TODO werkt dit?
         if p.suffix == "":
             return Folder()
         else:
