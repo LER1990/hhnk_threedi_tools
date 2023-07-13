@@ -31,7 +31,7 @@ class TestRasterFunctions():
         assert arr.shape == (2, 2)
 
         #reproject
-        output_raster_reproject = hrt.Raster(output_raster.pl.with_stem(f"reproject_{hrt.get_uuid()}"))
+        output_raster_reproject = hrt.Raster(output_raster.path.with_stem(f"reproject_{hrt.get_uuid()}"))
         hrt.reproject(src=output_raster,
                       target_res=20,
                       output_path=output_raster_reproject.path)
@@ -51,7 +51,7 @@ class TestRasterFunctions():
 
     def test_save_raster_array_to_tiff_vrt(self):
         output_folder = hrt.Folder(TEMP_DIR/f"vrt_test", create=True)
-        output_file = output_folder.pl/f"save_raster_array_to_tiff_{hrt.get_uuid()}.tif"
+        output_file = output_folder.full_path(f"save_raster_array_to_tiff_{hrt.get_uuid()}.tif")
         arr = np.array([[1,2],[2,3]])
         hrt.save_raster_array_to_tiff(output_file = output_file,
                                         raster_array=arr,

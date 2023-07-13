@@ -100,7 +100,7 @@ class ThreediSchematisation(Folder):
                 table_name="v2_simple_infiltration", col_name="infiltration_rate_file"
             )
 
-            landuse = [i for i in self.pl.glob("landuse_*.tif")]
+            landuse = [i for i in self.path.glob("landuse_*.tif")]
             if len(landuse)==0:
                 landuse = [""]
             self.landuse = File(landuse[0])
@@ -180,7 +180,7 @@ class RevisionsDir(Folder):
             return self.returnclass(self.full_path(self.revisions[revision]), create=True)
         elif os.path.exists(revision):
             return self.returnclass(revision, create=True)
-        elif (self.pl / revision).exists():
+        elif self.full_path(revision).exists():
             return self.returnclass(self.full_path(revision), create=True)
         else:
             # print(f"path; {self.base} not found, create with '.create()'")
