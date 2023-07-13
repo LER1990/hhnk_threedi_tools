@@ -125,11 +125,11 @@ class ThreediSchematisation(Folder):
                 if raster_name == None:
                     raster_path = ""
                 else:
-                    raster_path = os.path.join(self.caller.base, raster_name)
+                    raster_path = self.caller.full_path(raster_name)
             else:
                 raster_path = ""
             #TODO check if hrt.Raster return is possible
-            return File(raster_path)
+            return Raster(raster_path)
 
 
         def __repr__(self):
