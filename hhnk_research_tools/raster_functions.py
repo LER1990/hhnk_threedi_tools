@@ -504,3 +504,29 @@ def reproject(src:Raster, target_res:float, output_path:str):
         if dst_ds is not None:
             gdal.ReprojectImage(src_ds, dst_ds, src_wkt='EPSG:28992')
         
+
+def hist_stats(histogram: dict, stat_type: str, ignore_keys=[0]):
+    """
+    histogram (dict): histogram of raster built with np.unique(block_arr, return_counts=True)
+    stat_type (str): statistics to calculate. Options are;
+        ["median"]
+    ignore_key (float/int/str): use this to remove the nodata value from hist
+    
+    calc median of a histogram. To create a hist per label, see example in 
+    nbs/sample_histogram_median.
+    """
+         
+    total = 0
+    for key in ignore_keys:
+        histogram.pop(ignore_keys, None) #dont use 0 values in medean calc
+
+    #No values left, all values are noldata.
+    if histogram == {}:
+        return np.nan
+
+    if stat_type=="median":
+        median_index = (sum(histogram.values()) + 1) / 2
+        for value in sorted(histogram.keys()):
+            total += histogram[value]
+            if total >= median_index:
+                return value
