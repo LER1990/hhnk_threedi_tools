@@ -13,7 +13,7 @@
 
 # print(hrt.__file__)
 # from hhnk_research_tools.waterschadeschatter import wss_main
-# from tests.config import TEST_DIRECTORY
+# from tests_hrt.config import TEST_DIRECTORY
 
 
 # class TestSql():

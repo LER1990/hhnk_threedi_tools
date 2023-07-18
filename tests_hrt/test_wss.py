@@ -10,7 +10,7 @@ import importlib.resources as pkg_resources  # Load resource from package
 
 import hhnk_research_tools as hrt
 from hhnk_research_tools.waterschadeschatter import wss_main
-from tests.config import TEST_DIRECTORY, OUTPUT_DIR
+from tests_hrt.config import TEST_DIRECTORY, OUTPUT_DIR
 
 def test_wss():
         

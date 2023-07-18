@@ -1,15 +1,12 @@
 
 # %%
 
-if __name__ == "__main__":
-    import set_local_paths  # add local git repos.
-
 from pathlib import Path
 import numpy as np
 
 import geopandas as gpd
 import hhnk_research_tools as hrt
-from tests.config import TEST_DIRECTORY, OUTPUT_DIR
+from tests_hrt.config import TEST_DIRECTORY, OUTPUT_DIR
 
 # %%
 class TestRasterFunctions():
@@ -17,6 +14,9 @@ class TestRasterFunctions():
     gdf = gpd.read_file(TEST_DIRECTORY/r"area_test.gpkg")
     meta=hrt.create_meta_from_gdf(gdf=gdf, res=40)
 
+
+    def test_meta(self):
+        assert self.meta.bounds == [133613, 133693, 500677, 500757]
 
     def test_gdf_to_raster_and_reproject(self):
         output_raster = hrt.Raster(OUTPUT_DIR/f"gdf_to_raster_{hrt.get_uuid()}.tif")
