@@ -518,7 +518,7 @@ def hist_stats(histogram: dict, stat_type: str, ignore_keys=[0]):
          
     total = 0
     for key in ignore_keys:
-        histogram.pop(ignore_keys, None) #dont use 0 values in medean calc
+        histogram.pop(key, None) #dont use 0 values in medean calc
 
     #No values left, all values are noldata.
     if histogram == {}:
