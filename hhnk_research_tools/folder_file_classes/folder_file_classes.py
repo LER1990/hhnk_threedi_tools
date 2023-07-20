@@ -110,7 +110,7 @@ class Folder():
             return File(p)
         # return self.path / name
 
-    #TODO ftype is niet meer. uit de suffix halen.
+
     def add_file(self, objectname, filename):
         """"""
         # if not os.path.exists(self.full_path(filename)) or
