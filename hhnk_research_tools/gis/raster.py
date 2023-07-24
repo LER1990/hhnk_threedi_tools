@@ -435,14 +435,22 @@ class RasterMetadata():
     def bounds(self):
         return [self.x_min, self.x_max, self.y_min, self.y_max]
 
+    #TODO deprecated. Remove in future release.
     @property
     def bounds_dl(self):
+        """Lizard v3 bounds"""
+        raise Exception("use .bbox instead. lizard v4 api no longer suppers bounds_dl")
         return {
             "west": self.x_min,
             "south": self.y_min,
             "east": self.x_max,
             "north": self.y_max,
         }
+
+    @property
+    def bbox(self):
+        """Lizard v4 bbox; x1, y1, x2, y2"""
+        return f"{self.x_min}, {self.y_min}, {self.x_max}, {self.y_max}"
 
     @property
     def shape(self):
