@@ -64,8 +64,9 @@ def check_create_new_file(output_file:str, overwrite:bool=False, input_files:lis
             output_mtime = output_file.stat().st_mtime
 
             for input_file in input_files:
+                input_file = Path(input_file)
                 if input_file.exists():
-                    input_mtime = Path(input_file).stat().st_mtime
+                    input_mtime = input_file.stat().st_mtime
                     
                     if input_mtime > output_mtime:
                         output_file.unlink()

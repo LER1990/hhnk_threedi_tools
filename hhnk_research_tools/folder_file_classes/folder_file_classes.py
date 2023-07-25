@@ -17,7 +17,7 @@ class Folder():
     """Base folder class for creating, deleting and see if folder exists"""
 
     def __init__(self, base, create=False):
-        self.path = Path(base)
+        self.path = Path(str(base))
 
         self.files = {}
         self.olayers = {}
@@ -38,7 +38,6 @@ class Folder():
     def structure(self):
         return ""
 
-    #TODO oude content gaf alleen namen terug, nu volledig Path naar file
     @property
     def content(self):
         return [i for i in self.path.glob("*")]
@@ -99,27 +98,18 @@ class Folder():
 
 
     #TODO uitzoeken of name met '/' start. Dat mag niet.
-    #TODO return Folder or File object
     def full_path(self, name):
-        """returns the full path of a file or a folder when only a name is known"""
-        # p = self.path / name
-        p = self.path.joinpath(name) #TODO werkt dit?
-        if p.suffix == "":
-            return Folder()
-        else:
-            return File(p)
-        # return self.path / name
-
-
-    def add_file(self, objectname, filename):
-        """"""
-        # if not os.path.exists(self.full_path(filename)) or
-        if filename in [None, ""]:
-            filepath = Path("")
-        else:
-            filepath = self.full_path(filename)
-
-        if filepath.suffix in [".gdb", ".gpkg", ".shp"]:
+        """
+        returns the full path of a file or a folder when only a name is known.
+        Will return the object based on suffix
+        
+        """
+        filepath = self.path.joinpath(name)
+        if name in [None, ""]:
+            new_file = Path("")
+        elif filepath.suffix == "":
+            new_file = Folder(filepath)
+        elif filepath.suffix in [".gdb", ".gpkg", ".shp"]:
             new_file = FileGDB(filepath)
         elif filepath.suffix in [".tif", ".tiff", ".vrt"]:
             new_file = hrt.Raster(filepath)
@@ -127,6 +117,12 @@ class Folder():
             new_file = Sqlite(filepath)
         else:
             new_file = File(filepath)
+        return new_file
+
+
+    def add_file(self, objectname, filename):
+        """"""
+        new_file = self.full_path(filename)
 
         self.files[objectname] = new_file
         setattr(self, objectname, new_file)

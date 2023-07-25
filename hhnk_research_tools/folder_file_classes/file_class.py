@@ -18,7 +18,7 @@ def get_variables(cls):
 # class File(type(Path()), Path):
 class File():
     def __init__(self, base):
-        self.path = Path(base)
+        self.path = Path(str(base))
 
 
     @property
@@ -30,8 +30,9 @@ class File():
     @property
     def stem(self): #stem (without suffix)
         return self.path.stem
-    
-
+    @property
+    def suffix(self):
+        return self.path.suffix
 
     def read_json(self):
         if self.path.suffix==".json":
