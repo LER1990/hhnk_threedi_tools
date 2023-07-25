@@ -47,6 +47,14 @@ class File():
             return False
         else:
             return self.path.exists()
+        
+    @property
+    def path_if_exists(self):
+        """return filepath if the file exists otherwise return None"""
+        if self.exists():
+            return str(self.path)
+        else:
+            return None
 
 
     def __repr__(self):

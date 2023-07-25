@@ -94,7 +94,7 @@ class Folder():
     def find_ext(self, ext):
         """finds files with a certain extension"""
         # return glob.glob(self.base + f"/*.{ext}")
-        return self.path.glob(f"*.{ext}")
+        return [i for i in self.path.glob(f"*.{ext.replace('.','')}")]
 
 
     #TODO uitzoeken of name met '/' start. Dat mag niet.

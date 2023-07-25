@@ -65,7 +65,7 @@ class ThreediSchematisation(Folder):
     @property
     def sqlite_names(self):
         """returns all sqlites in folder"""
-        return [Path(sp).stem for sp in self.sqlite_paths]
+        return [sp.stem for sp in self.sqlite_paths]
 
 
     def model_path(self, idx=0, name=None):
