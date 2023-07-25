@@ -91,10 +91,14 @@ class Folder():
         self.path.mkdir(parents=parents, exist_ok=True)
 
 
-    def find_ext(self, ext):
+    def find_ext(self, ext:list):
         """finds files with a certain extension"""
-        # return glob.glob(self.base + f"/*.{ext}")
-        return [i for i in self.path.glob(f"*.{ext.replace('.','')}")]
+        if type(ext)==str:
+            ext=[ext]
+        file_list = []
+        for e in ext:
+            file_list += [i for i in self.path.glob(f"*.{e.replace('.','')}")]
+        return file_list
 
 
     #TODO uitzoeken of name met '/' start. Dat mag niet.

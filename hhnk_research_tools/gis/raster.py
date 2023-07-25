@@ -16,14 +16,8 @@ from hhnk_research_tools.folder_file_classes.file_class import File
 
 
 class Raster(File):
-    def __init__(self, source_path, min_block_size=1024):
-
-        if type(source_path) in [Raster, File]:
-            source_path = source_path.path
-
-        super().__init__(source_path)
-        self.source_path = source_path
-
+    def __init__(self, base, min_block_size=1024):
+        super().__init__(base)
         
         self.source_set=False #Tracks if the source exist on the system. 
         # self.source = True #calls self.source.setter(source_path)
@@ -40,15 +34,6 @@ class Raster(File):
             print('Array not loaded. Call Raster.get_array(window) first')
             return self._array
 
-    #TODO deprecate this, same as .base
-    @property
-    def source_path(self):
-        return self._source_path
-    @source_path.setter
-    def source_path(self, value):
-        if type(value)==str:
-            value = Path(value)
-        self._source_path = value
 
     @array.setter
     def array(self, raster_array, window=None, band_nr=1):
@@ -104,7 +89,7 @@ class Raster(File):
                 raster_array = np.dstack((red_array, green_array, blue_array))
             else:
                 raise ValueError(
-                    f"Unexpected number of bands in raster {self.source_path} (expect 1 or 3)"
+                    f"Unexpected number of bands in raster {self.base} (expect 1 or 3)"
                 )
             self._array = raster_array
             return raster_array
@@ -125,12 +110,11 @@ class Raster(File):
         """If source does not exist it will not be set.
         Bit clunky. But it should work that if it exists it will only be set once. 
         Otherwise it will not set.  """
-        if os.path.exists(self.source_path): #cannot use self.exists here.
+        if self.path.exists(): #cannot use self.exists here.
             #Needs to be first otherwise we end in a loop when settings metadata/nodata/band_count
             self.source_set=True 
             # print(f"setting source {self.file_path}")
 
-            # self._source=gdal.Open(str(self.source_path), gdal.GA_ReadOnly)
             gdal_src = self.open_gdal_source_read()
 
             self._metadata = RasterMetadata(gdal_src=gdal_src)
@@ -143,14 +127,14 @@ class Raster(File):
         with self.open_gdal_source_read() as gdal_src: doesnt work.
         just dont write it to the class, and it should be fine..
         """
-        return gdal.Open(str(self.source_path), gdal.GA_ReadOnly)
+        return gdal.Open(self.base, gdal.GA_ReadOnly)
 
 
     def open_gdal_source_write(self):
         """
         open source with write access
         """
-        return gdal.Open(str(self.source_path), gdal.GA_Update)
+        return gdal.Open(self.base, gdal.GA_Update)
 
 
     def unlink_if_exists(self):
@@ -165,7 +149,7 @@ class Raster(File):
         if self.source_set: #check this first for speed.
             return True
         else:
-            path_exists = os.path.exists(self.source_path)
+            path_exists = self.path.exists()
             if not self.source_set:
                 if path_exists:
                     self.source #Set the source.      
@@ -335,12 +319,12 @@ class Raster(File):
     def __repr__(self):
         if self.exists():
             return f"""{self.__class__}
-    Source: {self.source_path}, exists:{self.exists()}
+    Source: {self.base}, exists:{self.exists()}
     Shape: {self.metadata.shape}
     Pixelsize: {self.metadata.pixel_width}"""
         else:
             return f"""{self.__class__}
-    Source: {self.source_path}, exists:{self.exists()}"""
+    Source: {self.base}, exists:{self.exists()}"""
 
 
     def create(self, metadata, nodata, verbose=False, overwrite=False):
@@ -350,8 +334,8 @@ class Raster(File):
         """
         #Check if function should continue.
         if verbose:
-            print(f"creating output raster: {self.source_path}")
-        target_ds = hrt.create_new_raster_file(file_name=str(self.source_path),
+            print(f"creating output raster: {self.path}")
+        target_ds = hrt.create_new_raster_file(file_name=self.path,
                                                 nodata=nodata,
                                                 meta=metadata,
                                                 overwrite=overwrite,)

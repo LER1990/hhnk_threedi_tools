@@ -10,7 +10,7 @@ from hhnk_research_tools.gis.raster import Raster, RasterMetadata
 from pathlib import Path
 import os
 import types
-
+from hhnk_research_tools.folder_file_classes.folder_file_classes import Folder
 
 DEFAULT_CREATE_OPTIONS = [f"COMPRESS=ZSTD", f"TILED=YES", "PREDICTOR=2", "ZSTD_LEVEL=1"]
 
@@ -284,23 +284,24 @@ def save_raster_array_to_tiff(
 
         
 def build_vrt(raster_folder, vrt_name='combined_rasters', bandlist=[1], bounds=None, overwrite=False):
-    #TODO check resolution of all rasters in folder. if not equal then no vrt.
     """create vrt from all rasters in a folder.
     bounds=(xmin, ymin, xmax, ymax)
     bandList doesnt work as expected."""
-    output_path = os.path.join(raster_folder, f'{vrt_name}.vrt')
+    raster_folder = Folder(raster_folder)
+    output_path = raster_folder.full_path(f'{vrt_name}.vrt')
     
-    if os.path.exists(output_path) and not overwrite:
+    if output_path.exists() and not overwrite:
         print(f'vrt already exists: {output_path}')
         return
 
-    tifs_list = [os.path.join(raster_folder, i) for i in os.listdir(raster_folder) if i.endswith('.tif') or i.endswith('.tiff')]
+    tifs_list = raster_folder.find_ext(["tif", "tiff"])
 
-
+    resolutions = []
     for r in tifs_list:
-        if Raster(r).metadata.pixel_width==1:
-            print(Path(r.source_path).stem)
-
+        r=Raster(r)
+        resolutions.append(r.metadata.pixel_width)
+    if len(np.unique(resolutions)) > 1:
+        raise Exception(f"Multiple resolutions ({resolutions}) found in folder. We cannot handle that yet.")
 
     vrt_options = gdal.BuildVRTOptions(resolution='highest',
                                        separate=False,
@@ -310,9 +311,8 @@ def build_vrt(raster_folder, vrt_name='combined_rasters', bandlist=[1], bounds=N
                                        bandList=bandlist,)
     ds = gdal.BuildVRT(output_path, tifs_list, options=vrt_options)
     ds.FlushCache()
-    del tifs_list
 
-    if not os.path.exists(output_path):
+    if not output_path.exists():
         print('Something went wrong, vrt not created.')
 
 

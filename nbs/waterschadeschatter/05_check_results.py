@@ -83,7 +83,7 @@ import hhnk_schadeschatter as hhnk_wss
 cfg_file = schadeschatter_path/'01_data/cfg/cfg_lizard.cfg'
 landuse_file = schadeschatter_path/'01_data/landuse2019_3di_tiles/combined_rasters.vrt'
 
-depth_file = depth_lizard.source_path
+depth_file = depth_lizard.path
 output_raster = threedi_result.full_path("damage_local_lizard_settings.tif")
 
 wss_settings = {'inundation_period': 48, #uren
