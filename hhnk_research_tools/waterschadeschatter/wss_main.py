@@ -52,9 +52,9 @@ class Waterschadeschatter():
 
     def validate(self):
         """check if input exists"""
-        for filepath in [self.lu_raster, self.depth_raster]:
-            if not os.path.exists(filepath):
-                raise Exception(f"could not find input file in: {filepath}")
+        for r in [self.lu_raster, self.depth_raster]:
+            if not r.exists():
+                raise Exception(f"could not find input file in: {r}")
 
 
     def get_dmg_table_indices(self):

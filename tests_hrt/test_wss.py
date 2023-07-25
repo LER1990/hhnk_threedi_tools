@@ -16,7 +16,6 @@ def test_wss():
         
         cfg_file = hrt.get_pkg_resource_path(package_resource=hrt.waterschadeschatter.resources, 
                                      name="cfg_lizard.cfg")
-    
         landuse_file = TEST_DIRECTORY/'landuse_test.tif'
         depth_file = TEST_DIRECTORY/'depth_test.tif'
         output_file = hrt.Raster(TEMP_DIR/fr'schade_test_{hrt.get_uuid()}.tif')

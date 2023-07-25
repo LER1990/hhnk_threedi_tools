@@ -56,6 +56,8 @@ class File():
         else:
             return None
 
+    def __str__(self):
+        return self.base
 
     def __repr__(self):
         repr_str = \

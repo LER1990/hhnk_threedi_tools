@@ -65,7 +65,7 @@ class TestRaster:
         out_raster = Raster(TEMP_DIR/f"test_create_{hrt.get_uuid()}.tif")
 
         #remove raster
-        out_raster.unlink_if_exists()
+        out_raster.unlink()
         assert not out_raster.exists()
 
         #Create raster

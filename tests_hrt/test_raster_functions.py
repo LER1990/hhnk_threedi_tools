@@ -11,7 +11,7 @@ import geopandas as gpd
 import hhnk_research_tools as hrt
 from tests_hrt.config import TEST_DIRECTORY, TEMP_DIR
 
-# %%
+
 class TestRasterFunctions():
 
     gdf = gpd.read_file(TEST_DIRECTORY/r"area_test.gpkg")

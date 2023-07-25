@@ -44,7 +44,7 @@ def check_create_new_file(output_file:str, overwrite:bool=False, input_files:lis
                  recreate the output.
     """
     create=False
-    output_file = Path(output_file)
+    output_file = Path(str(output_file))
 
     #Als geen suffix (dus geen file), dan error
     if not allow_emptypath: #
@@ -101,13 +101,10 @@ def get_uuid(chars=8):
     return str(uuid4())[:chars]
 
 
-#TODO htt uitzoeken of Path ipv str ook goed is.
 def get_pkg_resource_path(package_resource, name) -> Path:
     """return path to resource in a python package, so it can be loaded"""
-    # with pkg_resources.path(package_resource, name) as p:
-    #     # return p.absolute().as_posix()
-    #     return p
-    return pkg_resources.path(package_resource, name)
+    with pkg_resources.path(package_resource, name) as p:
+        return p
     
 
 

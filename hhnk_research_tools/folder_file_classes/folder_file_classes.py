@@ -154,7 +154,7 @@ class Folder():
 
 
     def __str__(self):
-        return str(self.path)
+        return self.base
 
 
     def __repr__(self):

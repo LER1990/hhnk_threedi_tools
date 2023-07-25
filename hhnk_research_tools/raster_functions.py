@@ -294,7 +294,7 @@ def build_vrt(raster_folder, vrt_name='combined_rasters', bandlist=[1], bounds=N
         print(f'vrt already exists: {output_path}')
         return
 
-    tifs_list = raster_folder.find_ext(["tif", "tiff"])
+    tifs_list = [str(i) for i in raster_folder.find_ext(["tif", "tiff"])]
 
     resolutions = []
     for r in tifs_list:
@@ -309,7 +309,8 @@ def build_vrt(raster_folder, vrt_name='combined_rasters', bandlist=[1], bounds=N
                                        addAlpha=False,
                                        outputBounds=bounds,
                                        bandList=bandlist,)
-    ds = gdal.BuildVRT(output_path, tifs_list, options=vrt_options)
+
+    ds = gdal.BuildVRT(str(output_path), tifs_list, options=vrt_options)
     ds.FlushCache()
 
     if not output_path.exists():

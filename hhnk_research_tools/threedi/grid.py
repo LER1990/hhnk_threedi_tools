@@ -55,7 +55,7 @@ def _write_grid_to_file(grid, grid_type, output_path):
 class Grid:
     def __init__(self, grid_folder=None, sqlite_path=None, dem_path=None):
         
-        self.folder = grid_folder
+        self.folder = hrt.Folder(grid_folder)
         self.sqlite_path = sqlite_path
         self.dem_path = dem_path
         
@@ -73,15 +73,15 @@ class Grid:
             self.folder = self.grid_dir.name
             make_gridadmin(sqlite_path, dem_path, self.folder + "/gridadmin.h5") 
         
-        if self.folder:
-            self.admin_path = self.folder + "/gridadmin.h5"
-            self.grid_path = self.folder + "/results_3di.nc"
+        if self.folder.exists():
+            self.admin_path = self.folder / "gridadmin.h5"
+            self.grid_path = self.folder / "results_3di.nc"
             
-            if os.path.exists(self.grid_path):
-                self.grid = GridH5ResultAdmin(self.admin_path, self.grid_path)
+            if self.grid_path.exists():
+                self.grid = GridH5ResultAdmin(str(self.admin_path), str(self.grid_path))
                 
-            if os.path.exists(self.admin_path):
-                self.admin = GridH5Admin(self.admin_path)
+            if self.admin_path.exists():
+                self.admin = GridH5Admin(str(self.admin_path))
     
     def read_1d2d_lines(self):
         return read_1d2d_lines(self.admin)

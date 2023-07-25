@@ -178,7 +178,7 @@ class RevisionsDir(Folder):
         """revision can be a integer or a path"""
         if type(revision) == int:
             return self.returnclass(self.full_path(self.revisions[revision]), create=True)
-        elif os.path.exists(revision):
+        elif os.path.exists(str(revision)):
             return self.returnclass(revision, create=True)
         elif self.full_path(revision).exists():
             return self.returnclass(self.full_path(revision), create=True)

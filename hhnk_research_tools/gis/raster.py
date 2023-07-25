@@ -137,10 +137,9 @@ class Raster(File):
         return gdal.Open(self.base, gdal.GA_Update)
 
 
-    def unlink_if_exists(self):
-        """Remove file if it exists
-        overwrites function from File class"""
-        super().unlink_if_exists()
+    def unlink(self, missing_ok=True):
+        """Remove raster if it exists, reset source."""
+        self.path.unlink(missing_ok=missing_ok)
         if not self.exists():
             self.source_set=False
 
