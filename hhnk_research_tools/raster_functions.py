@@ -327,10 +327,10 @@ def create_meta_from_gdf(gdf, res) -> dict:
     Projection is 28992 default, only option.""" 
     gdf_local=gdf[["geometry"]].copy()
     bounds = gdf_local.bounds
-    bounds_dict={"minx":bounds["minx"].min().round(4), 
-                "miny":bounds["miny"].min().round(4),
-                "maxx":bounds["maxx"].max().round(4),
-                "maxy":bounds["maxy"].max().round(4),
+    bounds_dict={"minx":np.round(bounds["minx"].min(),4), 
+                "miny":np.round(bounds["miny"].min(),4),
+                "maxx":np.round(bounds["maxx"].max(),4),
+                "maxy":np.round(bounds["maxy"].max(),4),
     }
     return RasterMetadata(res=res, bounds_dict=bounds_dict)
 
