@@ -148,11 +148,14 @@ class Raster(File):
         if self.source_set: #check this first for speed.
             return True
         else:
-            path_exists = self.path.exists()
-            if not self.source_set:
-                if path_exists:
-                    self.source #Set the source.      
-            return path_exists
+            if self.base == ".":
+                return False
+            else:
+                path_exists = self.path.exists()
+                if not self.source_set:
+                    if path_exists:
+                        self.source #Set the source.      
+                return path_exists
 
 
     @property

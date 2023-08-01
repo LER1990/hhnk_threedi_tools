@@ -7,9 +7,7 @@ Klaarzetten van de landgebruiksrasters.
 # %%
 import threedi_scenario_downloader.downloader as dl
 import os
-import geopandas as gpd
 from osgeo import gdal
-import getpass
 import numpy as np
 # from functions.create_folders_dict import create_folders_dict_wss
 # import functions.wsa_tools as wsa #general tools used across all scripts

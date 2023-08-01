@@ -1,11 +1,6 @@
 
 # %%
-
-# if __name__ == "__main__":
-#     import set_local_paths  # add local git repos.
-
 from pathlib import Path
-import importlib.resources as pkg_resources  # Load resource from package
 
 
 import hhnk_research_tools as hrt

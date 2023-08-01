@@ -2,13 +2,6 @@
 import sys
 from pathlib import Path
 import os
-#add hhnk_schadeschatter parent folder to path.
-if str(Path(os.getcwd()).parent.parent) not in sys.path:
-    sys.path.append(str(Path(os.getcwd()).parent.parent))
-
-import hhnk_schadeschatter.local_settings as local_settings
-local_settings.fix_path() #add an remove some paths from sys.path.
-
 
 import importlib
 import hhnk_threedi_tools as htt
@@ -24,9 +17,9 @@ import geopandas as gpd
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-import hhnk_schadeschatter.functions.wss_loading as wss_loading
-import hhnk_schadeschatter.functions.wss_calculations as wss_calculations
-import hhnk_schadeschatter.functions.wss_main as wss_main
+import hhnk_research_tools.waterschadeschatter.wss_loading as wss_loading
+import hhnk_research_tools.waterschadeschatter.wss_calculations as wss_calculations
+import hhnk_research_tools.waterschadeschatter.wss_main as wss_main
 
 importlib.reload(wss_main)
 importlib.reload(wss_loading)

@@ -70,12 +70,12 @@ class Grid:
 
         if not grid_folder and (sqlite_path and dem_path):
             self.grid_dir = tempfile.TemporaryDirectory()
-            self.folder = self.grid_dir.name
-            make_gridadmin(sqlite_path, dem_path, self.folder + "/gridadmin.h5") 
+            self.folder = hrt.Folder(self.grid_dir.name)
+            make_gridadmin(sqlite_path, dem_path, self.folder.path / "gridadmin.h5") 
         
         if self.folder.exists():
-            self.admin_path = self.folder / "gridadmin.h5"
-            self.grid_path = self.folder / "results_3di.nc"
+            self.admin_path = self.folder.path / "gridadmin.h5"
+            self.grid_path = self.folder.path / "results_3di.nc"
             
             if self.grid_path.exists():
                 self.grid = GridH5ResultAdmin(str(self.admin_path), str(self.grid_path))

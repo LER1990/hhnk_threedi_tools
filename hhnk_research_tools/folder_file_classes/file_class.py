@@ -20,7 +20,7 @@ class File():
     def __init__(self, base):
         self.path = Path(str(base))
 
-
+    #Path properties
     @property
     def base(self): #full path to file
         return self.path.as_posix()
@@ -33,6 +33,12 @@ class File():
     @property
     def suffix(self):
         return self.path.suffix
+    def unlink(self, missing_ok=True):
+        self.path.unlink(missing_ok=missing_ok)
+    @property
+    def parent(self):
+        return self.path.parent
+    
 
     def read_json(self):
         if self.path.suffix==".json":
