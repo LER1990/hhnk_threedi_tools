@@ -74,3 +74,6 @@ functions: {get_functions(self)}
 variables: {get_variables(self)}
 """
         return repr_str
+
+    def view_name_with_parents(self, parents=0):
+        return self.base.split(self.path.parents[parents].as_posix())[-1]

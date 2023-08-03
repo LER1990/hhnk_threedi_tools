@@ -10,8 +10,6 @@ from hhnk_research_tools.folder_file_classes.sqlite_class import Sqlite
 import types
 
 
-#TODO refactor en alle classes los behandelen.
-
 
 class Folder():
     """Base folder class for creating, deleting and see if folder exists"""
@@ -33,7 +31,11 @@ class Folder():
     @property
     def name(self):
         return self.path.name
+    @property
+    def parent(self):
+        return self.path.parent
 
+    #TODO is deze nog nodig??
     @property
     def structure(self):
         return ""

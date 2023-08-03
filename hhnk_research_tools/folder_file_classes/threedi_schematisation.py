@@ -100,6 +100,9 @@ class ThreediSchematisation(Folder):
                 table_name="v2_simple_infiltration", col_name="infiltration_rate_file"
             )
 
+            #Waterschadeschatter required 50cm resolution.
+            self.dem_50cm = Raster(self.dem.path.with_stem("dem_50cm"))
+
             landuse = [i for i in self.path.glob("landuse_*.tif")]
             if len(landuse)==0:
                 landuse = [""]

@@ -11,7 +11,7 @@ from shapely import geometry
 from pathlib import Path
 
 import hhnk_research_tools as hrt
-from hhnk_research_tools.folder_file_classes.file_class import File
+from hhnk_research_tools.folder_file_classes.file_class import File, get_functions, get_variables
 
 
 
@@ -320,14 +320,24 @@ class Raster(File):
 
     def __repr__(self):
         if self.exists():
-            return f"""{self.__class__}
-    Source: {self.base}, exists:{self.exists()}
-    Shape: {self.metadata.shape}
-    Pixelsize: {self.metadata.pixel_width}"""
-        else:
-            return f"""{self.__class__}
-    Source: {self.base}, exists:{self.exists()}"""
+            return f"""{self.path.name} @ {self.path}
+exists: {self.exists()}
+type: {type(self)}
+shape: {self.metadata.shape}
+pixelsize: {self.metadata.pixel_width}
 
+functions: {get_functions(self)}
+variables: {get_variables(self)}
+"""
+
+        else:
+            return f"""{self.path.name} @ {self.path}
+exists: {self.exists()}
+type: {type(self)}
+
+functions: {get_functions(self)}
+variables: {get_variables(self)}
+"""
 
     def create(self, metadata, nodata, verbose=False, overwrite=False):
         """Create empty raster
