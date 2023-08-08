@@ -5,7 +5,7 @@ Controle van de resultaten. Vergeleken met de resultaten uit de WSS van STOWA en
 """
 
 import xarray 
-import threedi_raster_edits as tre
+# import threedi_raster_edits as tre
 from hhnk_threedi_tools import Folders
 import geopandas as gpd
 import numpy as np
