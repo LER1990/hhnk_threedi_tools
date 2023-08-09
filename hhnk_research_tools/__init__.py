@@ -43,6 +43,7 @@ from hhnk_research_tools.general_functions import (
     load_source,
     get_uuid,
     get_pkg_resource_path,
+    dict_to_class,
 )
 
 from hhnk_research_tools.raster_functions import (
