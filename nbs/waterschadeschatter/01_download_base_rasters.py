@@ -12,12 +12,15 @@ import numpy as np
 # from functions.create_folders_dict import create_folders_dict_wss
 # import functions.wsa_tools as wsa #general tools used across all scripts
 import hhnk_research_tools as hrt
-from local_settings import API_KEY
 # %%
 # this allows GDAL to throw Python Exceptions
 gdal.UseExceptions()
 
-dl.set_api_key(API_KEY)
+
+api_keys_path = fr"{os.getenv('APPDATA')}\3Di\QGIS3\profiles\default\python\plugins\hhnk_threedi_plugin\api_key.txt"}
+api_keys = hrt.read_api_file(api_keys_path)
+dl.set_api_key(api_key=api_keys["lizard"])
+
 
 #uuid of raster
 uuids={}

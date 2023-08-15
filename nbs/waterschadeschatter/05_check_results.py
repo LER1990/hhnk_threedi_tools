@@ -13,6 +13,8 @@ import numpy as np
 from hhnk_threedi_tools.core.result_rasters.netcdf_to_gridgpkg import ThreediGrid
 from hhnk_threedi_tools.core.result_rasters.calculate_raster import BaseCalculatorGPKG
 
+import hhnk_research_tools.waterschadeschatter.wss_main as wss_main
+
 
 #User input
 folder_path = r"E:\02.modellen\23_Katvoed"
@@ -74,7 +76,6 @@ schadeschatter_path = Path(r"E:\01.basisgegevens\hhnk_schadeschatter")
 import sys
 if str(schadeschatter_path) not in sys.path:
     sys.path.append(str(schadeschatter_path))
-import hhnk_schadeschatter as hhnk_wss
 
 
 
@@ -93,7 +94,7 @@ wss_settings = {'inundation_period': 48, #uren
                 'dmg_type':'gem'}
 
 #Calculation
-self = hhnk_wss.wss_main.Waterschadeschatter(depth_file=depth_file, 
+self = wss_main.Waterschadeschatter(depth_file=depth_file, 
                         landuse_file=landuse_file, 
                         wss_settings=wss_settings)
 
@@ -164,7 +165,7 @@ pixel_factor = self.depth_raster.pixelarea
 
 
 # %%
-
+YES=True
 # damage_local_lizard_settings
 STATISTICS_APPROXIMATE=YES
 STATISTICS_MAXIMUM=78.963439941406

@@ -48,18 +48,6 @@ class Folder():
         # else:
         #     return []
 
-
-    #TODO name uitfaseren. dit is stem. 
-    # @property
-    # def name(self):
-    #     return self.stem
-
-    #TODO uitfaseren, dit is .path.name
-    # @property
-    # def folder(self):
-    #     return self.path.name
-        # return os.path.basename(self.base)
-
     def exists(self):
         """dont return true on empty path."""
         if self.base == ".":
@@ -75,11 +63,6 @@ class Folder():
             return str(self.path)
         else:
             return None
-
-    #TODO uitfaseren, is dit nodig?
-    @property
-    def show(self):
-        print(self.__repr__())
 
 
     def create(self, parents=False, verbose=False):
@@ -215,6 +198,7 @@ class FileGDB(File):
 f"""{self.path.name} @ {self.path}
 exists: {self.exists()}
 type: {type(self)}
+
 functions: {get_functions(self)}
 variables: {get_variables(self)}
 layers (access through .layers): {self.layerlist}"""

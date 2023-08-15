@@ -2,7 +2,6 @@
 from osgeo import gdal
 import os
 
-
 import hhnk_research_tools as hrt
 import hhnk_research_tools.waterschadeschatter.wss_calculations as wss_calculations
 import hhnk_research_tools.waterschadeschatter.wss_loading as wss_loading
