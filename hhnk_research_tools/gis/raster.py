@@ -71,7 +71,10 @@ class Raster(File):
     def get_array(self, window=None, band_count=None):
         try:
             if band_count is None:
+                print("dafuq")
                 band_count = self.band_count
+                print(band_count)
+                print(f"self bc {self._band_count}")
 
             gdal_src = self.open_gdal_source_read()
             if band_count == 1:
@@ -89,7 +92,7 @@ class Raster(File):
                 raster_array = np.dstack((red_array, green_array, blue_array))
             else:
                 raise ValueError(
-                    f"Unexpected number of bands in raster {self.base} (expect 1 or 3)"
+                    f"Unexpected number of bands in raster {self.base} (got {band_count}, expected 1 or 3)"
                 )
             self._array = raster_array
             return raster_array
@@ -100,17 +103,21 @@ class Raster(File):
 
     @property
     def source(self):
-        if not self.source_set:
-            self.source=True #call source.setter
-            return self.open_gdal_source_read()
+        if super().exists():
+            if not self.source_set:
+                self.source=True #call source.setter
+                return self.open_gdal_source_read()
+            else:
+                return self.open_gdal_source_read()
         else:
-            return self.open_gdal_source_read()
+            return False
+        
     @source.setter
     def source(self, value):
         """If source does not exist it will not be set.
         Bit clunky. But it should work that if it exists it will only be set once. 
         Otherwise it will not set.  """
-        if self.path.exists(): #cannot use self.exists here.
+        if super().exists(): #cannot use self.exists here.
             #Needs to be first otherwise we end in a loop when settings metadata/nodata/band_count
             self.source_set=True 
             # print(f"setting source {self.file_path}")
@@ -120,6 +127,7 @@ class Raster(File):
             self._metadata = RasterMetadata(gdal_src=gdal_src)
             self._nodata = gdal_src.GetRasterBand(1).GetNoDataValue()
             self._band_count = gdal_src.RasterCount
+            print(f"bc {self._band_count}")
 
 
     def open_gdal_source_read(self):
@@ -145,17 +153,17 @@ class Raster(File):
 
 
     def exists(self):
-        if self.source_set: #check this first for speed.
-            return True
-        else:
-            if self.base == ".":
-                return False
+        file_exists = super().exists()
+
+        if file_exists:
+            if self.source_set: #check this first for speed.
+                return True
             else:
-                path_exists = self.path.exists()
-                if not self.source_set:
-                    if path_exists:
-                        self.source #Set the source.      
-                return path_exists
+                self.source
+        else:
+            if self.source_set:
+                self.source_set = False
+            return False
 
 
     @property
@@ -165,6 +173,7 @@ class Raster(File):
         
     @property
     def band_count(self):
+        print(f"{self.exists()}")
         if self.exists():
             return self._band_count
 
@@ -355,11 +364,8 @@ variables: {get_variables(self)}
 
         #Reset source, if raster is deleted and recreated with different resolution
         #this would otherwise cause issues. 
-        self.source_set=None
-        self.source=None
-
-
-        self.exists() #Update raster now it exists
+        self.source_set=False
+        self.source=None #Update raster now it exists
 
 
     def sum(self):

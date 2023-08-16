@@ -1,22 +1,15 @@
 
 # %%
-if __name__ == "__main__":
-    import set_local_paths  # add local git repos.
-
 from pathlib import Path
-import importlib.resources as pkg_resources  # Load resource from package
 import numpy as np
 import pytest
-import time
 import hhnk_research_tools as hrt
-import types
 
 print(hrt.__file__)
 from hhnk_research_tools.gis.raster import Raster
 from tests_hrt.config import TEST_DIRECTORY, TEMP_DIR
 
-
-# %%        
+    
 class TestRaster:
 
     raster = Raster(TEST_DIRECTORY/r"depth_test.tif")
