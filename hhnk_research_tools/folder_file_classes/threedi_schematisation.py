@@ -101,12 +101,13 @@ class ThreediSchematisation(Folder):
             )
 
             #Waterschadeschatter required 50cm resolution.
-            self.dem_50cm = Raster(self.dem.path.with_stem("dem_50cm"))
+            self.dem_50cm = self.full_path("dem_50cm.tif")
+            
 
             landuse = [i for i in self.path.glob("landuse_*.tif")]
             if len(landuse)==0:
                 landuse = [""]
-            self.landuse = File(landuse[0])
+            self.landuse = File(landuse[0])            
 
 
         def get_raster_path(self, table_name, col_name):
@@ -142,6 +143,7 @@ class ThreediSchematisation(Folder):
     friction - {self.friction.name}
     infiltration - {self.infiltration.name}
     landuse - {self.landuse.name}
+    dem_50cm - {self.dem_50cm.name}
 """
 
 
