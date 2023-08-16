@@ -71,10 +71,7 @@ class Raster(File):
     def get_array(self, window=None, band_count=None):
         try:
             if band_count is None:
-                print("dafuq")
                 band_count = self.band_count
-                print(band_count)
-                print(f"self bc {self._band_count}")
 
             gdal_src = self.open_gdal_source_read()
             if band_count == 1:
@@ -127,7 +124,6 @@ class Raster(File):
             self._metadata = RasterMetadata(gdal_src=gdal_src)
             self._nodata = gdal_src.GetRasterBand(1).GetNoDataValue()
             self._band_count = gdal_src.RasterCount
-            print(f"bc {self._band_count}")
 
 
     def open_gdal_source_read(self):
@@ -159,7 +155,8 @@ class Raster(File):
             if self.source_set: #check this first for speed.
                 return True
             else:
-                self.source
+                self.source #set source
+                return True
         else:
             if self.source_set:
                 self.source_set = False
@@ -173,7 +170,6 @@ class Raster(File):
         
     @property
     def band_count(self):
-        print(f"{self.exists()}")
         if self.exists():
             return self._band_count
 
