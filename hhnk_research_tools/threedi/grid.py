@@ -57,7 +57,7 @@ class Grid:
         from threedigrid.admin.gridadmin import GridH5Admin
         from threedigrid.admin.gridresultadmin import GridH5ResultAdmin
         from threedigrid_builder import make_gridadmin
-        self.folder = grid_folder
+        self.folder = hrt.Folder(grid_folder)
         self.sqlite_path = sqlite_path
         self.dem_path = dem_path
         
