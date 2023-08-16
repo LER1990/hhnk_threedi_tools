@@ -40,9 +40,7 @@ type_col = "type"
 
 
 # Third-party imports
-from threedigrid.admin.gridadmin import GridH5Admin
-from threedigrid.admin.gridresultadmin import GridH5ResultAdmin
-from threedigrid_builder import make_gridadmin
+
 
 
 
@@ -54,8 +52,12 @@ def _write_grid_to_file(grid, grid_type, output_path):
     
 class Grid:
     def __init__(self, grid_folder=None, sqlite_path=None, dem_path=None):
-        
-        self.folder = hrt.Folder(grid_folder)
+        #moved imports here because gridbuilder has h5py issues
+        #TODO gridadmin should be loaded from ThreediResult
+        from threedigrid.admin.gridadmin import GridH5Admin
+        from threedigrid.admin.gridresultadmin import GridH5ResultAdmin
+        from threedigrid_builder import make_gridadmin
+        self.folder = grid_folder
         self.sqlite_path = sqlite_path
         self.dem_path = dem_path
         

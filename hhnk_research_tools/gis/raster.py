@@ -206,20 +206,29 @@ class Raster(File):
                 }
 
 
-    def generate_blocks(self) -> pd.DataFrame:
+    def generate_blocks(self, blocksize_from_source: bool = False) -> pd.DataFrame:
         """Generate blocks with the blocksize of the band. 
-        These blocks can be used as window to load the raster iteratively."""
-        gdal_src = self.open_gdal_source_read()
-        band = gdal_src.GetRasterBand(1)
+        These blocks can be used as window to load the raster iteratively.
+        from_source (bool): read
+        """
+        
+        if blocksize_from_source:
+            gdal_src = self.open_gdal_source_read()
+            band = gdal_src.GetRasterBand(1)
+            block_height, block_width = band.GetBlockSize()
+            band.FlushCache()  # close file after writing
+            band = None
+        else:
+            block_height = 0
+            block_width = 0
 
-        block_height, block_width = band.GetBlockSize()
 
         if (block_height < self.min_block_size) or (block_width < self.min_block_size):
             block_height=self.min_block_size
             block_width=self.min_block_size
 
-        ncols = int(np.floor(band.XSize / block_width))
-        nrows = int(np.floor(band.YSize / block_height))
+        ncols = int(np.floor(self.metadata.x_res / block_width))
+        nrows = int(np.floor(self.metadata.y_res / block_height))
 
 
         #Create arrays with index of where windows end. These are square blocks. 
@@ -244,8 +253,7 @@ class Raster(File):
 
         blocks_df['window_readarray'] = blocks_df['window'].apply(lambda x: [int(x[0]), int(x[1]), int(x[2]-x[0]), int(x[3]-x[1])])
 
-        band.FlushCache()  # close file after writing
-        band = None
+
 
         self.blocks=blocks_df
         return blocks_df
@@ -344,7 +352,7 @@ functions: {get_functions(self)}
 variables: {get_variables(self)}
 """
 
-    def create(self, metadata, nodata, verbose=False, overwrite=False):
+    def create(self, metadata, nodata, datatype=None, create_options=None, verbose=False, overwrite=False):
         """Create empty raster
         metadata : RasterMetadata instance
         nodata: int
@@ -355,6 +363,8 @@ variables: {get_variables(self)}
         target_ds = hrt.create_new_raster_file(file_name=self.path,
                                                 nodata=nodata,
                                                 meta=metadata,
+                                                datatype=datatype,
+                                                create_options=create_options,
                                                 overwrite=overwrite,)
         target_ds = None
 
@@ -431,14 +441,22 @@ class RasterMetadata():
     def bounds(self):
         return [self.x_min, self.x_max, self.y_min, self.y_max]
 
+    #TODO deprecated. Remove in future release.
     @property
     def bounds_dl(self):
+        """Lizard v3 bounds"""
+        raise Exception("use .bbox instead. lizard v4 api no longer suppers bounds_dl")
         return {
             "west": self.x_min,
             "south": self.y_min,
             "east": self.x_max,
             "north": self.y_max,
         }
+
+    @property
+    def bbox(self):
+        """Lizard v4 bbox; x1, y1, x2, y2"""
+        return f"{self.x_min}, {self.y_min}, {self.x_max}, {self.y_max}"
 
     @property
     def shape(self):

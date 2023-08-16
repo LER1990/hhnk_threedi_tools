@@ -104,8 +104,11 @@ def get_uuid(chars=8):
 def get_pkg_resource_path(package_resource, name) -> Path:
     """return path to resource in a python package, so it can be loaded"""
     with pkg_resources.path(package_resource, name) as p:
-        return p
+        return p.absolute().as_posix()
     
 
-
-
+class dict_to_class(dict):
+    """dot.notation access to dictionary attributes"""
+    __getattr__ = dict.get
+    __setattr__ = dict.__setitem__
+    __delattr__ = dict.__delitem__

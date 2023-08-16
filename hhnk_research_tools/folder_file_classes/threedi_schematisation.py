@@ -9,9 +9,6 @@ from hhnk_research_tools.gis.raster import Raster
 from hhnk_research_tools.folder_file_classes.file_class import File
 
 # Third-party imports
-from threedigrid.admin.gridadmin import GridH5Admin
-from threedigrid.admin.gridresultadmin import GridH5ResultAdmin
-
 
 class ThreediSchematisation(Folder):
     """Threedi model/schematisation.
@@ -99,7 +96,10 @@ class ThreediSchematisation(Folder):
             self.infiltration = self.get_raster_path(
                 table_name="v2_simple_infiltration", col_name="infiltration_rate_file"
             )
-
+            self.initial_wlvl_2d = self.get_raster_path(
+                table_name="v2_global_settings", col_name="initial_waterlevel_file"
+            )
+            
             #Waterschadeschatter required 50cm resolution.
             self.dem_50cm = self.full_path("dem_50cm.tif")
             
@@ -143,6 +143,7 @@ class ThreediSchematisation(Folder):
     friction - {self.friction.name}
     infiltration - {self.infiltration.name}
     landuse - {self.landuse.name}
+    initial_wlvl_2d - {self.initial_wlvl_2d.name}
     dem_50cm - {self.dem_50cm.name}
 """
 
@@ -150,8 +151,8 @@ class ThreediSchematisation(Folder):
 class ThreediResult(Folder):
     """Result of threedi simulation. Base files are .nc and .h5.
     Use .grid to access GridH5ResultAdmin and .admin to access GridH5Admin"""
-
     def __init__(self, base, create=False):
+
         super().__init__(base, create=create)
 
         # Files
@@ -159,11 +160,14 @@ class ThreediResult(Folder):
         self.add_file("admin_path", "gridadmin.h5")
 
     @property
-    def grid(self):
+    def grid(self):    
+        #moved imports here because gridbuilder has h5py issues
+        from threedigrid.admin.gridresultadmin import GridH5ResultAdmin
         return GridH5ResultAdmin(self.admin_path.base, self.grid_path.base)
 
     @property
     def admin(self):
+        from threedigrid.admin.gridadmin import GridH5Admin
         return GridH5Admin(self.admin_path.base)
 
 

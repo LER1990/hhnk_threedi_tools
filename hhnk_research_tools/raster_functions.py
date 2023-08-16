@@ -137,6 +137,8 @@ def gdf_to_raster(
         if type(raster_out) == Raster:
             raster_out=raster_out.path
 
+
+        gdf = gdf[[value_field, "geometry"]] #filter unnecessary columns
         ogr_ds, polygon = _gdf_to_ogr(gdf, epsg)
         # make sure folders exist
         if raster_out != '': #empty str when driver='MEM'
@@ -209,6 +211,8 @@ def create_new_raster_file(
     [f"COMPRESS=LERC_ZSTD", f"TILED=True", "PREDICTOR=2", "ZSTD_LEVEL=1", "MAX_Z_ERROR=0.001"]
     """
     try:
+        if datatype is None:
+            datatype=GDAL_DATATYPE
         if create_options is None:
             # if datatype==gdal.GDT_Float32:
             # options=[f"COMPRESS=LERC_DEFLATE", f"TILED=YES", "PREDICTOR=2", "ZSTD_LEVEL=1", "MAX_Z_ERROR=0.001"]
@@ -309,8 +313,9 @@ def build_vrt(raster_folder, vrt_name='combined_rasters', bandlist=[1], bounds=N
                                        addAlpha=False,
                                        outputBounds=bounds,
                                        bandList=bandlist,)
-
-    ds = gdal.BuildVRT(str(output_path), tifs_list, options=vrt_options)
+    ds = gdal.BuildVRT(destName=str(output_path), 
+                       srcDSOrSrcDSTab=tifs_list, 
+                       options=vrt_options)
     ds.FlushCache()
 
     if not output_path.exists():
@@ -320,9 +325,13 @@ def build_vrt(raster_folder, vrt_name='combined_rasters', bandlist=[1], bounds=N
 def create_meta_from_gdf(gdf, res) -> dict:
     """Create metadata that can be used in raster creation based on gdf bounds. 
     Projection is 28992 default, only option.""" 
-    gdf_local=gdf.copy()
-    gdf_local['temp'] = 0
-    bounds_dict = gdf_local.dissolve('temp').bounds.iloc[0]
+    gdf_local=gdf[["geometry"]].copy()
+    bounds = gdf_local.bounds
+    bounds_dict={"minx":np.round(bounds["minx"].min(),4), 
+                "miny":np.round(bounds["miny"].min(),4),
+                "maxx":np.round(bounds["maxx"].max(),4),
+                "maxy":np.round(bounds["maxy"].max(),4),
+    }
     return RasterMetadata(res=res, bounds_dict=bounds_dict)
 
 
@@ -336,7 +345,9 @@ def dx_dy_between_rasters(meta_big, meta_small):
                 meta_big   = {meta_big.pixel_width}m
                 meta_small = {meta_small.pixel_width}m""")
 
-    dx_min = max(0, int((meta_small.x_min-meta_big.x_min)/meta_big.pixel_width))
+    #FIXME waarom stond dit op max(0, x) en geeft dan geen verdere problemen?
+    # dx_min = max(0, int((meta_small.x_min-meta_big.x_min)/meta_big.pixel_width))
+    dx_min = int((meta_small.x_min-meta_big.x_min)/meta_big.pixel_width)
     dy_min = int((meta_big.y_max-meta_small.y_max)/meta_big.pixel_width)
 
     if dx_min < 0:
@@ -493,3 +504,29 @@ def reproject(src:Raster, target_res:float, output_path:str):
         if dst_ds is not None:
             gdal.ReprojectImage(src_ds, dst_ds, src_wkt='EPSG:28992')
         
+
+def hist_stats(histogram: dict, stat_type: str, ignore_keys=[0]):
+    """
+    histogram (dict): histogram of raster built with np.unique(block_arr, return_counts=True)
+    stat_type (str): statistics to calculate. Options are;
+        ["median"]
+    ignore_key (float/int/str): use this to remove the nodata value from hist
+    
+    calc median of a histogram. To create a hist per label, see example in 
+    nbs/sample_histogram_median.
+    """
+         
+    total = 0
+    for key in ignore_keys:
+        histogram.pop(key, None) #dont use 0 values in median calc
+
+    #No values left, all values are nodata.
+    if histogram == {}:
+        return np.nan
+
+    if stat_type=="median":
+        median_index = (sum(histogram.values()) + 1) / 2
+        for value in sorted(histogram.keys()):
+            total += histogram[value]
+            if total >= median_index:
+                return value
