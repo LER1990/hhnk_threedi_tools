@@ -1,6 +1,7 @@
 # %%
 
-
+levee_id_col = "levee_id"
+levee_height_col = "levee_height"
 
 class ThreediResultLoader:
     def __init__(self, grid):
