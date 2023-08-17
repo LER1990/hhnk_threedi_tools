@@ -7,6 +7,7 @@ from hhnk_research_tools.folder_file_classes.folder_file_classes import Folder
 from hhnk_research_tools.folder_file_classes.sqlite_class import Sqlite
 from hhnk_research_tools.gis.raster import Raster
 from hhnk_research_tools.folder_file_classes.file_class import File
+from hhnk_research_tools.threedi.threediresult_loader import ThreediResultLoader
 
 # Third-party imports
 
@@ -158,6 +159,7 @@ class ThreediResult(Folder):
         self.add_file("grid_path", "results_3di.nc")
         self.add_file("admin_path", "gridadmin.h5")
 
+        
     @property
     def grid(self):    
         #moved imports here because gridbuilder has h5py issues
@@ -168,6 +170,11 @@ class ThreediResult(Folder):
     def admin(self):
         from threedigrid.admin.gridadmin import GridH5Admin
         return GridH5Admin(self.admin_path.base)
+    
+    @property
+    def load(self):
+        return ThreediResultLoader(self.grid)
+    
 
 
 class RevisionsDir(Folder):
