@@ -39,6 +39,12 @@ class File():
     def parent(self):
         return self.path.parent
     
+    #TODO remove in future release
+    @property
+    def pl(self):
+        import warnings
+        warnings.warn(".pl is deprecated and will be removed in a future release. Please use .path instead", DeprecationWarning, stacklevel=2)
+        return self.path
 
     def read_json(self):
         if self.path.suffix==".json":

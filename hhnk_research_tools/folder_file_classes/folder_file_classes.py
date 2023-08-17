@@ -24,7 +24,13 @@ class Folder():
         if create:
             self.create(parents=False)
 
-
+    #TODO remove in future release
+    @property
+    def pl(self):
+        import warnings
+        warnings.warn(".pl is deprecated and will be removed in a future release. Please use .path instead", DeprecationWarning, stacklevel=2)
+        return self.path
+    
     @property
     def base(self):
         return self.path.as_posix()

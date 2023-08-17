@@ -133,7 +133,6 @@ class ThreediSchematisation(Folder):
                     raster_path = self.caller.full_path(raster_name)
             else:
                 raster_path = ""
-            #TODO check if hrt.Raster return is possible
             return Raster(raster_path)
 
 

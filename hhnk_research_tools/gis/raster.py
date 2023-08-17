@@ -46,7 +46,7 @@ class Raster(File):
         x0, y0 is left top corner!!"""
         if band == None:
             gdal_src = self.open_gdal_source_read()
-            band = gdal_src.GetRasterBand(1) #TODO band is not closed properly
+            band = gdal_src.GetRasterBand(1)
 
         if window is not None:
             # raster_array = band.ReadAsArray(
