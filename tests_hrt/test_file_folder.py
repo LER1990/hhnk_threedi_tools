@@ -16,20 +16,17 @@ if __name__ == "__main__": #check if python is configed correctly
     print(hrt.__file__)
 from tests_hrt.config import TEMP_DIR
 
+#TODO tests uitbreiden
+def test_file():
+    file_path = TEMP_DIR/f"test_{hrt.get_uuid()}.txt"
+    file_path.write_text("test")
 
-# def test_file():
-file_path = TEMP_DIR/f"test_{hrt.get_uuid()}.txt"
-file_path.write_text("test")
+    file = fcl.File(file_path)
+    assert file.exists() == True
 
-file = fcl.File(file_path)
-# f.parent.files
-
-
-
-
-
-# def test_folder():
-folder = ffcl.Folder(TEMP_DIR)
-folder
+def test_folder():
+    folder = ffcl.Folder(TEMP_DIR)
+    
+    assert folder.exists() == True
 
 # %%
