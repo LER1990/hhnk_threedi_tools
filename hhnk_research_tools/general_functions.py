@@ -8,6 +8,7 @@ from uuid import uuid4
 
 
 def ensure_file_path(filepath):
+    #TODO add to file class? still needed?
     """
     Functions makes sure all folders in a given file path exist. Creates them if they don't.
     """
