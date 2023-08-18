@@ -3,7 +3,7 @@ from threedi_api_client.openapi import ApiException
 import time
 
 
-def _call_threedi_api(func, max_retries=60, **kwargs):
+def call_threedi_api(func, max_retries=60, **kwargs):
     """add something to simulation, if apiexcetion is raised sleep on it and try again."""
     
     for i in range(max_retries):

@@ -10,7 +10,7 @@ from hhnk_research_tools.threedi.read_api_file import (
     read_api_file
 )  
 from hhnk_research_tools.threedi.call_api import (
-    _call_threedi_api
+    call_threedi_api
 )
 
 from hhnk_research_tools.waterschadeschatter.wss_main import Waterschadeschatter
