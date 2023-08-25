@@ -35,8 +35,11 @@ def calculate_damage(caller, #wss_main.Waterschadeschatter,
     depth_mask = depth_block==caller.depth_raster.nodata
 
     index_boven = np.searchsorted(xp, depth_block, side='left')
-    index_boven[depth_mask] = 1 #Tijdelijke oplossing om de berekening wel te kunnen maken. Gamma_inundatiediepte worden later voor dit masker ook op 0 gezet.
 
+    mask_nan = index_boven==len(xp)
+
+    index_boven[depth_mask] = 1 #Tijdelijke oplossing om de berekening wel te kunnen maken. Gamma_inundatiediepte worden later voor dit masker ook op 0 gezet.
+    index_boven[mask_nan] = 1 #nan waarden krijgen een andere waarde mee.
     index_onder=index_boven.copy()-1
 
     #Stacked array zijn de gamma waarden van de inundatiediepte. Heeft dezelfde vorm als depth_block.
@@ -61,6 +64,7 @@ def calculate_damage(caller, #wss_main.Waterschadeschatter,
 
     gamma_inundatiediepte[mask] = y1[mask]
     gamma_inundatiediepte[depth_mask] = np.nan
+    gamma_inundatiediepte[mask_nan] = np.nan
 
     #Indirecte schade telt alleen bij inundatiediepte >0
     mask_indirect = depth_block<=0
