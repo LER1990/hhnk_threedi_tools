@@ -5,40 +5,16 @@ Hhnk wss is de cfg zoals gebruikt in 2020 bij opnieuw afleiden van schadecurven.
 
 """
 
-import sys
-sys.path.append('../..')
-
-rmve_paths = ['C:/Users/wvangerwen/AppData/Roaming/QGIS/QGIS3/profiles/default/python/plugins/hhnk_threedi_plugin/external-dependencies','C:/Users/wvangerwen/AppData/Roaming/QGIS/QGIS3/profiles/default/python']
-for rm in rmve_paths:
-    if rm in sys.path:
-        sys.path.remove(rm)
-
-import hhnk_schadeschatter.local_settings as local_settings
-if local_settings.DEBUG:
-    sys.path.insert(0, local_settings.hhnk_threedi_tools_path)
-    sys.path.insert(0, local_settings.hhnk_research_tools_path)
-
-    import importlib
-    import hhnk_threedi_tools as htt
-    import hhnk_research_tools as hrt
-    htt=importlib.reload(htt)
-    hrt=importlib.reload(hrt)
-    importlib.reload(htt.core.folders)
-
-
 import importlib
-import hhnk_threedi_tools as htt
-import hhnk_research_tools as hrt
 
-import geopandas as gpd
 import pandas as pd
 import os
 import numpy as np
 import matplotlib.pyplot as plt
-import hhnk_schadeschatter.functions.wss_loading as wss_loading
-import hhnk_schadeschatter.functions.wss_calculations as wss_calculations
-import hhnk_schadeschatter.functions.wss_main as wss_main
-import hhnk_schadeschatter.functions.add_to_hrt as hrt_temp
+import hhnk_research_tools.waterschadeschatter.wss_loading as wss_loading
+import hhnk_research_tools.waterschadeschatter.wss_calculations as wss_calculations
+import hhnk_research_tools.waterschadeschatter.wss_main as wss_main
+
 
 importlib.reload(wss_main)
 importlib.reload(wss_loading)
@@ -47,7 +23,6 @@ importlib.reload(wss_calculations)
 from osgeo import gdal
 gdal.UseExceptions()
 
-from pathlib import Path
 # %%
 
 cfg_file={}

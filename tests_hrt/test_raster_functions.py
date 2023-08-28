@@ -6,9 +6,9 @@ import numpy as np
 
 import geopandas as gpd
 import hhnk_research_tools as hrt
-from tests_hrt.config import TEST_DIRECTORY, OUTPUT_DIR
+from tests_hrt.config import TEST_DIRECTORY, TEMP_DIR
 
-# %%
+
 class TestRasterFunctions():
 
     gdf = gpd.read_file(TEST_DIRECTORY/r"area_test.gpkg")
@@ -19,7 +19,7 @@ class TestRasterFunctions():
         assert self.meta.bounds == [133613, 133693, 500677, 500757]
 
     def test_gdf_to_raster_and_reproject(self):
-        output_raster = hrt.Raster(OUTPUT_DIR/f"gdf_to_raster_{hrt.get_uuid()}.tif")
+        output_raster = hrt.Raster(TEMP_DIR/f"gdf_to_raster_{hrt.get_uuid()}.tif")
         #gdf_to_raster
         arr = hrt.gdf_to_raster(gdf=self.gdf,
                           value_field="id",
@@ -31,7 +31,7 @@ class TestRasterFunctions():
         assert arr.shape == (2, 2)
 
         #reproject
-        output_raster_reproject = hrt.Raster(output_raster.pl.with_stem(f"reproject_{hrt.get_uuid()}"))
+        output_raster_reproject = hrt.Raster(output_raster.path.with_stem(f"reproject_{hrt.get_uuid()}"))
         hrt.reproject(src=output_raster,
                       target_res=20,
                       output_path=output_raster_reproject.path)
@@ -50,8 +50,8 @@ class TestRasterFunctions():
 
 
     def test_save_raster_array_to_tiff_vrt(self):
-        output_folder = hrt.Folder(OUTPUT_DIR/f"vrt_test", create=True)
-        output_file = output_folder.pl/f"save_raster_array_to_tiff_{hrt.get_uuid()}.tif"
+        output_folder = hrt.Folder(TEMP_DIR/f"vrt_test", create=True)
+        output_file = output_folder.full_path(f"save_raster_array_to_tiff_{hrt.get_uuid()}.tif")
         arr = np.array([[1,2],[2,3]])
         hrt.save_raster_array_to_tiff(output_file = output_file,
                                         raster_array=arr,

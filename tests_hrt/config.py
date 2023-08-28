@@ -1,12 +1,28 @@
+# %%  
 from pathlib import Path
+import shutil
 import hhnk_research_tools as hrt
-
 
 TEST_DIRECTORY = Path(__file__).parent.absolute() / "data"
 
-OUTPUT_FOLDER = hrt.Folder(TEST_DIRECTORY/r"output", create=True)
 
-hrt.Folder(OUTPUT_FOLDER.pl/"vrt_test").unlink_contents()
-OUTPUT_FOLDER.unlink_contents(rmfiles=True, rmdirs=True)
 
-OUTPUT_DIR = OUTPUT_FOLDER.pl
+# TEMP_DIR = TEST_DIRECTORY/r"temp"
+# if TEMP_DIR.exists():
+#     shutil.rmtree(TEMP_DIR)
+TEMP_DIR = hrt.Folder(TEST_DIRECTORY/r"temp", create=True)
+
+TEMP_DIR.unlink_contents()
+TEMP_DIR = TEMP_DIR.path
+cont=False
+for i in TEMP_DIR.iterdir():
+    if i.is_dir:
+        for dirname in ["batch_test","test_project_","vrt_test"]:
+            if dirname in str(i):
+                cont=True
+
+        if cont:
+            try:
+                shutil.rmtree(i)
+            except:
+                pass

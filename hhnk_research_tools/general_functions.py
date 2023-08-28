@@ -1,13 +1,33 @@
 from pathlib import Path
-from hhnk_research_tools.folder_file_classes.folder_file_classes import FileGDB
 import geopandas as gpd
 import sys
 import importlib
 import importlib.resources as pkg_resources  # Load resource from package
+import inspect
 from uuid import uuid4
 
 
+def get_functions(cls, stringify=True):
+    """Get a string with functions (methods) in a class."""
+    funcs = [f".{i}" for i in dir(cls) if not i.startswith('__') 
+                            and hasattr(inspect.getattr_static(cls,i)
+                            , '__call__')]
+    if stringify:
+        funcs = " ".join(funcs)
+    return funcs
+
+def get_variables(cls, stringify=True):
+    """Get a string with variables (properties) in a class."""
+    variables = [i for i in dir(cls) if not i.startswith('__') 
+                            and not hasattr(inspect.getattr_static(cls,i)
+                            , '__call__')]
+    if stringify:
+        variables = " ".join(variables)
+    return variables
+
+
 def ensure_file_path(filepath):
+    #TODO add to file class? still needed?
     """
     Functions makes sure all folders in a given file path exist. Creates them if they don't.
     """
@@ -18,36 +38,37 @@ def ensure_file_path(filepath):
         raise e from None
 
 
-def convert_gdb_to_gpkg(gdb:FileGDB, gpkg:FileGDB, overwrite=False, verbose=True):
+def convert_gdb_to_gpkg(gdb, gpkg, overwrite=False, verbose=True):
     """Convert input filegdb to geopackage"""
 
-    if gdb.pl.exists():
-        if check_create_new_file(output_file=gpkg.pl, overwrite=overwrite):
+    if gdb.exists():
+        if check_create_new_file(output_file=gpkg, overwrite=overwrite):
             if verbose:
-                print(f"Write gpkg to {gpkg.pl}")
+                print(f"Write gpkg to {gpkg}")
             for layer in gdb.available_layers():
                 if verbose:
                     print(f"    {layer}")
-                gdf = gpd.read_file(str(gdb.pl), layer=layer)
+                gdf = gpd.read_file(str(gdb), layer=layer)
 
-                gdf.to_file(str(gpkg.pl), layer=layer, driver="GPKG")
+                gdf.to_file(str(gpkg), layer=layer, driver="GPKG")
 
 
-def check_create_new_file(output_file:str, overwrite:bool=False, input_files:list=[], allow_emptypath=False) -> bool:
+def check_create_new_file(output_file:str, overwrite:bool=False, input_files:list=[], check_is_file=True) -> bool:
     """
     Check if we should continue to create a new file. 
 
-    output_file:
+    output_file: The file under evaluation
     overwrite: When overwriting is True the output_file will be removed.  
     input_files: if input files are provided the edit time of the input will be 
                  compared to the output. If edit time is after the output, it will
                  recreate the output.
+    check_is_file: check if output_file is a file
     """
     create=False
-    output_file = Path(output_file)
+    output_file = Path(str(output_file))
 
     #Als geen suffix (dus geen file), dan error
-    if not allow_emptypath: #
+    if check_is_file: #
         if not output_file.suffix:
             raise TypeError(f"{output_file} is not a file.")
     
@@ -64,8 +85,9 @@ def check_create_new_file(output_file:str, overwrite:bool=False, input_files:lis
             output_mtime = output_file.stat().st_mtime
 
             for input_file in input_files:
+                input_file = Path(input_file)
                 if input_file.exists():
-                    input_mtime = Path(input_file).stat().st_mtime
+                    input_mtime = input_file.stat().st_mtime
                     
                     if input_mtime > output_mtime:
                         output_file.unlink()
@@ -100,9 +122,10 @@ def get_uuid(chars=8):
     return str(uuid4())[:chars]
 
 
-def get_pkg_resource_path(package_resource, name):
+def get_pkg_resource_path(package_resource, name) -> Path:
+    """return path to resource in a python package, so it can be loaded"""
     with pkg_resources.path(package_resource, name) as p:
-        return p.absolute().as_posix()
+        return p.absolute().resolve()
     
 
 class dict_to_class(dict):

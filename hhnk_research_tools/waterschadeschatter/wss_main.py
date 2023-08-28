@@ -1,8 +1,5 @@
 # %%
 from osgeo import gdal
-import os
-
-
 import hhnk_research_tools as hrt
 import hhnk_research_tools.waterschadeschatter.wss_calculations as wss_calculations
 import hhnk_research_tools.waterschadeschatter.wss_loading as wss_loading
@@ -52,9 +49,9 @@ class Waterschadeschatter():
 
     def validate(self):
         """check if input exists"""
-        for filepath in [self.lu_raster.pl, self.depth_raster.pl]:
-            if not os.path.exists(filepath):
-                raise Exception(f"could not find input file in: {filepath}")
+        for r in [self.lu_raster, self.depth_raster]:
+            if not r.exists():
+                raise Exception(f"could not find input file in: {r}")
 
 
     def get_dmg_table_indices(self):
@@ -75,11 +72,11 @@ class Waterschadeschatter():
         Calculation type options: 'sum','direct','indirect'
         """
 
-        if output_raster.exists:
+        if output_raster.exists():
             if overwrite is False:
                 return
             else:
-                output_raster.pl.unlink()
+                output_raster.unlink()
 
         #Create output raster
         output_raster.create(metadata=self.depth_raster.metadata,

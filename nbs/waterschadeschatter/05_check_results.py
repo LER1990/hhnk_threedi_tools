@@ -4,14 +4,11 @@ Controle van de resultaten. Vergeleken met de resultaten uit de WSS van STOWA en
 
 """
 
-import xarray 
 # import threedi_raster_edits as tre
 from hhnk_threedi_tools import Folders
-import geopandas as gpd
 import numpy as np
 
-from hhnk_threedi_tools.core.result_rasters.netcdf_to_gridgpkg import ThreediGrid
-from hhnk_threedi_tools.core.result_rasters.calculate_raster import BaseCalculatorGPKG
+import hhnk_research_tools.waterschadeschatter.wss_main as wss_main
 
 
 #User input
@@ -29,10 +26,10 @@ threedi_result = folder.threedi_results.one_d_two_d[scenario]
 
 import hhnk_research_tools as hrt
 
-depth_out = hrt.Raster(threedi_result.pl/"depth_local_min_lizard.tif")
+depth_out = threedi_result.full_path("depth_local_min_lizard.tif")
 
-depth_local = hrt.Raster(threedi_result.pl/"wdepth_orig_ahn3.tif")
-depth_lizard = hrt.Raster(threedi_result.pl/"depth_for_lizard_dmg_res0_5m.tif")
+depth_local = threedi_result.full_path("wdepth_orig_ahn3.tif")
+depth_lizard = threedi_result.full_path("depth_for_lizard_dmg_res0_5m.tif")
 
 # %%
 
@@ -74,7 +71,6 @@ schadeschatter_path = Path(r"E:\01.basisgegevens\hhnk_schadeschatter")
 import sys
 if str(schadeschatter_path) not in sys.path:
     sys.path.append(str(schadeschatter_path))
-import hhnk_schadeschatter as hhnk_wss
 
 
 
@@ -83,8 +79,8 @@ import hhnk_schadeschatter as hhnk_wss
 cfg_file = schadeschatter_path/'01_data/cfg/cfg_lizard.cfg'
 landuse_file = schadeschatter_path/'01_data/landuse2019_3di_tiles/combined_rasters.vrt'
 
-depth_file = depth_lizard.source_path
-output_file = threedi_result.pl/"damage_local_lizard_settings.tif"
+depth_file = depth_lizard.path
+output_raster = threedi_result.full_path("damage_local_lizard_settings.tif")
 
 wss_settings = {'inundation_period': 48, #uren
                 'herstelperiode':'10 dagen',
@@ -93,13 +89,13 @@ wss_settings = {'inundation_period': 48, #uren
                 'dmg_type':'gem'}
 
 #Calculation
-self = hhnk_wss.wss_main.Waterschadeschatter(depth_file=depth_file, 
+self = wss_main.Waterschadeschatter(depth_file=depth_file, 
                         landuse_file=landuse_file, 
                         wss_settings=wss_settings)
 
 
 # Berekenen schaderaster
-self.run(output_raster=hrt.Raster(output_file), 
+self.run(output_raster=output_raster, 
             calculation_type="sum", 
             verbose=True, 
             overwrite=False,
@@ -110,9 +106,9 @@ self.run(output_raster=hrt.Raster(output_file),
 
 # %% Verschil schade Lizard en lokaal
 
-damage_local = hrt.Raster(output_file)
-damage_lizard = hrt.Raster(threedi_result.pl/"total_damage_res0_5m.tif")
-diff_out = hrt.Raster(threedi_result.pl/"diff_damage_local_min_lizard_noround.tif")
+damage_local = output_raster
+damage_lizard = threedi_result.full_path("total_damage_res0_5m.tif")
+diff_out = threedi_result.full_path("diff_damage_local_min_lizard_noround.tif")
 
 diff_calc = hrt.Raster_calculator(raster1=damage_local,
                 raster2=damage_lizard,
@@ -164,7 +160,7 @@ pixel_factor = self.depth_raster.pixelarea
 
 
 # %%
-
+YES=True
 # damage_local_lizard_settings
 STATISTICS_APPROXIMATE=YES
 STATISTICS_MAXIMUM=78.963439941406
@@ -202,9 +198,9 @@ def get_raster_total(r: hrt.Raster):
 
 
 damage_raster = {}
-damage_raster["local"] = hrt.Raster(threedi_result.pl/"damage_local_lizard_settings.tif")
-damage_raster["local_noround"] = hrt.Raster(threedi_result.pl/"damage_local_lizard_settings_noround.tif")
-damage_raster["lizard"] = hrt.Raster(threedi_result.pl/"total_damage_res0_5m.tif")
+damage_raster["local"] = threedi_result.full_path("damage_local_lizard_settings.tif")
+damage_raster["local_noround"] = threedi_result.full_path("damage_local_lizard_settings_noround.tif")
+damage_raster["lizard"] = threedi_result.full_path("total_damage_res0_5m.tif")
 
 total = {}
 for key in damage_raster:

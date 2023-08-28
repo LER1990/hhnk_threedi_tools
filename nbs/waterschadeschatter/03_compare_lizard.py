@@ -4,43 +4,28 @@
 # 
 """ Compare the local WSS to the lizard WSS.
 # Use: zwartedijkspolder_sted_DPRA160"""
-from argparse import FileType
 import threedi_scenario_downloader.downloader as dl
 import os
 import geopandas as gpd
 from osgeo import gdal
-import getpass
 import numpy as np
+import hhnk_threedi_tools as htt
 # from functions.create_folders_dict import create_folders_dict_wss
 # import functions.wsa_tools as wsa #general tools used across all scripts
 
 
-import functools
 import sys
 # sys.path.remove( 'C:\\Users\\wvangerwen\\AppData\\Roaming\\Python\\Python37\\site-packages',)
-
-
-sys.path.append('../..')
-import hhnk_schadeschatter.local_settings as local_settings
-if local_settings.DEBUG:
-    sys.path.insert(0, local_settings.hhnk_threedi_tools_path)
-    sys.path.insert(0, local_settings.hhnk_research_tools_path)
-
-    import importlib
-    import hhnk_threedi_tools as htt
-    import hhnk_research_tools as hrt
-    htt=importlib.reload(htt)
-    hrt=importlib.reload(hrt)
-    importlib.reload(htt.core.folders)
-
-from hhnk_schadeschatter.local_settings import API_KEY
-import hhnk_schadeschatter.functions.add_to_hrt as hrt_temp
+import hhnk_research_tools as hrt
 
 
 # this allows GDAL to throw Python Exceptions
 gdal.UseExceptions()
 
-dl.set_api_key(API_KEY)
+
+api_keys_path = fr"{os.getenv('APPDATA')}\3Di\QGIS3\profiles\default\python\plugins\hhnk_threedi_plugin\api_key.txt"
+api_keys = hrt.read_api_file(api_keys_path)
+dl.set_api_key(api_key=api_keys["lizard"])
 
 test_name = 'test_zwartedijkspolder'
 test_name = 'test_bwn_test'
@@ -53,9 +38,9 @@ class Test_Folder(htt.core.folders.Folder):
     def __init__(self, base):
         super().__init__(base)
 
-        self.add_file('depth_lizard', 'depth_dmg.tif', ftype='raster')
-        self.add_file('dmg_lizard', 'dmg_lizard.tif', ftype='raster')
-        self.add_file('dmg_local', 'dmg_local.tif', ftype='raster')
+        self.add_file('depth_lizard', 'depth_dmg.tif')
+        self.add_file('dmg_lizard', 'dmg_lizard.tif')
+        self.add_file('dmg_local', 'dmg_local.tif')
         self.add_file('cfg_lizard', 'cfg_lizard.cfg')
 test_folder = Test_Folder(test_path)
 
@@ -166,15 +151,12 @@ class PgbFolder(htt.core.folders.Folder):
 
         for ws in ws_range:
             self.add_file(objectname=f"ws_{ws}",
-                            filename=f"ws_{ws}.tif",
-                            ftype='raster')
+                            filename=f"ws_{ws}.tif")
             self.add_file(objectname=f"depth_{ws}",
-                            filename=f"depth_{ws}.tif",
-                            ftype='raster')
+                            filename=f"depth_{ws}.tif")
             self.add_file(objectname=f"dmg_{ws}",
-                            filename=f"dmg_{ws}.tif",
-                            ftype='raster')
-
+                            filename=f"dmg_{ws}.tif")
+            
 output_dir = r"E:\github\wvangerwen\hhnk_schadeschatter\01_data\drainage_areas"
 pgb_folder = PgbFolder(base=os.path.join(output_dir, 'pgb_4770_04751-04'))
 landuse_file = r"\\srv57d1\geo_info\02_Werkplaatsen\06_HYD\Projecten\HKC21002 Schadecurven\07. SchadecurvenPy\03_gebieden\06_ad\03_downloads\landuse2019_tiles\ad_landuse2019.vrt"

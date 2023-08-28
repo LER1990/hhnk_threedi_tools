@@ -4,30 +4,21 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 import geopandas as gpd
+from pathlib import Path
 from scipy import ndimage
-import os
 import inspect
 from shapely import geometry
-from pathlib import Path
-
 import hhnk_research_tools as hrt
 from hhnk_research_tools.folder_file_classes.file_class import File
+from hhnk_research_tools.general_functions import get_functions, get_variables
 
 
 
 class Raster(File):
-    def __init__(self, source_path, min_block_size=1024):
-
-        if type(source_path) in [Raster, File]:
-            source_path = source_path.path
-
-        super().__init__(source_path)
-        self.source_path = source_path
-
+    def __init__(self, base, min_block_size=1024):
+        super().__init__(base)
         
         self.source_set=False #Tracks if the source exist on the system. 
-        # self.source = True #calls self.source.setter(source_path)
-
         self._array = None
         self.min_block_size=min_block_size
 
@@ -40,19 +31,10 @@ class Raster(File):
             print('Array not loaded. Call Raster.get_array(window) first')
             return self._array
 
-    @property
-    def source_path(self):
-        return self._source_path
-    @source_path.setter
-    def source_path(self, value):
-        if type(value)==str:
-            value = Path(value)
-        self._source_path = value
 
     @array.setter
     def array(self, raster_array, window=None, band_nr=1):
         self._array = raster_array
-        # self.source.GetRasterBand(band_nr).WriteArray(window[0],window[1],raster_array)
 
     def _read_array(self, band=None, window=None):
         """window=[x0, y0, x1, y1]--oud.
@@ -60,15 +42,9 @@ class Raster(File):
         x0, y0 is left top corner!!"""
         if band == None:
             gdal_src = self.open_gdal_source_read()
-            band = gdal_src.GetRasterBand(1) #TODO band is not closed properly
+            band = gdal_src.GetRasterBand(1)
 
         if window is not None:
-            # raster_array = band.ReadAsArray(
-            #     xoff=int(window[0]),
-            #     yoff=int(window[1]),
-            #     win_xsize=int(window[2] - window[0]),
-            #     win_ysize=int(window[3] - window[1]))
-
             raster_array = band.ReadAsArray(
                 xoff=int(window[0]),
                 yoff=int(window[1]),
@@ -103,7 +79,7 @@ class Raster(File):
                 raster_array = np.dstack((red_array, green_array, blue_array))
             else:
                 raise ValueError(
-                    f"Unexpected number of bands in raster {self.source_path} (expect 1 or 3)"
+                    f"Unexpected number of bands in raster {self.base} (got {band_count}, expected 1 or 3)"
                 )
             self._array = raster_array
             return raster_array
@@ -114,22 +90,24 @@ class Raster(File):
 
     @property
     def source(self):
-        if not self.source_set:
-            self.source=True #call source.setter
-            return self.open_gdal_source_read()
+        if super().exists():
+            if not self.source_set:
+                self.source=True #call source.setter
+                return self.open_gdal_source_read()
+            else:
+                return self.open_gdal_source_read()
         else:
-            return self.open_gdal_source_read()
+            return False
+        
     @source.setter
     def source(self, value):
         """If source does not exist it will not be set.
         Bit clunky. But it should work that if it exists it will only be set once. 
         Otherwise it will not set.  """
-        if os.path.exists(self.source_path): #cannot use self.exists here.
+        if super().exists(): #cannot use self.exists here.
             #Needs to be first otherwise we end in a loop when settings metadata/nodata/band_count
             self.source_set=True 
-            # print(f"setting source {self.file_path}")
 
-            # self._source=gdal.Open(str(self.source_path), gdal.GA_ReadOnly)
             gdal_src = self.open_gdal_source_read()
 
             self._metadata = RasterMetadata(gdal_src=gdal_src)
@@ -142,49 +120,51 @@ class Raster(File):
         with self.open_gdal_source_read() as gdal_src: doesnt work.
         just dont write it to the class, and it should be fine..
         """
-        return gdal.Open(str(self.source_path), gdal.GA_ReadOnly)
+        return gdal.Open(self.base, gdal.GA_ReadOnly)
 
 
     def open_gdal_source_write(self):
         """
         open source with write access
         """
-        return gdal.Open(str(self.source_path), gdal.GA_Update)
+        return gdal.Open(self.base, gdal.GA_Update)
 
 
-    def unlink_if_exists(self):
-        """Remove file if it exists
-        overwrites function from File class"""
-        super().unlink_if_exists()
-        if not self.pl.exists():
+    def unlink(self, missing_ok=True):
+        """Remove raster if it exists, reset source."""
+        self.path.unlink(missing_ok=missing_ok)
+        if not self.exists():
             self.source_set=False
 
 
-    @property
     def exists(self):
-        if self.source_set: #check this first for speed.
-            return True
+        file_exists = super().exists()
+
+        if file_exists:
+            if self.source_set: #check this first for speed.
+                return True
+            else:
+                self.source #set source
+                return True
         else:
-            path_exists = os.path.exists(self.source_path)
-            if not self.source_set:
-                if path_exists:
-                    self.source #Set the source.      
-            return path_exists
+            if self.source_set:
+                self.source_set = False
+            return False
 
 
     @property
     def nodata(self):
-        if self.exists:
+        if self.exists():
             return self._nodata
         
     @property
     def band_count(self):
-        if self.exists:
+        if self.exists():
             return self._band_count
 
     @property
     def metadata(self):
-        if self.exists:
+        if self.exists():
             return self._metadata
         
 
@@ -341,15 +321,25 @@ class Raster(File):
             
 
     def __repr__(self):
-        if self.exists:
-            return f"""{self.__class__}
-    Source: {self.source_path}, exists:{self.exists}
-    Shape: {self.metadata.shape}
-    Pixelsize: {self.metadata.pixel_width}"""
-        else:
-            return f"""{self.__class__}
-    Source: {self.source_path}, exists:{self.exists}"""
+        if self.exists():
+            return f"""{self.path.name} @ {self.path}
+exists: {self.exists()}
+type: {type(self)}
+shape: {self.metadata.shape}
+pixelsize: {self.metadata.pixel_width}
 
+functions: {get_functions(self)}
+variables: {get_variables(self)}
+"""
+
+        else:
+            return f"""{self.path.name} @ {self.path}
+exists: {self.exists()}
+type: {type(self)}
+
+functions: {get_functions(self)}
+variables: {get_variables(self)}
+"""
 
     def create(self, metadata, nodata, datatype=None, create_options=None, verbose=False, overwrite=False):
         """Create empty raster
@@ -358,8 +348,8 @@ class Raster(File):
         """
         #Check if function should continue.
         if verbose:
-            print(f"creating output raster: {self.source_path}")
-        target_ds = hrt.create_new_raster_file(file_name=str(self.source_path),
+            print(f"creating output raster: {self.path}")
+        target_ds = hrt.create_new_raster_file(file_name=self.path,
                                                 nodata=nodata,
                                                 meta=metadata,
                                                 datatype=datatype,
@@ -369,11 +359,8 @@ class Raster(File):
 
         #Reset source, if raster is deleted and recreated with different resolution
         #this would otherwise cause issues. 
-        self.source_set=None
-        self.source=None
-
-
-        self.exists #Update raster now it exists
+        self.source_set=False
+        self.source=None #Update raster now it exists
 
 
     def sum(self):
@@ -521,9 +508,7 @@ variables: {variables}"""
 
 
 if __name__ == '__main__':
-    dem_path = r"G:\02_Werkplaatsen\06_HYD\Projecten\HKC16015 Wateropgave 2.0\11. DCMB\hhnk-modelbuilder-master\data\fixed_data\DEM\DEM_AHN4_int.vrt"
-
-    r=Raster(dem_path)
-    print(r)
-
-# %%
+    dem_path = Path(r"G:\02_Werkplaatsen\06_HYD\Projecten\HKC16015 Wateropgave 2.0\11. DCMB\hhnk-modelbuilder-master\data\fixed_data\DEM\DEM_AHN4_int.vrt")
+    if dem_path.exists():
+        r=Raster(str(dem_path))
+        print(r)

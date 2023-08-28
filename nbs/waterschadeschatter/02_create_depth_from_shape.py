@@ -1,14 +1,5 @@
 # %%
-import sys
-from pathlib import Path
 import os
-#add hhnk_schadeschatter parent folder to path.
-if str(Path(os.getcwd()).parent.parent) not in sys.path:
-    sys.path.append(str(Path(os.getcwd()).parent.parent))
-
-import hhnk_schadeschatter.local_settings as local_settings
-local_settings.fix_path() #add an remove some paths from sys.path.
-
 
 import importlib
 import hhnk_threedi_tools as htt
@@ -24,9 +15,9 @@ import geopandas as gpd
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-import hhnk_schadeschatter.functions.wss_loading as wss_loading
-import hhnk_schadeschatter.functions.wss_calculations as wss_calculations
-import hhnk_schadeschatter.functions.wss_main as wss_main
+import hhnk_research_tools.waterschadeschatter.wss_loading as wss_loading
+import hhnk_research_tools.waterschadeschatter.wss_calculations as wss_calculations
+import hhnk_research_tools.waterschadeschatter.wss_main as wss_main
 
 importlib.reload(wss_main)
 importlib.reload(wss_loading)
@@ -61,14 +52,11 @@ class PgbFolder(htt.core.folders.Folder):
 
         for ws in ws_range:
             self.add_file(objectname=f"ws_{ws}",
-                            filename=f"ws_{ws}.tif",
-                            ftype='raster')
+                            filename=f"ws_{ws}.tif")
             self.add_file(objectname=f"depth_{ws}",
-                            filename=f"depth_{ws}.tif",
-                            ftype='raster')
+                            filename=f"depth_{ws}.tif")
             self.add_file(objectname=f"dmg_{ws}",
-                            filename=f"dmg_{ws}.tif",
-                            ftype='raster')
+                            filename=f"dmg_{ws}.tif")
 
 # %%
 
@@ -142,7 +130,7 @@ for index, row in gdf.iterrows():
                 ws_raster = hrt.Raster(getattr(pgb_folder, f'ws_{ws}').path)
                 depth_raster = hrt.Raster(getattr(pgb_folder, f'depth_{ws}').path)
 
-                if ws_raster.exists:
+                if ws_raster.exists():
                     depth_calc = hrt.Raster_calculator(raster1=dem_raster, 
                                                         raster2=ws_raster, 
                                                         raster_out=depth_raster, 

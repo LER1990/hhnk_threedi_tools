@@ -1,12 +1,10 @@
-
 import os
-from pathlib import Path
-
 import hhnk_research_tools as hrt
 from hhnk_research_tools.folder_file_classes.folder_file_classes import Folder
 from hhnk_research_tools.folder_file_classes.sqlite_class import Sqlite
 from hhnk_research_tools.gis.raster import Raster
 from hhnk_research_tools.folder_file_classes.file_class import File
+from hhnk_research_tools.threedi.threediresult_loader import ThreediResultLoader
 
 # Third-party imports
 
@@ -22,7 +20,7 @@ class ThreediSchematisation(Folder):
         super().__init__(os.path.join(base, name), create=create)
 
         # File
-        # self.add_file("database", self.model_path(), ftype='sqlite')
+        # self.add_file("database", self.model_path())
 
     @property
     def rasters(self):
@@ -62,7 +60,7 @@ class ThreediSchematisation(Folder):
     @property
     def sqlite_names(self):
         """returns all sqlites in folder"""
-        return [Path(sp).stem for sp in self.sqlite_paths]
+        return [sp.stem for sp in self.sqlite_paths]
 
 
     def model_path(self, idx=0, name=None):
@@ -99,11 +97,15 @@ class ThreediSchematisation(Folder):
             self.initial_wlvl_2d = self.get_raster_path(
                 table_name="v2_global_settings", col_name="initial_waterlevel_file"
             )
+            
+            #Waterschadeschatter required 50cm resolution.
+            self.dem_50cm = self.full_path("dem_50cm.tif")
+            
 
-            landuse = [i for i in self.pl.glob("landuse_*.tif")]
+            landuse = [i for i in self.path.glob("landuse_*.tif")]
             if len(landuse)==0:
                 landuse = [""]
-            self.landuse = File(landuse[0])
+            self.landuse = File(landuse[0])            
 
 
         def get_raster_path(self, table_name, col_name):
@@ -111,7 +113,7 @@ class ThreediSchematisation(Folder):
             This only works for models from Klondike release onwards, where we only have
             one global settings row."""
 
-            if self.caller.database.exists:
+            if self.caller.database.exists():
                 df = hrt.sqlite_table_to_df(
                     database_path=self.caller.database.path, table_name=table_name
                 )
@@ -125,10 +127,10 @@ class ThreediSchematisation(Folder):
                 if raster_name == None:
                     raster_path = ""
                 else:
-                    raster_path = os.path.join(self.caller.base, raster_name)
+                    raster_path = self.caller.full_path(raster_name)
             else:
                 raster_path = ""
-            return File(raster_path)
+            return Raster(raster_path)
 
 
         def __repr__(self):
@@ -139,6 +141,7 @@ class ThreediSchematisation(Folder):
     infiltration - {self.infiltration.name}
     landuse - {self.landuse.name}
     initial_wlvl_2d - {self.initial_wlvl_2d.name}
+    dem_50cm - {self.dem_50cm.name}
 """
 
 
@@ -146,13 +149,13 @@ class ThreediResult(Folder):
     """Result of threedi simulation. Base files are .nc and .h5.
     Use .grid to access GridH5ResultAdmin and .admin to access GridH5Admin"""
     def __init__(self, base, create=False):
-
         super().__init__(base, create=create)
 
         # Files
         self.add_file("grid_path", "results_3di.nc")
         self.add_file("admin_path", "gridadmin.h5")
 
+        
     @property
     def grid(self):    
         #moved imports here because gridbuilder has h5py issues
@@ -163,6 +166,11 @@ class ThreediResult(Folder):
     def admin(self):
         from threedigrid.admin.gridadmin import GridH5Admin
         return GridH5Admin(self.admin_path.base)
+    
+    @property
+    def load(self):
+        return ThreediResultLoader(self.grid)
+    
 
 
 class RevisionsDir(Folder):
@@ -181,9 +189,9 @@ class RevisionsDir(Folder):
         """revision can be a integer or a path"""
         if type(revision) == int:
             return self.returnclass(self.full_path(self.revisions[revision]), create=True)
-        elif os.path.exists(revision):
+        elif os.path.exists(str(revision)):
             return self.returnclass(revision, create=True)
-        elif (self.pl / revision).exists():
+        elif self.full_path(revision).exists():
             return self.returnclass(self.full_path(revision), create=True)
         else:
             # print(f"path; {self.base} not found, create with '.create()'")

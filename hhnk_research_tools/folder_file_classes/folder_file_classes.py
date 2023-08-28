@@ -1,124 +1,103 @@
 from pathlib import Path
-import os
-import inspect
-import glob
 import fiona
 import geopandas as gpd
-import hhnk_research_tools as hrt
-from hhnk_research_tools.folder_file_classes.file_class import File
+from hhnk_research_tools import Raster
+from hhnk_research_tools.general_functions import get_functions, get_variables
 from hhnk_research_tools.folder_file_classes.sqlite_class import Sqlite
+from hhnk_research_tools.folder_file_classes.file_class import BasePath, File
+import types
 
 
-
-#TODO refactor en alle classes los behandelen.
-
-
-class Folder:
+class Folder(BasePath):
     """Base folder class for creating, deleting and see if folder exists"""
 
     def __init__(self, base, create=False):
-        self.base = str(base)
-        self.pl = Path(base)  # pathlib path
+        super().__init__(base)
 
         self.files = {}
         self.olayers = {}
         self.space = "\t\t\t\t"
-        self.isfolder = True
         if create:
             self.create(parents=False)
 
+
+    #TODO is deze nog nodig??
     @property
     def structure(self):
         return ""
 
     @property
     def content(self):
-        if self.exists:
-            return os.listdir(self.base)
-        else:
-            return []
+        return [i for i in self.path.glob("*")]
+    
+    # @property
+    # def paths(self):
+    #     """Get all properties that are a subclass of BasePath."""
+    #     return [
+    #         i for i in get_variables(self, stringify=False) if issubclass(type(getattr(self, i)), BasePath)
+    #         ]
+       
+    # @property
+    # def files_list(self):
+    #     """If a path is not a folder, it is a file :-)."""
+    #     return [i for i in self.paths if i not in self.folders]
 
-    @property
-    def path(self):
-        return self.base
+    # @property
+    # def folders_list(self):
+    #     """Check if paths are instance of Folder."""
+    #     return [i for i in self.paths if not isinstance(getattr(self, i), Folder)]
 
-    @property
-    def name(self):
-        return self.pl.stem
-
-    @property
-    def folder(self):
-        return os.path.basename(self.base)
-
-    @property
-    def exists(self):
-        return self.pl.exists()
-
-    @property
-    def pl_if_exists(self):
-        """return filepath if the file exists otherwise return None"""
-        if self.exists:
-            return self.pl
-        else:
-            return None
-
-    @property
-    def path_if_exists(self):
-        """return filepath if the file exists otherwise return None"""
-        if self.exists:
-            return str(self.pl)
-        else:
-            return None
-
-    @property
-    def show(self):
-        print(self.__repr__())
 
     def create(self, parents=False, verbose=False):
         """Create folder, if parents==False path wont be
         created if parent doesnt exist."""
         if not parents:
-            if not self.pl.parent.exists():
+            if not self.path.parent.exists():
                 if verbose:
-                    print(f"{self.path} not created, parent doesnt exist.")
+                    print(f"'{self.path}' not created, parent does not exist.")
                 return
-        self.pl.mkdir(parents=parents, exist_ok=True)
+        self.path.mkdir(parents=parents, exist_ok=True)
 
-    def find_ext(self, ext):
+
+    def find_ext(self, ext:list):
         """finds files with a certain extension"""
-        return glob.glob(self.base + f"/*.{ext}")
+        if type(ext)==str:
+            ext=[ext]
+        file_list = []
+        for e in ext:
+            file_list += [i for i in self.path.glob(f"*.{e.replace('.','')}")]
+        return file_list
 
+
+    #TODO uitzoeken of name met '/' start. Dat mag niet.
     def full_path(self, name):
-        """returns the full path of a file or a folder when only a name is known"""
-        if "/" in name:
-            return Path(str(self.pl) + name)
-        else:
-            return self.pl / name
-
-    def add_file(self, objectname, filename, ftype="file"):
-        """ftype options = ['file', 'filegdb', 'gpkg', 'raster', 'sqlite'] """
-        # if not os.path.exists(self.full_path(filename)) or
-        if filename in [None, ""]:
-            filepath = ""
-        else:
-            filepath = self.full_path(filename)
-
-        if ftype == "file":
-            new_file = File(filepath)
-        elif ftype in ["filegdb", "gpkg"]:
+        """
+        returns the full path of a file or a folder when only a name is known.
+        Will return the object based on suffix
+        
+        """
+        filepath = self.path.joinpath(name)
+        if name in [None, ""]:
+            new_file = Path("")
+        elif filepath.suffix == "":
+            new_file = Folder(filepath)
+        elif filepath.suffix in [".gdb", ".gpkg", ".shp"]:
             new_file = FileGDB(filepath)
-        elif ftype == "raster":
-            new_file = hrt.Raster(filepath)
-        elif ftype == "sqlite":
+        elif filepath.suffix in [".tif", ".tiff", ".vrt"]:
+            new_file = Raster(filepath)
+        elif filepath.suffix in [".sqlite"]:
             new_file = Sqlite(filepath)
+        else:
+            new_file = File(filepath)
+        return new_file
+
+
+    def add_file(self, objectname, filename):
+        """"""
+        new_file = self.full_path(filename)
 
         self.files[objectname] = new_file
         setattr(self, objectname, new_file)
-
-
-    def add_layer(self, objectname, layer):
-        self.olayers[objectname] = layer
-        setattr(self, objectname, layer)
 
 
     def unlink_contents(self, names=[], rmfiles=True, rmdirs=False):
@@ -126,7 +105,7 @@ class Folder:
         if not names:
             names=self.content
         for name in names:
-            pathname = self.pl / name
+            pathname = self.path / name
             try:
                 if pathname.exists():
                     #FIXME rmdir is only allowed for empty dirs
@@ -142,31 +121,29 @@ class Folder:
                 print(pathname, e)
 
 
-    def __str__(self):
-        return self.base
-
-
     def __repr__(self):
-        funcs = '.'+' .'.join([i for i in dir(self) if not i.startswith('__') and hasattr(inspect.getattr_static(self,i), '__call__')]) #getattr resulted in RecursionError. https://stackoverflow.com/questions/1091259/how-to-test-if-a-class-attribute-is-an-instance-method
-        variables = '.'+' .'.join([i for i in dir(self) if not i.startswith('__') and not hasattr(inspect.getattr_static(self,i)
-                , '__call__')])
-        repr_str = f"""functions: {funcs}
-variables: {variables}"""
-        return f"""{self.name} @ {self.path}
-Exists: {self.exists} -- Type: {type(self)}
-    Folders:\t{self.structure}
-    Files:\t{list(self.files.keys())}
-    Layers:\t{list(self.olayers.keys())}
-{repr_str}
-                """
-    
+        paths = [
+            i for i in get_variables(self, stringify=False) if issubclass(type(getattr(self, i)), BasePath)
+            ]
+        folders = [i for i in paths if isinstance(getattr(self, i), Folder)]
+        files = [i for i in paths if i not in folders]
+        repr_str = \
+ f"""{self.path.name} @ {self.path}
+Exists: {self.exists()}
+type: {type(self)}
+    Folders:\t{folders}
+    Files:\t{files}
+functions: {get_functions(self)}
+variables: {get_variables(self)}"""
+        return repr_str
+
 
 class FileGDB(File):
     def __init__(self, base):
         super().__init__(base)
 
         self.layerlist=[]
-        self.layers=FileGDBLayers()
+        self.layers=types.SimpleNamespace() #empty class
 
 
     def load(self, layer=None):
@@ -176,7 +153,7 @@ class FileGDB(File):
                 layer= avail_layers[0]
             else:
                 layer = input(f"Select layer [{avail_layers}]:")
-        return gpd.read_file(self.path, layer=layer)
+        return gpd.read_file(self.base, layer=layer)
 
 
     def add_layer(self, name:str):
@@ -195,27 +172,21 @@ class FileGDB(File):
 
     def available_layers(self):
         """Return available layers in file gdb"""
-        return fiona.listlayers(self.path)
+        return fiona.listlayers(self.base)
 
 
     def __repr__(self):
-        if self.exists:
-            exists = "exists"
-        else:
-            exists = "doesn't exist"
-        funcs = '.'+' .'.join([i for i in dir(self) if not i.startswith('__') and hasattr(inspect.getattr_static(self,i)
-        , '__call__')])
-        variables = '.'+' .'.join([i for i in dir(self) if not i.startswith('__') and not hasattr(inspect.getattr_static(self,i)
-        , '__call__')])
-        repr_str = f"""functions: {funcs}
-variables: {variables}
-layers (access through .layers.): {self.layerlist}"""
-        return f"""{self.name} @ {self.base} ({exists})
-{repr_str}"""
+        repr_str = \
+f"""{self.path.name} @ {self.path}
+exists: {self.exists()}
+type: {type(self)}
+
+functions: {get_functions(self)}
+variables: {get_variables(self)}
+layers (access through .layers): {self.layerlist}"""
+        return repr_str
 
 
-class FileGDBLayers():
-    pass
 
 class FileGDBLayer():
     def __init__(self, name:str,  parent:FileGDB):
@@ -223,4 +194,8 @@ class FileGDBLayer():
         self.parent=parent
 
     def load(self):
-        return gpd.read_file(self.parent.path, layer=self.name)
+        return gpd.read_file(self.parent.base, layer=self.name)
+
+folder = Folder(r"d:\repositories\hhnk-research-tools\hhnk_research_tools\folder_file_classes")
+
+folder.add_file("mijn_file", "mijn_file.ext")
