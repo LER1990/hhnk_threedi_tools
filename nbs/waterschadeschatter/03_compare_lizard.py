@@ -4,31 +4,26 @@
 # 
 """ Compare the local WSS to the lizard WSS.
 # Use: zwartedijkspolder_sted_DPRA160"""
-from argparse import FileType
 import threedi_scenario_downloader.downloader as dl
 import os
 import geopandas as gpd
 from osgeo import gdal
-import getpass
 import numpy as np
+import hhnk_threedi_tools as htt
 # from functions.create_folders_dict import create_folders_dict_wss
 # import functions.wsa_tools as wsa #general tools used across all scripts
 
 
-import functools
 import sys
 # sys.path.remove( 'C:\\Users\\wvangerwen\\AppData\\Roaming\\Python\\Python37\\site-packages',)
 import hhnk_research_tools as hrt
-
-
-from hhnk_schadeschatter.local_settings import API_KEY
 
 
 # this allows GDAL to throw Python Exceptions
 gdal.UseExceptions()
 
 
-api_keys_path = fr"{os.getenv('APPDATA')}\3Di\QGIS3\profiles\default\python\plugins\hhnk_threedi_plugin\api_key.txt"}
+api_keys_path = fr"{os.getenv('APPDATA')}\3Di\QGIS3\profiles\default\python\plugins\hhnk_threedi_plugin\api_key.txt"
 api_keys = hrt.read_api_file(api_keys_path)
 dl.set_api_key(api_key=api_keys["lizard"])
 

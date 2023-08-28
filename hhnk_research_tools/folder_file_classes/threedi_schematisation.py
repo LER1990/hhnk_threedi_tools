@@ -1,7 +1,4 @@
-
 import os
-from pathlib import Path
-
 import hhnk_research_tools as hrt
 from hhnk_research_tools.folder_file_classes.folder_file_classes import Folder
 from hhnk_research_tools.folder_file_classes.sqlite_class import Sqlite

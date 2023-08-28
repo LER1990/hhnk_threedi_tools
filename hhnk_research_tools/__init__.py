@@ -1,14 +1,12 @@
 import hhnk_research_tools.variables as variables
 
-from hhnk_research_tools.folder_file_classes.file_class import (
-    get_functions,
-    get_variables,
-    File,
-)
-
 from hhnk_research_tools.gis.raster import Raster, RasterMetadata
 
 import hhnk_research_tools.threedi as threedi
+
+from hhnk_research_tools.folder_file_classes.file_class import (
+    File
+)
 
 from hhnk_research_tools.threedi.read_api_file import (
     read_api_file
@@ -41,6 +39,8 @@ from hhnk_research_tools.dataframe_functions import (
 )
 
 from hhnk_research_tools.general_functions import (
+    get_functions,
+    get_variables,
     ensure_file_path,
     convert_gdb_to_gpkg,
     check_create_new_file,
@@ -65,6 +65,7 @@ from hhnk_research_tools.raster_functions import (
 
 
 from hhnk_research_tools.folder_file_classes.folder_file_classes import (
+    File,
     Folder,
     FileGDB,
     FileGDBLayer,

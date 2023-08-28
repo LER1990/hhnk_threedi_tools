@@ -1,45 +1,25 @@
 from pathlib import Path
-import os
-import inspect
-import glob
 import fiona
 import geopandas as gpd
-import hhnk_research_tools as hrt
-from hhnk_research_tools.folder_file_classes.file_class import File, get_functions, get_variables
+from hhnk_research_tools import Raster
+from hhnk_research_tools.general_functions import get_functions, get_variables
 from hhnk_research_tools.folder_file_classes.sqlite_class import Sqlite
+from hhnk_research_tools.folder_file_classes.file_class import BasePath, File
 import types
 
 
-
-class Folder():
+class Folder(BasePath):
     """Base folder class for creating, deleting and see if folder exists"""
 
     def __init__(self, base, create=False):
-        self.path = Path(str(base))
+        super().__init__(base)
 
         self.files = {}
         self.olayers = {}
         self.space = "\t\t\t\t"
-        self.isfolder = True
         if create:
             self.create(parents=False)
 
-    #TODO remove in future release
-    @property
-    def pl(self):
-        import warnings
-        warnings.warn(".pl is deprecated and will be removed in a future release. Please use .path instead", DeprecationWarning, stacklevel=2)
-        return self.path
-    
-    @property
-    def base(self):
-        return self.path.as_posix()
-    @property
-    def name(self):
-        return self.path.name
-    @property
-    def parent(self):
-        return self.path.parent
 
     #TODO is deze nog nodig??
     @property
@@ -49,26 +29,23 @@ class Folder():
     @property
     def content(self):
         return [i for i in self.path.glob("*")]
-        #     if self.exists:
-        #     return os.listdir(self.base)
-        # else:
-        #     return []
+    
+    # @property
+    # def paths(self):
+    #     """Get all properties that are a subclass of BasePath."""
+    #     return [
+    #         i for i in get_variables(self, stringify=False) if issubclass(type(getattr(self, i)), BasePath)
+    #         ]
+       
+    # @property
+    # def files_list(self):
+    #     """If a path is not a folder, it is a file :-)."""
+    #     return [i for i in self.paths if i not in self.folders]
 
-    def exists(self):
-        """dont return true on empty path."""
-        if self.base == ".":
-            return False
-        else:
-            return self.path.exists()
-
-
-    @property
-    def path_if_exists(self):
-        """return filepath if the file exists otherwise return None"""
-        if self.exists():
-            return str(self.path)
-        else:
-            return None
+    # @property
+    # def folders_list(self):
+    #     """Check if paths are instance of Folder."""
+    #     return [i for i in self.paths if not isinstance(getattr(self, i), Folder)]
 
 
     def create(self, parents=False, verbose=False):
@@ -77,7 +54,7 @@ class Folder():
         if not parents:
             if not self.path.parent.exists():
                 if verbose:
-                    print(f"{self.path} not created, parent does not exist.")
+                    print(f"'{self.path}' not created, parent does not exist.")
                 return
         self.path.mkdir(parents=parents, exist_ok=True)
 
@@ -107,7 +84,7 @@ class Folder():
         elif filepath.suffix in [".gdb", ".gpkg", ".shp"]:
             new_file = FileGDB(filepath)
         elif filepath.suffix in [".tif", ".tiff", ".vrt"]:
-            new_file = hrt.Raster(filepath)
+            new_file = Raster(filepath)
         elif filepath.suffix in [".sqlite"]:
             new_file = Sqlite(filepath)
         else:
@@ -144,22 +121,21 @@ class Folder():
                 print(pathname, e)
 
 
-    def __str__(self):
-        return self.base
-
-
     def __repr__(self):
+        paths = [
+            i for i in get_variables(self, stringify=False) if issubclass(type(getattr(self, i)), BasePath)
+            ]
+        folders = [i for i in paths if isinstance(getattr(self, i), Folder)]
+        files = [i for i in paths if i not in folders]
         repr_str = \
  f"""{self.path.name} @ {self.path}
 Exists: {self.exists()}
 type: {type(self)}
-    Folders:\t{self.structure}
-    Files:\t{list(self.files.keys())}
+    Folders:\t{folders}
+    Files:\t{files}
 functions: {get_functions(self)}
 variables: {get_variables(self)}"""
         return repr_str
-
-
 
 
 class FileGDB(File):
@@ -219,3 +195,7 @@ class FileGDBLayer():
 
     def load(self):
         return gpd.read_file(self.parent.base, layer=self.name)
+
+folder = Folder(r"d:\repositories\hhnk-research-tools\hhnk_research_tools\folder_file_classes")
+
+folder.add_file("mijn_file", "mijn_file.ext")

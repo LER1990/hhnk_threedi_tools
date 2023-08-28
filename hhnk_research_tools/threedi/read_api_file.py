@@ -1,16 +1,19 @@
-import os
+from pathlib import Path
 import json
 
-
 def read_api_file(file_path):
-    if os.path.exists(str(file_path)):
+    """Reads Lizard and 3Di api-keys from a JSON-file. The JSON-file should contain e.g.:
+        {"lizard: "valid_lizard_key","threedi: "valid_threedi_key"}"""
+    api_keys = {"lizard": "", "threedi": ""}
+    file_path = Path(file_path)
+    if file_path.exists():
         try:
-            with open(file_path, "r") as f:
-                api_keys = f.read()
-            return json.loads(api_keys)
-
+            result = json.loads(file_path.read_text())
+            if isinstance(result, dict):
+                for k in api_keys.keys():
+                    if k in result.keys():
+                        api_keys[k] = result[k]
+            
         except Exception as e:
             raise e
-
-    else:
-        return {"lizard": "", "threedi": ""}
+    return api_keys
