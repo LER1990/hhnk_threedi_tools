@@ -4,15 +4,12 @@ import numpy as np
 import json
 from hhnk_research_tools.variables import DEF_TRGT_CRS
 from hhnk_research_tools.variables import GDAL_DATATYPE, GEOTIFF
-from hhnk_research_tools.variables import GEOTIFF, GDAL_DATATYPE
 from hhnk_research_tools.general_functions import ensure_file_path, check_create_new_file
 from hhnk_research_tools.gis.raster import Raster, RasterMetadata
-from pathlib import Path
-import os
 import types
 from hhnk_research_tools.folder_file_classes.folder_file_classes import Folder
 
-DEFAULT_CREATE_OPTIONS = [f"COMPRESS=ZSTD", f"TILED=YES", "PREDICTOR=2", "ZSTD_LEVEL=1"]
+DEFAULT_CREATE_OPTIONS = ["COMPRESS=ZSTD", "TILED=YES", "PREDICTOR=2", "ZSTD_LEVEL=1"]
 
 # Loading
 #TODO deprecate? replaced by hrt.Raster
@@ -224,12 +221,12 @@ def create_new_raster_file(
             #     options = [f"COMPRESS=DEFLATE", f"TILED=YES", "PREDICTOR=2", "ZSTD_LEVEL=1"]
 
         if driver=="MEM":
-            allow_emptypath=True
+            check_is_file=False
         else:
-            allow_emptypath=False
+            check_is_file=True
         if check_create_new_file(output_file=file_name, 
                                     overwrite=overwrite,
-                                    allow_emptypath=allow_emptypath) or driver == "MEM":
+                                    check_is_file=check_is_file) or driver == "MEM":
 
             target_ds = gdal.GetDriverByName(driver).Create(
                 str(file_name),
@@ -491,9 +488,6 @@ def reproject(src:Raster, target_res:float, output_path:str):
         output_path : str
         meta_new : hrt.core"""
         #https://svn.osgeo.org/gdal/trunk/autotest/alg/reproject.py
-        # drv = gdal.GetDriverByName( 'GTiff' )
-        # drv.Delete(output_path)
-
         src.metadata.update_resolution(target_res)
 
         src_ds = src.source

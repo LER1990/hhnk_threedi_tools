@@ -1,18 +1,9 @@
-# %%
-from pathlib import Path
 import os
-import inspect
-
 import sqlite3
-import geopandas as gpd
 import pandas as pd
-
 import hhnk_research_tools as hrt
 from hhnk_research_tools.folder_file_classes.file_class import File
-
-from hhnk_research_tools.variables import MOD_SPATIALITE_PATH, DEF_SRC_CRS
-
-
+from hhnk_research_tools.variables import MOD_SPATIALITE_PATH
 
 class Sqlite(File):
     def __init__(self, base):

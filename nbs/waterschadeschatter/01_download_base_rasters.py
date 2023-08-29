@@ -17,7 +17,7 @@ import hhnk_research_tools as hrt
 gdal.UseExceptions()
 
 
-api_keys_path = fr"{os.getenv('APPDATA')}\3Di\QGIS3\profiles\default\python\plugins\hhnk_threedi_plugin\api_key.txt"}
+api_keys_path = fr"{os.getenv('APPDATA')}\3Di\QGIS3\profiles\default\python\plugins\hhnk_threedi_plugin\api_key.txt"
 api_keys = hrt.read_api_file(api_keys_path)
 dl.set_api_key(api_key=api_keys["lizard"])
 

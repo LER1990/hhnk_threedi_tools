@@ -1,25 +1,13 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Thu Aug 26 16:24:32 2021
-
-@author: chris.kerklaan
-"""
-
 # First party imports
-import os
 import tempfile
 import pandas as pd
-import numpy as np
 import geopandas as gpd
-from shapely.geometry import Point
 import hhnk_research_tools as hrt
 import shapely.wkt as wkt
-from shapely.geometry import MultiPoint, Point
 
 from hhnk_research_tools.threedi.variables.results_mapping import one_d_two_d
 from hhnk_research_tools.threedi.geometry_functions import point_geometries_to_wkt
 
-from hhnk_research_tools.variables import UTF8, GPKG_DRIVER
 
 DEF_TRGT_CRS = 28992
 one_d_node_id_col = "1dnode_id"
@@ -39,16 +27,7 @@ levee_height_col = "levee_height"
 type_col = "type"
 
 
-# Third-party imports
-
-
-
-
-def _write_grid_to_file(grid, grid_type, output_path):
-    df = pd.DataFrame(grid[grid_type])
-    gdf = hrt.df_convert_to_gdf(df, geom_col_type='wkb', src_crs='28992')
-    hrt.gdf_write_to_geopackage(gdf, filepath=output_path)
-    
+# Third-party imports   
     
 class Grid:
     def __init__(self, grid_folder=None, sqlite_path=None, dem_path=None):

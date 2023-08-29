@@ -4,14 +4,11 @@ Controle van de resultaten. Vergeleken met de resultaten uit de WSS van STOWA en
 
 """
 
-import xarray 
 # import threedi_raster_edits as tre
 from hhnk_threedi_tools import Folders
-import geopandas as gpd
 import numpy as np
 
-from hhnk_threedi_tools.core.result_rasters.netcdf_to_gridgpkg import ThreediGrid
-from hhnk_threedi_tools.core.result_rasters.calculate_raster import BaseCalculatorGPKG
+import hhnk_research_tools.waterschadeschatter.wss_main as wss_main
 
 import hhnk_research_tools.waterschadeschatter.wss_main as wss_main
 

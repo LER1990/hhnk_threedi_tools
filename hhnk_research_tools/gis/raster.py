@@ -4,14 +4,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 import geopandas as gpd
+from pathlib import Path
 from scipy import ndimage
-import os
 import inspect
 from shapely import geometry
-from pathlib import Path
-
 import hhnk_research_tools as hrt
-from hhnk_research_tools.folder_file_classes.file_class import File, get_functions, get_variables
+from hhnk_research_tools.folder_file_classes.file_class import File
+from hhnk_research_tools.general_functions import get_functions, get_variables
 
 
 
@@ -20,8 +19,6 @@ class Raster(File):
         super().__init__(base)
         
         self.source_set=False #Tracks if the source exist on the system. 
-        # self.source = True #calls self.source.setter(source_path)
-
         self._array = None
         self.min_block_size=min_block_size
 
@@ -38,7 +35,6 @@ class Raster(File):
     @array.setter
     def array(self, raster_array, window=None, band_nr=1):
         self._array = raster_array
-        # self.source.GetRasterBand(band_nr).WriteArray(window[0],window[1],raster_array)
 
     def _read_array(self, band=None, window=None):
         """window=[x0, y0, x1, y1]--oud.
@@ -49,12 +45,6 @@ class Raster(File):
             band = gdal_src.GetRasterBand(1)
 
         if window is not None:
-            # raster_array = band.ReadAsArray(
-            #     xoff=int(window[0]),
-            #     yoff=int(window[1]),
-            #     win_xsize=int(window[2] - window[0]),
-            #     win_ysize=int(window[3] - window[1]))
-
             raster_array = band.ReadAsArray(
                 xoff=int(window[0]),
                 yoff=int(window[1]),
@@ -117,7 +107,6 @@ class Raster(File):
         if super().exists(): #cannot use self.exists here.
             #Needs to be first otherwise we end in a loop when settings metadata/nodata/band_count
             self.source_set=True 
-            # print(f"setting source {self.file_path}")
 
             gdal_src = self.open_gdal_source_read()
 
@@ -519,9 +508,7 @@ variables: {variables}"""
 
 
 if __name__ == '__main__':
-    dem_path = r"G:\02_Werkplaatsen\06_HYD\Projecten\HKC16015 Wateropgave 2.0\11. DCMB\hhnk-modelbuilder-master\data\fixed_data\DEM\DEM_AHN4_int.vrt"
-
-    r=Raster(dem_path)
-    print(r)
-
-# %%
+    dem_path = Path(r"G:\02_Werkplaatsen\06_HYD\Projecten\HKC16015 Wateropgave 2.0\11. DCMB\hhnk-modelbuilder-master\data\fixed_data\DEM\DEM_AHN4_int.vrt")
+    if dem_path.exists():
+        r=Raster(str(dem_path))
+        print(r)

@@ -1,10 +1,29 @@
 from pathlib import Path
-from hhnk_research_tools.folder_file_classes.folder_file_classes import FileGDB
 import geopandas as gpd
 import sys
 import importlib
 import importlib.resources as pkg_resources  # Load resource from package
+import inspect
 from uuid import uuid4
+
+
+def get_functions(cls, stringify=True):
+    """Get a string with functions (methods) in a class."""
+    funcs = [f".{i}" for i in dir(cls) if not i.startswith('__') 
+                            and hasattr(inspect.getattr_static(cls,i)
+                            , '__call__')]
+    if stringify:
+        funcs = " ".join(funcs)
+    return funcs
+
+def get_variables(cls, stringify=True):
+    """Get a string with variables (properties) in a class."""
+    variables = [i for i in dir(cls) if not i.startswith('__') 
+                            and not hasattr(inspect.getattr_static(cls,i)
+                            , '__call__')]
+    if stringify:
+        variables = " ".join(variables)
+    return variables
 
 
 def ensure_file_path(filepath):
@@ -19,7 +38,7 @@ def ensure_file_path(filepath):
         raise e from None
 
 
-def convert_gdb_to_gpkg(gdb:FileGDB, gpkg:FileGDB, overwrite=False, verbose=True):
+def convert_gdb_to_gpkg(gdb, gpkg, overwrite=False, verbose=True):
     """Convert input filegdb to geopackage"""
 
     if gdb.exists():
@@ -34,21 +53,22 @@ def convert_gdb_to_gpkg(gdb:FileGDB, gpkg:FileGDB, overwrite=False, verbose=True
                 gdf.to_file(str(gpkg), layer=layer, driver="GPKG")
 
 
-def check_create_new_file(output_file:str, overwrite:bool=False, input_files:list=[], allow_emptypath=False) -> bool:
+def check_create_new_file(output_file:str, overwrite:bool=False, input_files:list=[], check_is_file=True) -> bool:
     """
     Check if we should continue to create a new file. 
 
-    output_file:
+    output_file: The file under evaluation
     overwrite: When overwriting is True the output_file will be removed.  
     input_files: if input files are provided the edit time of the input will be 
                  compared to the output. If edit time is after the output, it will
                  recreate the output.
+    check_is_file: check if output_file is a file
     """
     create=False
     output_file = Path(str(output_file))
 
     #Als geen suffix (dus geen file), dan error
-    if not allow_emptypath: #
+    if check_is_file: #
         if not output_file.suffix:
             raise TypeError(f"{output_file} is not a file.")
     
@@ -105,7 +125,7 @@ def get_uuid(chars=8):
 def get_pkg_resource_path(package_resource, name) -> Path:
     """return path to resource in a python package, so it can be loaded"""
     with pkg_resources.path(package_resource, name) as p:
-        return p
+        return p.absolute().resolve()
     
 
 class dict_to_class(dict):

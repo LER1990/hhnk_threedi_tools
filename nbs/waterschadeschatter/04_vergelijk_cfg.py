@@ -6,10 +6,7 @@ Hhnk wss is de cfg zoals gebruikt in 2020 bij opnieuw afleiden van schadecurven.
 """
 
 import importlib
-import hhnk_threedi_tools as htt
-import hhnk_research_tools as hrt
 
-import geopandas as gpd
 import pandas as pd
 import os
 import numpy as np
@@ -26,7 +23,6 @@ importlib.reload(wss_calculations)
 from osgeo import gdal
 gdal.UseExceptions()
 
-from pathlib import Path
 # %%
 
 cfg_file={}
