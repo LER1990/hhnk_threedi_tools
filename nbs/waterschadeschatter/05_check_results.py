@@ -10,6 +10,8 @@ import numpy as np
 
 import hhnk_research_tools.waterschadeschatter.wss_main as wss_main
 
+import hhnk_research_tools.waterschadeschatter.wss_main as wss_main
+
 
 #User input
 folder_path = r"E:\02.modellen\23_Katvoed"

@@ -1,4 +1,7 @@
+
 import os
+from pathlib import Path
+
 import hhnk_research_tools as hrt
 from hhnk_research_tools.folder_file_classes.folder_file_classes import Folder
 from hhnk_research_tools.folder_file_classes.sqlite_class import Sqlite
@@ -101,12 +104,20 @@ class ThreediSchematisation(Folder):
             #Waterschadeschatter required 50cm resolution.
             self.dem_50cm = self.full_path("dem_50cm.tif")
             
+            self.landuse = self.find_file_by_name("landuse_*.tif")            
 
-            landuse = [i for i in self.path.glob("landuse_*.tif")]
-            if len(landuse)==0:
-                landuse = [""]
-            self.landuse = File(landuse[0])            
+            self.add_file("soil", "soil.tif")
+            #Groundwaterlevel (used to create storage)
+            self.add_file("gwlvl_glg", "gwlvl_glg.tif")
+            self.add_file("gwlvl_ggg", "gwlvl_ggg.tif")
+            self.add_file("gwlvl_ghg", "gwlvl_ghg.tif")
 
+
+        def find_file_by_name(self, name) -> File:
+            tifs = [i for i in self.path.glob(name)]
+            if len(tifs)==0:
+                tifs = [""]
+            return File(tifs[0])  
 
         def get_raster_path(self, table_name, col_name):
             """Read the sqlite to check which rasters are used in the model.
