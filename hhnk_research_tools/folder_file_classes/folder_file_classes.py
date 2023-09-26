@@ -76,6 +76,10 @@ class Folder(BasePath):
         Will return the object based on suffix
         
         """
+        name = str(name)
+        if name.startswith("\\") or name.startswith("/"):
+            name = name[1:]
+
         filepath = self.path.joinpath(name)
         if name in [None, ""]:
             new_file = Path("")
