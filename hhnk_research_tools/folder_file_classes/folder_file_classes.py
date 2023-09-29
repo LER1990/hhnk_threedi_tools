@@ -1,3 +1,4 @@
+# %%
 from pathlib import Path
 import fiona
 import geopandas as gpd
@@ -69,7 +70,6 @@ class Folder(BasePath):
         return file_list
 
 
-    #TODO uitzoeken of name met '/' start. Dat mag niet.
     def full_path(self, name):
         """
         returns the full path of a file or a folder when only a name is known.
