@@ -7,9 +7,12 @@ DEF_SRC_CRS = 4326
 DEF_DELIMITER = ","
 DEF_ENCODING = "utf-8"
 
-# Download from http://www.gaia-gis.it/gaia-sins/windows-bin-amd64/ into anaconda installation
+# Download from http://www.gaia-gis.it/gaia-sins/windows-bin-amd64/ into conda installation
 # Needs to be added to path before using.
-MOD_SPATIALITE_PATH = r"C:\ProgramData\Anaconda3\mod_spatialite-5.0.1-win-amd64"
+MOD_SPATIALITE_PATHS = [r"C:\ProgramData\miniforge-pypy3\mod_spatialite-5.0.1-win-amd64",
+                        r"C:\ProgramData\miniforge3\mod_spatialite-5.0.1-win-amd64",
+                        r"C:\ProgramData\Anaconda3\mod_spatialite-5.0.1-win-amd64",
+]
 
 
 # definitions

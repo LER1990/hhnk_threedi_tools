@@ -2,7 +2,8 @@ import sqlite3
 import pandas as pd
 import geopandas as gpd
 import os
-from hhnk_research_tools.variables import MOD_SPATIALITE_PATH, DEF_SRC_CRS
+from pathlib import Path
+from hhnk_research_tools.variables import MOD_SPATIALITE_PATHS, DEF_SRC_CRS
 from hhnk_research_tools.dataframe_functions import df_convert_to_gdf
 
 # TODO was: create_update_case_statement
@@ -111,19 +112,22 @@ def create_sqlite_connection(database_path):
         return conn
     except sqlite3.OperationalError as e:
         if e.args[0] == "The specified module could not be found.\r\n":
-            if os.path.exists(MOD_SPATIALITE_PATH):
-                os.environ["PATH"] = MOD_SPATIALITE_PATH + ";" + os.environ["PATH"]
+            for mod_path in MOD_SPATIALITE_PATHS:
+                if Path(mod_path).exists():
+                    os.environ["PATH"] = mod_path + ";" + os.environ["PATH"]
 
-                conn = sqlite3.connect(database_path)
-                conn.enable_load_extension(True)
-                conn.execute("SELECT load_extension('mod_spatialite')")
-                return conn
-            else:
-                print(
-                    """Download mod_spatialite extension from http://www.gaia-gis.it/gaia-sins/windows-bin-amd64/ 
-                and place into anaconda installation C:\ProgramData\Anaconda3\mod_spatialite-5.0.1-win-amd64."""
-                )
-                raise e from None
+                    conn = sqlite3.connect(database_path)
+                    conn.enable_load_extension(True)
+                    conn.execute("SELECT load_extension('mod_spatialite')")
+                    return conn
+                
+            #If function didnt return it cant find the extension
+            print(
+                """Download mod_spatialite extension from http://www.gaia-gis.it/gaia-sins/windows-bin-amd64/ 
+            and place into conda installation C:\ProgramData\Anaconda3\mod_spatialite-5.0.1-win-amd64."""
+            )
+            raise e from None
+
 
     except Exception as e:
         raise e from None
