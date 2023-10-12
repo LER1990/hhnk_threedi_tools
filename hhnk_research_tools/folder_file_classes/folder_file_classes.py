@@ -82,7 +82,7 @@ class Folder(BasePath):
 
         filepath = self.path.joinpath(name)
         if name in [None, ""]:
-            new_file = Path("")
+            new_file = self #TODO was, Path(""), gaat dit goed?
         elif filepath.suffix == "":
             new_file = Folder(filepath)
         elif filepath.suffix in [".gdb", ".gpkg", ".shp"]:

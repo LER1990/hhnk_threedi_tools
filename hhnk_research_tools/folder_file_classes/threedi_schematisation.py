@@ -198,15 +198,15 @@ class RevisionsDir(Folder):
 
     def __getitem__(self, revision):
         """revision can be a integer or a path"""
+        create=True
+        if revision in ["", None]:
+            create=False
         if type(revision) == int:
-            return self.returnclass(self.revisions[revision], create=True)
+            return self.returnclass(self.revisions[revision], create=create)
         elif os.path.exists(str(revision)):
-            return self.returnclass(revision, create=True)
-        elif self.full_path(revision).exists():
-            return self.returnclass(self.full_path(revision), create=True)
+            return self.returnclass(revision, create=create)
         else:
-            # print(f"path; {self.base} not found, create with '.create()'")
-            return self.returnclass(self.full_path(revision), create=True)
+            return self.returnclass(self.full_path(revision), create=create)
 
 
     def revision_structure(self, name):
