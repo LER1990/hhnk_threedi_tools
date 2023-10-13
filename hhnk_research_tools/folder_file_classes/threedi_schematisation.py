@@ -1,7 +1,7 @@
 
 import os
 from pathlib import Path
-
+import numpy as np
 import hhnk_research_tools as hrt
 from hhnk_research_tools.folder_file_classes.folder_file_classes import Folder
 from hhnk_research_tools.folder_file_classes.sqlite_class import Sqlite
@@ -223,3 +223,27 @@ class RevisionsDir(Folder):
     @property
     def revisions(self):
         return self.content
+    
+
+    @property
+    def revisions_mtime(self):
+        """sorted list of revisions by: 
+        mtime -> latest edit date first
+        """
+        revisions_sorted = np.take(self.revisions, np.argsort([item.lstat().st_mtime for item in self.revisions]))[::-1]
+        return revisions_sorted
+
+
+    @property
+    def revisions_rev(self):
+        """sort list of revisions by: 
+        rev -> revisions. highest revisionnr first
+        """
+        lst_items = []
+        for item in self.revisions:
+            try:
+                lst_items += [int(str(item.name).split("#")[1].split(" ")[0])]
+            except:
+                lst_items += [0] #add 0 so its always at end of list. 
+        revisions_sorted = np.take(self.revisions, np.argsort(lst_items))[::-1]
+        return revisions_sorted
