@@ -106,6 +106,7 @@ class Waterschadeschatter():
                 lu_block = self.lu_raster._read_array(window=window_lu)
                 lu_block = lu_block.astype(int)
                 lu_block[lu_block==self.lu_raster.nodata] = 0
+                #TODO np.all(self.polder==folder.dst.tmp.polder.nodata) is mogelijk net iets sneller. 
                 if lu_block.mean()!=0:
                     # Load depth
                     depth_block = self.depth_raster._read_array(window=window_depth)

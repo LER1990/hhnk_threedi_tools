@@ -284,10 +284,14 @@ def save_raster_array_to_tiff(
         raise e
 
         
-def build_vrt(raster_folder, vrt_name='combined_rasters', bandlist=[1], bounds=None, overwrite=False):
+#TODO deprecate, staat nu in hrt.Raster
+def build_vrt(raster_folder, bounds=None, bandlist=[1], overwrite=False):
     """create vrt from all rasters in a folder.
-    bounds=(xmin, ymin, xmax, ymax)
-    bandList doesnt work as expected."""
+
+    raster_folder (str)
+    bounds (np.array): format should be; (xmin, ymin, xmax, ymax), 
+        if None will use input files.
+    bandList doesnt work as expected, passing [1] works."""
     raster_folder = Folder(raster_folder)
     output_path = raster_folder.full_path(f'{vrt_name}.vrt')
     
@@ -317,6 +321,7 @@ def build_vrt(raster_folder, vrt_name='combined_rasters', bandlist=[1], bounds=N
 
     if not output_path.exists():
         print('Something went wrong, vrt not created.')
+
 
 
 def create_meta_from_gdf(gdf, res) -> dict:

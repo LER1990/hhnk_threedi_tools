@@ -198,7 +198,8 @@ class Raster(File):
     def generate_blocks(self, blocksize_from_source: bool = False) -> pd.DataFrame:
         """Generate blocks with the blocksize of the band. 
         These blocks can be used as window to load the raster iteratively.
-        from_source (bool): read
+        blocksize_from_source (bool): read the blocksize from the source raster
+            if its bigger than min_blocksize, use that.
         """
         
         if blocksize_from_source:
@@ -308,6 +309,75 @@ class Raster(File):
 
     def to_file(self):
         pass
+
+
+    def build_vrt(self, overwrite:bool, 
+                  bounds, 
+                  input_files:list, 
+                  resolution="highest",
+                  bandlist=[1]):
+        """Build vrt from input files. 
+        overwrite (bool)
+        bounds (np.array): format should be; (xmin, ymin, xmax, ymax)
+            if None will use input files.
+        input_files (list): list of paths to input rasters
+        resolution: "highest"|"lowest"|"average"
+            instead of "user" option, provide a float for manual target_resolution
+        bandList: doesnt work as expected, passing [1] works.
+        """
+        if hrt.check_create_new_file(output_file=self.path,
+                                     overwrite=overwrite):
+            
+
+            #Set inputfiles to list of strings.
+            if type(input_files) != list:
+                input_files = [str(input_files)]
+            else:
+                input_files = [str(i) for i in input_files]
+
+            if type(resolution) in (float, int):
+                kwargs = {}
+                xRes = resolution
+                yRes = resolution
+                resolution = "user"
+            else:
+                xRes = None
+                yRes = None
+
+            #Check resolution of input files
+            input_resolutions = []
+            for r in input_files:
+                r=Raster(r)
+                input_resolutions.append(r.metadata.pixel_width)
+            if len(np.unique(input_resolutions)) > 1:
+                raise Exception(f"Multiple resolutions ({input_resolutions}) found in input_files. We cannot handle that yet.")
+
+            #Build vrt
+            vrt_options = gdal.BuildVRTOptions(resolution=resolution,
+                                        separate=False,
+                                        resampleAlg='nearest',
+                                        addAlpha=False,
+                                        outputBounds=bounds,
+                                        bandList=bandlist,
+                                        xRes=xRes,
+                                        yRes=yRes)
+            ds = gdal.BuildVRT(destName=str(self.path), 
+                            srcDSOrSrcDSTab=input_files, 
+                            options=vrt_options)
+            ds.FlushCache()
+
+            
+    #FIXME hoe hier het beste omgaan met Folder zonder circular imports?
+    # def build_vrt_from_folder(self, folder_path):
+    #     """"""
+    #     raster_folder = Folder(raster_folder)
+    #     output_path = raster_folder.full_path(f'{vrt_name}.vrt')
+        
+    #     if output_path.exists() and not overwrite:
+    #         print(f'vrt already exists: {output_path}')
+    #         return
+
+    #     tifs_list = [str(i) for i in raster_folder.find_ext(["tif", "tiff"])]
 
 
     def __iter__(self):
