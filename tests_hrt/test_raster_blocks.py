@@ -22,5 +22,9 @@ def test_raster_blocks():
     assert block.cont == True
     assert block.masks_all.shape == (160,160)
 
+    block.blocks['raster1'][block.masks_all] = 0
+    assert block.blocks['raster1'].sum() == 1826.1478
+
+
 if __name__ == "__main__":
     test_raster_blocks()

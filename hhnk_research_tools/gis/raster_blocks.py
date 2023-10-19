@@ -20,7 +20,7 @@ class RasterBlocks:
     be these case.
 
     Input parameters
-    window (list): [xmin, ymin, xmax, ymax]; same as row['windows_readarray']
+    window (list): [xmin, ymin, xsize, ysize]; same as row['windows_readarray']
     raster_paths_dict (dict): {key:hrt.Raster}, path items should be of type
         hrt.Raster.
     nodata_keys (list): the keys in raster_paths to check for all nodata values

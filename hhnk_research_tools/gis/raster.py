@@ -378,6 +378,27 @@ class Raster(File):
     #         return
 
     #     tifs_list = [str(i) for i in raster_folder.find_ext(["tif", "tiff"])]
+    
+    def write_array(self, array, window, band=None):
+        """
+        Note that not providing the band is much slower
+        and should be avoided.
+
+        array (np.array([])): block or raster array
+        window (list): [x0, y0, xsize, ysize]
+        x0, y0 is left top corner!!"""
+        flushband = False
+        if band == None:
+            gdal_src = self.open_gdal_source_write()
+            band = gdal_src.GetRasterBand(1)
+            flushband = True
+
+        band.WriteArray(array, xoff=window[0], yoff=window[1])
+        
+        if flushband:
+            #Only flush band if it was not provided
+            band.FlushCache()  # close file after writing
+            band = None
 
 
     def __iter__(self):
@@ -411,10 +432,16 @@ functions: {get_functions(self)}
 variables: {get_variables(self)}
 """
 
-    def create(self, metadata, nodata, datatype=None, create_options=None, verbose=False, overwrite=False):
+    def create(self,
+               metadata,
+               nodata,
+               datatype=None,
+               create_options=None,
+               verbose=False,
+               overwrite=False):
         """Create empty raster
-        metadata : RasterMetadata instance
-        nodata: int
+        metadata (RasterMetadata): metadata
+        nodata (int): nodata value
         """
         #Check if function should continue.
         if verbose:
