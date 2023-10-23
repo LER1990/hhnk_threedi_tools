@@ -5,7 +5,7 @@ import importlib
 import importlib.resources as pkg_resources  # Load resource from package
 import inspect
 from uuid import uuid4
-
+import datetime
 
 def get_functions(cls, stringify=True):
     """Get a string with functions (methods) in a class."""
@@ -127,6 +127,8 @@ def get_pkg_resource_path(package_resource, name) -> Path:
     with pkg_resources.path(package_resource, name) as p:
         return p.absolute().resolve()
     
+def current_time(time_format="%H:%M:%S"):
+    return datetime.datetime.now().strftime(time_format)
 
 class dict_to_class(dict):
     """dot.notation access to dictionary attributes"""
