@@ -197,7 +197,6 @@ layers (access through .layers): {self.layerlist}"""
         return repr_str
 
 
-
 class FileGDBLayer():
     def __init__(self, name:str,  parent:FileGDB):
         self.name=name
@@ -205,7 +204,3 @@ class FileGDBLayer():
 
     def load(self):
         return gpd.read_file(self.parent.base, layer=self.name)
-
-folder = Folder(r"d:\repositories\hhnk-research-tools\hhnk_research_tools\folder_file_classes")
-
-folder.add_file("mijn_file", "mijn_file.ext")
