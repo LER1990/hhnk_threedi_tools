@@ -8,6 +8,8 @@ from hhnk_research_tools.general_functions import ensure_file_path, check_create
 from hhnk_research_tools.gis.raster import Raster, RasterMetadata
 import types
 from hhnk_research_tools.folder_file_classes.folder_file_classes import Folder
+import hhnk_research_tools as hrt
+
 
 DEFAULT_CREATE_OPTIONS = ["COMPRESS=ZSTD", "TILED=YES", "PREDICTOR=2", "ZSTD_LEVEL=1"]
 
@@ -529,3 +531,138 @@ def hist_stats(histogram: dict, stat_type: str, ignore_keys=[0]):
             total += histogram[value]
             if total >= median_index:
                 return value
+            
+
+
+
+class RasterCalculatorV2():
+    """Make a custom calculation between two rasters by 
+    reading the blocks and applying a calculation
+    input raster should be of type hhnk_research_tools.gis.raster.Raster
+
+    raster1: hrt.Raster -> big raster
+    raster2: hrt.Raster -> smaller raster with full extent within big raster. 
+        Raster numbering is interchangeable as the scripts checks the bounds.
+    raster_out: hrt.Raster -> output, doesnt need to exist. self.create also creates it.
+    custom_run_window_function: function that takes window of small and big raster 
+        as input and does calculation with these arrays.
+    customize below function for this, can take more inputs.
+
+    def custom_run_window_function(self, raster1_window, raster2_window, band_out, **kwargs):
+        #hrt.Raster_calculator custom_run_window_function
+        #Customize this function with a calculation
+        #Load windows
+        block1 = self.raster1._read_array(window=raster1_window)
+        block2 = self.raster2._read_array(window=raster2_window)
+
+        #Calculate output
+        block_out = None #replace with a calculation.
+
+        # Write to file
+        band_out.WriteArray(block_out, xoff=window_small[0], yoff=window_small[1])
+
+    
+    """
+    def __init__(self, 
+                 raster_out: Raster,
+                 raster_paths_dict: dict,
+                 nodata_keys: list,
+                 mask_keys: list,
+                 metadata_key: str,
+                 custom_run_window_function: types.MethodType, 
+                 output_nodata: int,
+                 min_block_size: int = 4096,
+                 verbose: bool = False):
+        """
+
+        
+        block_raster (hrt.Raster): 
+        raster_out (hrt.Raster): 
+        raster_paths_dict (dict): {key:hrt.Raster} these rasters will have blocks loaded.
+        nodata_keys (list): keys to check if all values are nodata, if yes then skip
+        mask_keys (list): keys to add to nodatamask
+        metadata_key (str): key in raster_paths_dict that will be used to
+            create blocks and metadata 
+        custom_run_window_function: function that does calculation with blocks. should return block
+        output_matadata (hrt.RasterMetadata): use hrt.Raster.metadata
+        output_nodata (int): nodata
+        min_block_size (int): min block size for generator blocks_df
+        verbose (bool): print progress
+        """
+        self.raster_out = raster_out
+        self.raster_paths_dict = raster_paths_dict
+        self.nodata_keys = nodata_keys
+        self.mask_keys = mask_keys
+        self.metadata_key = metadata_key
+        self.custom_run_window_function = custom_run_window_function
+        self.output_nodata = output_nodata
+        self.min_block_size = min_block_size
+        self.verbose = verbose
+
+
+    @property
+    def metadata_raster(self):
+        return self.raster_paths_dict[self.metadata_key]
+
+
+    def verify(self):
+        cont = hrt.check_create_new_file(output_file=self.raster_out,
+                                  overwrite=overwrite)
+        
+
+    def create(self, overwrite) -> bool:
+        """Create empty output raster
+        returns bool wether the rest of the function should continue"""
+
+        #Check if function should continue.
+        
+        if cont:
+            if self.verbose:
+                print(f"creating output raster: {self.raster_out.stem}  {self.raster_out.path}")
+            self.raster_out.create(metadata=self.metadata_raster.metadata,
+                                   nodata=self.output_nodata)
+        else:
+            if self.verbose:
+                print(f"output raster already exists: {self.raster_out.stem}  {self.raster_out.path}")
+        return cont
+
+    
+    def run(self, overwrite=False, **kwargs):
+        try:
+            cont = self.create(overwrite=overwrite)
+            
+            if cont:
+                self.metadata_raster.min_block_size = self.min_block_size
+                self.blocks_df = self.metadata_raster.generate_blocks()
+                self.blocks_total = len(self.blocks_df)
+
+                gdal_src = self.raster_out.open_gdal_source_write()
+                band_out = gdal_src.GetRasterBand(1)
+                for idx, block_row in self.blocks_df.iterrows():
+                    window = block_row['window_readarray']
+                    block = hrt.RasterBlocks(window=window,
+                                raster_paths_dict=self.raster_paths_dict,
+                                nodata_keys=self.nodata_keys,
+                                mask_keys=self.mask_keys,
+                                )
+
+                    if block.cont:
+                        block_out = self.custom_run_window_function(block=block, 
+                                                                    **kwargs)
+                        if self.verbose:
+                            print(f"{idx} / {self.blocks_total}", end= '\r')
+
+
+                        #Wegschrijven block
+                        self.raster_out.write_array(array=block_out, 
+                                            window=window, 
+                                            band=band_out)
+
+
+                # band_out.FlushCache()  # close file after writing, slow, needed?
+                band_out = None
+        except Exception as e:
+            band_out.FlushCache()
+            band_out = None
+            self.raster_out.unlink()
+            raise e

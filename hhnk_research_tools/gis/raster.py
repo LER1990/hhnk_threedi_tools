@@ -381,8 +381,7 @@ class Raster(File):
     
     def write_array(self, array, window, band=None):
         """
-        Note that not providing the band is much slower
-        and should be avoided.
+        Note that providing the band may be faster.
 
         array (np.array([])): block or raster array
         window (list): [x0, y0, xsize, ysize]
@@ -397,7 +396,7 @@ class Raster(File):
         
         if flushband:
             #Only flush band if it was not provided
-            band.FlushCache()  # close file after writing
+            # band.FlushCache()  # close file after writing
             band = None
 
 
@@ -440,6 +439,7 @@ variables: {get_variables(self)}
                verbose=False,
                overwrite=False):
         """Create empty raster
+        
         metadata (RasterMetadata): metadata
         nodata (int): nodata value
         """

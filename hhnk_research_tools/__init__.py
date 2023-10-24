@@ -64,6 +64,7 @@ from hhnk_research_tools.raster_functions import (
     RasterCalculator,
     reproject,
     hist_stats,
+    RasterCalculatorV2,
 )
 
 
