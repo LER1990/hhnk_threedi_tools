@@ -9,6 +9,8 @@ from hhnk_research_tools.gis.raster import Raster, RasterMetadata
 import types
 from hhnk_research_tools.folder_file_classes.folder_file_classes import Folder
 import hhnk_research_tools as hrt
+import datetime
+from IPython.display import display
 
 
 DEFAULT_CREATE_OPTIONS = ["COMPRESS=ZSTD", "TILED=YES", "PREDICTOR=2", "ZSTD_LEVEL=1"]
@@ -574,17 +576,16 @@ class RasterCalculatorV2():
                  min_block_size: int = 4096,
                  verbose: bool = False):
         """
-
+        Base setup for raster calculations. 
         
-        block_raster (hrt.Raster): 
         raster_out (hrt.Raster): 
         raster_paths_dict (dict): {key:hrt.Raster} these rasters will have blocks loaded.
         nodata_keys (list): keys to check if all values are nodata, if yes then skip
         mask_keys (list): keys to add to nodatamask
         metadata_key (str): key in raster_paths_dict that will be used to
             create blocks and metadata 
-        custom_run_window_function: function that does calculation with blocks. should return block
-        output_matadata (hrt.RasterMetadata): use hrt.Raster.metadata
+        custom_run_window_function: function that does calculation with blocks. 
+            function must return block
         output_nodata (int): nodata
         min_block_size (int): min block size for generator blocks_df
         verbose (bool): print progress
@@ -605,33 +606,59 @@ class RasterCalculatorV2():
         return self.raster_paths_dict[self.metadata_key]
 
 
-    def verify(self):
-        cont = hrt.check_create_new_file(output_file=self.raster_out,
-                                  overwrite=overwrite)
-        
+    def verify(self, overwrite) -> bool:
+        cont=True
 
-    def create(self, overwrite) -> bool:
+        #Check if all input rasters have the same bounds
+        bounds = {}
+        for key, r in self.raster_paths_dict.items():
+            if cont:
+                if not r.exists():
+                    cont=False
+                    continue
+                bounds[key] = r.metadata.bounds
+
+        first_val = list(bounds.values())[0]
+        for val in bounds.values():
+            if val != first_val:
+                cont=False
+                print(f"input rasters dont have the same bounds:")
+                display(bounds)
+                break
+        
+        #Check if we should create new file
+        if cont:
+            cont = hrt.check_create_new_file(output_file=self.raster_out,
+                                    overwrite=overwrite)
+            if cont == False:
+                if self.verbose:
+                    print(f"output raster already exists: {self.raster_out.name} @ {self.raster_out.path}")
+                
+        return cont
+    
+
+    def create(self) -> bool:
         """Create empty output raster
         returns bool wether the rest of the function should continue"""
 
         #Check if function should continue.
         
-        if cont:
-            if self.verbose:
-                print(f"creating output raster: {self.raster_out.stem}  {self.raster_out.path}")
-            self.raster_out.create(metadata=self.metadata_raster.metadata,
+        if self.verbose:
+            print(f"creating output raster: {self.raster_out.name} @ {self.raster_out.path}")
+        self.raster_out.create(metadata=self.metadata_raster.metadata,
                                    nodata=self.output_nodata)
-        else:
-            if self.verbose:
-                print(f"output raster already exists: {self.raster_out.stem}  {self.raster_out.path}")
-        return cont
 
     
     def run(self, overwrite=False, **kwargs):
         try:
-            cont = self.create(overwrite=overwrite)
+            cont = self.verify(overwrite=overwrite)
+            if cont:
+                self.create()
             
             if cont:
+                if self.verbose:
+                    time_start = datetime.datetime.now()
+
                 self.metadata_raster.min_block_size = self.min_block_size
                 self.blocks_df = self.metadata_raster.generate_blocks()
                 self.blocks_total = len(self.blocks_df)
@@ -650,7 +677,8 @@ class RasterCalculatorV2():
                         block_out = self.custom_run_window_function(block=block, 
                                                                     **kwargs)
                         if self.verbose:
-                            print(f"{idx} / {self.blocks_total}", end= '\r')
+                            time_duration = hrt.time_delta(time_start)
+                            print(f"{idx} / {self.blocks_total} ({time_duration}s) - {self.raster_out.name}", end= '\r')
 
 
                         #Wegschrijven block
@@ -661,6 +689,9 @@ class RasterCalculatorV2():
 
                 # band_out.FlushCache()  # close file after writing, slow, needed?
                 band_out = None
+            else:
+                if self.verbose:
+                    print(f"{self.raster_out.name} not created")
         except Exception as e:
             band_out.FlushCache()
             band_out = None
