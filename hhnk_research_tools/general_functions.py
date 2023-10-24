@@ -127,8 +127,19 @@ def get_pkg_resource_path(package_resource, name) -> Path:
     with pkg_resources.path(package_resource, name) as p:
         return p.absolute().resolve()
     
+
 def current_time(time_format="%H:%M:%S"):
     return datetime.datetime.now().strftime(time_format)
+
+
+def time_delta(start_time: datetime.datetime):
+    """
+    difference between starttime in seconds.
+
+    start_time (datetime.datetime): get by using datetime.datetime.now()
+    """
+    return round((datetime.datetime.now()-start_time).total_seconds(), 2)
+
 
 class dict_to_class(dict):
     """dot.notation access to dictionary attributes"""
