@@ -439,7 +439,7 @@ variables: {get_variables(self)}
                verbose=False,
                overwrite=False):
         """Create empty raster
-        
+
         metadata (RasterMetadata): metadata
         nodata (int): nodata value
         """
@@ -464,7 +464,7 @@ variables: {get_variables(self)}
         """calculate sum of raster"""
         raster_sum = 0
         for window, block in self:
-            block[block==self.nodata] = np.nan
+            block[block==self.nodata] = 0
             raster_sum+=np.nansum(block)
         return raster_sum
 
