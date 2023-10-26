@@ -289,7 +289,7 @@ def save_raster_array_to_tiff(
 
         
 #TODO deprecate, staat nu in hrt.Raster
-def build_vrt(raster_folder, bounds=None, bandlist=[1], overwrite=False):
+def build_vrt(raster_folder, vrt_name, bounds=None, bandlist=[1], overwrite=False):
     """create vrt from all rasters in a folder.
 
     raster_folder (str)
@@ -325,7 +325,6 @@ def build_vrt(raster_folder, bounds=None, bandlist=[1], overwrite=False):
 
     if not output_path.exists():
         print('Something went wrong, vrt not created.')
-
 
 
 def create_meta_from_gdf(gdf, res) -> dict:
@@ -535,36 +534,7 @@ def hist_stats(histogram: dict, stat_type: str, ignore_keys=[0]):
                 return value
             
 
-
-
 class RasterCalculatorV2():
-    """Make a custom calculation between two rasters by 
-    reading the blocks and applying a calculation
-    input raster should be of type hhnk_research_tools.gis.raster.Raster
-
-    raster1: hrt.Raster -> big raster
-    raster2: hrt.Raster -> smaller raster with full extent within big raster. 
-        Raster numbering is interchangeable as the scripts checks the bounds.
-    raster_out: hrt.Raster -> output, doesnt need to exist. self.create also creates it.
-    custom_run_window_function: function that takes window of small and big raster 
-        as input and does calculation with these arrays.
-    customize below function for this, can take more inputs.
-
-    def custom_run_window_function(self, raster1_window, raster2_window, band_out, **kwargs):
-        #hrt.Raster_calculator custom_run_window_function
-        #Customize this function with a calculation
-        #Load windows
-        block1 = self.raster1._read_array(window=raster1_window)
-        block2 = self.raster2._read_array(window=raster2_window)
-
-        #Calculate output
-        block_out = None #replace with a calculation.
-
-        # Write to file
-        band_out.WriteArray(block_out, xoff=window_small[0], yoff=window_small[1])
-
-    
-    """
     def __init__(self, 
                  raster_out: Raster,
                  raster_paths_dict: dict,
@@ -576,16 +546,30 @@ class RasterCalculatorV2():
                  min_block_size: int = 4096,
                  verbose: bool = False):
         """
-        Base setup for raster calculations. 
+        Base setup for raster calculations. The input rasters defined in raster_paths_dict
+        are looped over per block. Note that all input rasters should have the same extent.
+        This can be achieved with .vrt if the original rasters do not have the same extent.
+        For each block the custom_run_window_function will be run. This always takes a
+        block as input and also returns the block. For example:
+
+        def run_dem_window(block):
+            block_out = block.blocks['dem']
+
+            #Watervlakken ophogen naar +10mNAP
+            block_out[block.blocks['watervlakken']==1] = 10
+
+            block_out[block.masks_all] = nodata
+            return block_out
+
         
-        raster_out (hrt.Raster): 
+        raster_out (hrt.Raster): output raster location
         raster_paths_dict (dict): {key:hrt.Raster} these rasters will have blocks loaded.
         nodata_keys (list): keys to check if all values are nodata, if yes then skip
         mask_keys (list): keys to add to nodatamask
         metadata_key (str): key in raster_paths_dict that will be used to
             create blocks and metadata 
         custom_run_window_function: function that does calculation with blocks. 
-            function must return block
+            function takes block (hrt.RasterBlocks) and kwargs as input and must return block
         output_nodata (int): nodata
         min_block_size (int): min block size for generator blocks_df
         verbose (bool): print progress
@@ -614,6 +598,7 @@ class RasterCalculatorV2():
         for key, r in self.raster_paths_dict.items():
             if cont:
                 if not r.exists():
+                    print(f"Missing input raster key: {key} @ {r}")
                     cont=False
                     continue
                 bounds[key] = r.metadata.bounds
@@ -689,9 +674,11 @@ class RasterCalculatorV2():
 
                 # band_out.FlushCache()  # close file after writing, slow, needed?
                 band_out = None
+                if self.verbose:
+                    print("\nDone")
             else:
                 if self.verbose:
-                    print(f"{self.raster_out.name} not created")
+                    print(f"{self.raster_out.name} not created, .verify was false.")
         except Exception as e:
             band_out.FlushCache()
             band_out = None
