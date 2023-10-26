@@ -9,6 +9,7 @@ import importlib
 importlib.reload(dl)
 import logging
 dl.set_logging_level(logging.DEBUG)
+dl.LIZARD_URL = "https://hhnk.lizard.net/api/v4/"
 import os
 from osgeo import gdal
 import numpy as np
@@ -98,9 +99,8 @@ for key, uuid in uuids.items():
         os.mkdir(output_dir[key])
     # #Create task and download rasters
     if len(pathname) != 0:
-        cont='y'
-        # cont = input(f'Start downloading {len(pathname)} tiles. \nContinue? [y/n]')
-
+        # cont='y'
+        cont = input(f'Start downloading {len(pathname)} tiles. \nContinue? [y/n]')
 
 
 # %% Download
@@ -125,3 +125,5 @@ for block in blocks:
 # %% Create VRT
 for key, uuid in uuids.items(): 
     hrt.build_vrt(output_dir[key], bandlist=None, overwrite=True)
+
+# %%
