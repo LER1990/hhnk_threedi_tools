@@ -542,7 +542,7 @@ class RasterCalculatorV2():
                  mask_keys: list,
                  metadata_key: str,
                  custom_run_window_function: types.MethodType, 
-                 output_nodata: int,
+                 output_nodata: int = -9999,
                  min_block_size: int = 4096,
                  verbose: bool = False):
         """
