@@ -50,7 +50,7 @@ output_dir['hittestress'] = r'E:\01.basisgegevens\rasters\lizard_hittestress'
 
 #resolution of output raster.
 RESOLUTION = 0.5 #m
-CHUNKSIZE = 5000
+CHUNKSIZE = 4096
     
 #outputloc
 outDirs = {}
