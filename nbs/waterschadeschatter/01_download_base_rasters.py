@@ -46,7 +46,7 @@ output_dir['landgebruik2019_3di'] = r'E:\01.basisgegevens\hhnk_schadeschatter\01
 output_dir['landuse2019'] = r'E:\01.basisgegevens\hhnk_schadeschatter\01_data\landuse2019_tiles'
 output_dir['landuse2020'] = r'E:\01.basisgegevens\hhnk_schadeschatter\01_data\landuse2020_tiles'
 output_dir['landuse2021'] = r'E:\01.basisgegevens\hhnk_schadeschatter\01_data\landuse2021_tiles'
-output_dir['hittestress'] = r'E:\01.basisgegevens\rasters\lizard_hittestress'
+output_dir['hittestress'] = r'E:\01.basisgegevens\rasters\lizard_hittestress_v2'
 
 #resolution of output raster.
 RESOLUTION = 0.5 #m
@@ -126,4 +126,31 @@ for block in blocks:
 for key, uuid in uuids.items(): 
     hrt.build_vrt(output_dir[key], bandlist=None, overwrite=True)
 
-# %%
+# %% omzetten van nodata values van inf naar -9999
+import geopandas as gpd
+
+output_dir['hittestress'] = r'E:\01.basisgegevens\rasters\lizard_hittestress\combined_rasters.vrt'
+out_dir_v2 = r'E:\01.basisgegevens\rasters\lizard_hittestress_v2'
+r = hrt.Raster(r'E:\01.basisgegevens\rasters\lizard_hittestress\combined_rasters.vrt')
+
+r.min_block_size = 2**14
+blocks = r.generate_blocks_geometry()
+
+for index, block_row in blocks.iterrows():
+
+
+    out_block_r = hrt.Raster(os.path.join(out_dir_v2, f"hittestress_{block_row.ix}_{block_row.iy}.tif"))
+
+    if not out_block_r.exists():
+        window=block_row['window_readarray']
+        block = r._read_array(window=window)
+        block[block > 1.79769313e+100] = -9999
+
+        hrt.save_raster_array_to_tiff(output_file=out_block_r,
+                                            raster_array=block,
+                                            nodata=-9999,
+                                            metadata=hrt.create_meta_from_gdf(gpd.GeoDataFrame(block_row).T, res=0.5),
+                                            create_options=None,
+                                            num_bands=1,
+                                            overwrite=False,
+        )
