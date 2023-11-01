@@ -194,19 +194,28 @@ class RevisionsDir(Folder):
         super().__init__(os.path.join(base, name), create=create)
         self.isrevisions = True
         self.returnclass = returnclass  # eg ClimateResult
-
+        self.sub_folders = {} # revisions that are already initialized.
 
     def __getitem__(self, revision):
         """revision can be a integer or a path"""
         create=True
         if revision in ["", None]:
             create=False
-        if type(revision) == int:
-            return self.returnclass(self.revisions[revision], create=create)
-        elif os.path.exists(str(revision)):
-            return self.returnclass(revision, create=create)
+
+        if type(revision) == int:   # revision number as input
+            revision_dir = self.revisions[revision]
+        elif os.path.isabs(str(revision)): # full path as input
+            revision_dir = revision
+        elif not os.sep in str(revision):
+            revision_dir = self.full_path(revision)
         else:
-            return self.returnclass(self.full_path(revision), create=create)
+            raise ValueError(f"{str(revision)} is not valid input for `revision`") 
+
+        revision_dir = Folder(revision_dir)
+        if not revision_dir.name in self.sub_folders.keys():
+            self.sub_folders[revision_dir.name] = self.returnclass(revision_dir, create=create)
+
+        return self.sub_folders[revision_dir.name]
 
 
     def revision_structure(self, name):
