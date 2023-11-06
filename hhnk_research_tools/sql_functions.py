@@ -1,9 +1,12 @@
-import sqlite3
-import pandas as pd
-import geopandas as gpd
 import os
-from hhnk_research_tools.variables import MOD_SPATIALITE_PATH, DEF_SRC_CRS
+import sqlite3
+
+import geopandas as gpd
+import pandas as pd
+
 from hhnk_research_tools.dataframe_functions import df_convert_to_gdf
+from hhnk_research_tools.variables import DEF_SRC_CRS, MOD_SPATIALITE_PATH
+
 
 # TODO was: create_update_case_statement
 def sql_create_update_case_statement(
@@ -28,29 +31,17 @@ def sql_create_update_case_statement(
 
     """
     if show_proposed and show_prev:
-        raise Exception(
-            "sql_create_update_case_statement: "
-            "Only one of show_prev and show_proposed can be True"
-        )
+        raise Exception("sql_create_update_case_statement: " "Only one of show_prev and show_proposed can be True")
     try:
         query = None
         if not show_prev and not show_proposed:
-            vals_list = [
-                (idx, val)
-                for idx, val in zip(df[df_id_col], df[new_val_col])
-                if idx not in excluded_ids
-            ]
-            statement_list = [
-                f"WHEN {idx} THEN {val if not val is None else 'null'}"
-                for idx, val in vals_list
-            ]
+            vals_list = [(idx, val) for idx, val in zip(df[df_id_col], df[new_val_col]) if idx not in excluded_ids]
+            statement_list = [f"WHEN {idx} THEN {val if not val is None else 'null'}" for idx, val in vals_list]
         else:
             comment = "Previous:" if show_prev else "Proposed"
             vals_list = [
                 (old_val, new_val, cur_id)
-                for old_val, new_val, cur_id in zip(
-                    df[old_val_col], df[new_val_col], df[df_id_col]
-                )
+                for old_val, new_val, cur_id in zip(df[old_val_col], df[new_val_col], df[df_id_col])
                 if cur_id not in excluded_ids
             ]
             statement_list = [
@@ -98,7 +89,8 @@ def sql_construct_select_query(table_name, columns=None) -> str:
     except Exception as e:
         raise e from None
 
-#TODO REMOVE
+
+# TODO REMOVE
 def create_sqlite_connection(database_path):
     """Create connection to database. On windows with conda envs this requires the mod_spatialaite extension
     to be installed explicitly. The location of this extension is stored in
@@ -129,8 +121,7 @@ def create_sqlite_connection(database_path):
         raise e from None
 
 
-
-#TODO REMOVE
+# TODO REMOVE
 def sql_table_exists(database_path, table_name):
     """
     Checks if a table name exists in the specified database
@@ -143,10 +134,8 @@ def sql_table_exists(database_path, table_name):
         raise e from None
 
 
-#TODO REMOVE
-def execute_sql_selection(
-    query, conn=None, database_path=None, **kwargs
-) -> pd.DataFrame:
+# TODO REMOVE
+def execute_sql_selection(query, conn=None, database_path=None, **kwargs) -> pd.DataFrame:
     """
     Execute sql query. Creates own connection if database path is given.
     Returns pandas dataframe
@@ -206,10 +195,7 @@ def _sql_get_creation_statement_from_table(src_table_name, dst_table_name, curso
 
         create_statement = cursor.execute(creation_sql).fetchone()[0]
         to_list = create_statement.split()
-        all_but_name = [
-            item if index != 2 else f'"{dst_table_name}"'
-            for index, item in enumerate(to_list)
-        ]
+        all_but_name = [item if index != 2 else f'"{dst_table_name}"' for index, item in enumerate(to_list)]
         creation_statement = " ".join(all_but_name)
         return creation_statement
     except Exception as e:
@@ -217,9 +203,7 @@ def _sql_get_creation_statement_from_table(src_table_name, dst_table_name, curso
 
 
 # TODO was: replace_or_add_table
-def sqlite_replace_or_add_table(
-    db, dst_table_name, src_table_name, select_statement=None
-):
+def sqlite_replace_or_add_table(db, dst_table_name, src_table_name, select_statement=None):
     """
     This functions maintains the backup tables.
     Tables are created if they do not exist yet.
@@ -235,8 +219,7 @@ def sqlite_replace_or_add_table(
         curr = conn.cursor()
         # Check if table exists
         exists = curr.execute(
-            f"SELECT count() from sqlite_master "
-            f"WHERE type='table' and name='{dst_table_name}'"
+            f"SELECT count() from sqlite_master " f"WHERE type='table' and name='{dst_table_name}'"
         ).fetchone()[0]
         if exists == 0:
             # Get the original creation statement from the table we are backing up if the new table doesn't exist
@@ -263,7 +246,7 @@ def sqlite_replace_or_add_table(
             conn.close()
 
 
-#TODO REMOVE
+# TODO REMOVE
 # TODO was: get_table_as_df
 def sqlite_table_to_df(database_path, table_name, columns=None) -> pd.DataFrame:
     conn = None
@@ -279,11 +262,9 @@ def sqlite_table_to_df(database_path, table_name, columns=None) -> pd.DataFrame:
             conn.close()
 
 
-#TODO REMOVE
+# TODO REMOVE
 # TODO was: gdf_from_sql
-def sqlite_table_to_gdf(
-    query, id_col, to_gdf=True, conn=None, database_path=None
-) -> gpd.GeoDataFrame:
+def sqlite_table_to_gdf(query, id_col, to_gdf=True, conn=None, database_path=None) -> gpd.GeoDataFrame:
     """
     Returns DataFrame or GeoDataFrame from database query.
 
@@ -297,9 +278,7 @@ def sqlite_table_to_gdf(
                 Supply either conn or database path.
                 )
     """
-    if (conn is None and database_path is None) or (
-        conn is not None and database_path is not None
-    ):
+    if (conn is None and database_path is None) or (conn is not None and database_path is not None):
         raise Exception("Provide exactly one of conn or database_path")
     try:
         kill_conn = conn is None

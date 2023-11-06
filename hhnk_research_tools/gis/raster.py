@@ -1,36 +1,36 @@
 # %%
-from osgeo import gdal
-import numpy as np
-import matplotlib.pyplot as plt
-import pandas as pd
-import geopandas as gpd
-from pathlib import Path
-from scipy import ndimage
 import inspect
+from pathlib import Path
+
+import geopandas as gpd
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+from osgeo import gdal
+from scipy import ndimage
 from shapely import geometry
+
 import hhnk_research_tools as hrt
 from hhnk_research_tools.folder_file_classes.file_class import File
 from hhnk_research_tools.general_functions import get_functions, get_variables
 
 
-
 class Raster(File):
     def __init__(self, base, min_block_size=1024):
         super().__init__(base)
-        
-        self.source_set=False #Tracks if the source exist on the system. 
+
+        self.source_set = False  # Tracks if the source exist on the system.
         self._array = None
-        self.min_block_size=min_block_size
+        self.min_block_size = min_block_size
 
     @property
     def array(self):
-        if self._array  is not None:
-            print('from memory')
+        if self._array is not None:
+            print("from memory")
             return self._array
         else:
-            print('Array not loaded. Call Raster.get_array(window) first')
+            print("Array not loaded. Call Raster.get_array(window) first")
             return self._array
-
 
     @array.setter
     def array(self, raster_array, window=None, band_nr=1):
@@ -46,10 +46,8 @@ class Raster(File):
 
         if window is not None:
             raster_array = band.ReadAsArray(
-                xoff=int(window[0]),
-                yoff=int(window[1]),
-                win_xsize=int(window[2]),
-                win_ysize=int(window[3]))
+                xoff=int(window[0]), yoff=int(window[1]), win_xsize=int(window[2]), win_ysize=int(window[3])
+            )
         else:
             raster_array = band.ReadAsArray()
 
@@ -65,16 +63,12 @@ class Raster(File):
 
             gdal_src = self.open_gdal_source_read()
             if band_count == 1:
-                raster_array = self._read_array(band=gdal_src.GetRasterBand(1), 
-                                                window=window)
+                raster_array = self._read_array(band=gdal_src.GetRasterBand(1), window=window)
 
             elif band_count == 3:
-                red_array = self._read_array(band=gdal_src.GetRasterBand(1), 
-                                                window=window)
-                green_array = self._read_array(band=gdal_src.GetRasterBand(2), 
-                                                window=window)   
-                blue_array = self._read_array(band=gdal_src.GetRasterBand(3), 
-                                window=window)                                                                            
+                red_array = self._read_array(band=gdal_src.GetRasterBand(1), window=window)
+                green_array = self._read_array(band=gdal_src.GetRasterBand(2), window=window)
+                blue_array = self._read_array(band=gdal_src.GetRasterBand(3), window=window)
 
                 raster_array = np.dstack((red_array, green_array, blue_array))
             else:
@@ -87,33 +81,31 @@ class Raster(File):
         except Exception as e:
             raise e from None
 
-
     @property
     def source(self):
         if super().exists():
             if not self.source_set:
-                self.source=True #call source.setter
+                self.source = True  # call source.setter
                 return self.open_gdal_source_read()
             else:
                 return self.open_gdal_source_read()
         else:
             return False
-        
+
     @source.setter
     def source(self, value):
         """If source does not exist it will not be set.
-        Bit clunky. But it should work that if it exists it will only be set once. 
-        Otherwise it will not set.  """
-        if super().exists(): #cannot use self.exists here.
-            #Needs to be first otherwise we end in a loop when settings metadata/nodata/band_count
-            self.source_set=True 
+        Bit clunky. But it should work that if it exists it will only be set once.
+        Otherwise it will not set."""
+        if super().exists():  # cannot use self.exists here.
+            # Needs to be first otherwise we end in a loop when settings metadata/nodata/band_count
+            self.source_set = True
 
             gdal_src = self.open_gdal_source_read()
 
             self._metadata = RasterMetadata(gdal_src=gdal_src)
             self._nodata = gdal_src.GetRasterBand(1).GetNoDataValue()
             self._band_count = gdal_src.RasterCount
-
 
     def open_gdal_source_read(self):
         """usage;
@@ -122,41 +114,37 @@ class Raster(File):
         """
         return gdal.Open(self.base, gdal.GA_ReadOnly)
 
-
     def open_gdal_source_write(self):
         """
         open source with write access
         """
         return gdal.Open(self.base, gdal.GA_Update)
 
-
     def unlink(self, missing_ok=True):
         """Remove raster if it exists, reset source."""
         self.path.unlink(missing_ok=missing_ok)
         if not self.exists():
-            self.source_set=False
-
+            self.source_set = False
 
     def exists(self):
         file_exists = super().exists()
 
         if file_exists:
-            if self.source_set: #check this first for speed.
+            if self.source_set:  # check this first for speed.
                 return True
             else:
-                self.source #set source
+                self.source  # set source
                 return True
         else:
             if self.source_set:
                 self.source_set = False
             return False
 
-
     @property
     def nodata(self):
         if self.exists():
             return self._nodata
-        
+
     @property
     def band_count(self):
         if self.exists():
@@ -166,11 +154,9 @@ class Raster(File):
     def metadata(self):
         if self.exists():
             return self._metadata
-        
 
     def plot(self):
         plt.imshow(self._array)
-
 
     @property
     def shape(self):
@@ -179,28 +165,27 @@ class Raster(File):
     @property
     def pixelarea(self):
         return self.metadata.pixelarea
-    
-    
+
     def statistics(self, approve_ok=True, force=True):
         """approve_ok: reads stats from xml if available.
         force: calculates stats, might be slow.
         returns [min, max, mean, std]"""
         raster_src = self.open_gdal_source_read()
-        stats = raster_src.GetRasterBand(1).GetStatistics(approve_ok, force) #[min, max, mean, std]
-        d=6 #decimals
-        return {"min":np.round(stats[0], d),
-                "max":np.round(stats[1],d),
-                "mean":np.round(stats[2],d),
-                "std":np.round(stats[3],d),
-                }
-
+        stats = raster_src.GetRasterBand(1).GetStatistics(approve_ok, force)  # [min, max, mean, std]
+        d = 6  # decimals
+        return {
+            "min": np.round(stats[0], d),
+            "max": np.round(stats[1], d),
+            "mean": np.round(stats[2], d),
+            "std": np.round(stats[3], d),
+        }
 
     def generate_blocks(self, blocksize_from_source: bool = False) -> pd.DataFrame:
-        """Generate blocks with the blocksize of the band. 
+        """Generate blocks with the blocksize of the band.
         These blocks can be used as window to load the raster iteratively.
         from_source (bool): read
         """
-        
+
         if blocksize_from_source:
             gdal_src = self.open_gdal_source_read()
             band = gdal_src.GetRasterBand(1)
@@ -211,80 +196,81 @@ class Raster(File):
             block_height = 0
             block_width = 0
 
-
         if (block_height < self.min_block_size) or (block_width < self.min_block_size):
-            block_height=self.min_block_size
-            block_width=self.min_block_size
+            block_height = self.min_block_size
+            block_width = self.min_block_size
 
         ncols = int(np.floor(self.metadata.x_res / block_width))
         nrows = int(np.floor(self.metadata.y_res / block_height))
 
+        # Create arrays with index of where windows end. These are square blocks.
+        xparts = np.linspace(0, block_width * ncols, ncols + 1).astype(int)
+        yparts = np.linspace(0, block_height * nrows, nrows + 1).astype(int)
 
-        #Create arrays with index of where windows end. These are square blocks. 
-        xparts = np.linspace(0, block_width*ncols, ncols+1).astype(int)
-        yparts = np.linspace(0, block_height*nrows, nrows+1).astype(int)
+        # If raster has some extra data that didnt fall within a block it is added to the parts here.
+        # These blocks are not square.
+        if block_width * ncols != self.shape[1]:
+            xparts = np.append(xparts, self.shape[1])
+            ncols += 1
+        if block_height * nrows != self.shape[0]:
+            yparts = np.append(yparts, self.shape[0])
+            nrows += 1
 
-        #If raster has some extra data that didnt fall within a block it is added to the parts here.
-        #These blocks are not square.
-        if block_width*ncols != self.shape[1]:
-            xparts=np.append(xparts, self.shape[1])
-            ncols+=1
-        if block_height*nrows != self.shape[0]:
-            yparts=np.append(yparts, self.shape[0])
-            nrows+=1
-
-        blocks_df = pd.DataFrame(index=np.arange(nrows*ncols)+1, columns=['ix', 'iy', 'window'])
+        blocks_df = pd.DataFrame(index=np.arange(nrows * ncols) + 1, columns=["ix", "iy", "window"])
         i = 0
         for ix in range(ncols):
             for iy in range(nrows):
                 i += 1
-                blocks_df.loc[i, :] = np.array((ix, iy, [xparts[ix], yparts[iy], xparts[ix+1], yparts[iy+1]]), dtype=object)
+                blocks_df.loc[i, :] = np.array(
+                    (ix, iy, [xparts[ix], yparts[iy], xparts[ix + 1], yparts[iy + 1]]), dtype=object
+                )
 
-        blocks_df['window_readarray'] = blocks_df['window'].apply(lambda x: [int(x[0]), int(x[1]), int(x[2]-x[0]), int(x[3]-x[1])])
+        blocks_df["window_readarray"] = blocks_df["window"].apply(
+            lambda x: [int(x[0]), int(x[1]), int(x[2] - x[0]), int(x[3] - x[1])]
+        )
 
-
-
-        self.blocks=blocks_df
+        self.blocks = blocks_df
         return blocks_df
 
-
     def _generate_blocks_geometry_row(self, window):
-        minx=self.metadata.x_min
-        maxy=self.metadata.y_max
+        minx = self.metadata.x_min
+        maxy = self.metadata.y_max
 
-        #account for pixel size
-        minx += window[0] *self.metadata.pixel_width
+        # account for pixel size
+        minx += window[0] * self.metadata.pixel_width
         maxy += window[1] * self.metadata.pixel_height
-        maxx = minx + window[2] *self.metadata.pixel_width
+        maxx = minx + window[2] * self.metadata.pixel_width
         miny = maxy + window[3] * self.metadata.pixel_height
-        
+
         return geometry.box(minx=minx, miny=miny, maxx=maxx, maxy=maxy)
-    
 
     def generate_blocks_geometry(self) -> gpd.GeoDataFrame:
         """Create blocks with shapely geometry"""
         self.blocks = self.generate_blocks()
-        self.blocks =gpd.GeoDataFrame(self.blocks, geometry=self.blocks["window_readarray"].apply(self._generate_blocks_geometry_row), crs=self.metadata.projection)
+        self.blocks = gpd.GeoDataFrame(
+            self.blocks,
+            geometry=self.blocks["window_readarray"].apply(self._generate_blocks_geometry_row),
+            crs=self.metadata.projection,
+        )
         return self.blocks
-
 
     def sum_labels(self, labels_raster, labels_index):
         """Calculate the sum of the rastervalues per label."""
         if labels_raster.shape != self.shape:
-            raise Exception(f'label raster shape {labels_raster.shape} does not match the raster shape {self.shape}')
+            raise Exception(f"label raster shape {labels_raster.shape} does not match the raster shape {self.shape}")
 
         accum = None
 
         for window, block in self:
-            block[block==self.nodata] = 0
+            block[block == self.nodata] = 0
             block[pd.isna(block)] = 0
 
             block_label = labels_raster._read_array(window=window)
 
-            #Calculate sum per label (region)
-            result = ndimage.sum_labels(input=block,
-                                    labels=block_label,
-                                    index=labels_index) #Which values in labels to take into account.
+            # Calculate sum per label (region)
+            result = ndimage.sum_labels(
+                input=block, labels=block_label, index=labels_index
+            )  # Which values in labels to take into account.
 
             if accum is None:
                 accum = result
@@ -292,33 +278,29 @@ class Raster(File):
                 accum += result
         return accum
 
-
     def iter_window(self, min_block_size=None):
         """Iterate of the raster using blocks, only returning the window, not the values."""
-        if not hasattr(self,'blocks') or min_block_size is not None:
+        if not hasattr(self, "blocks") or min_block_size is not None:
             if min_block_size is not None:
-                 self.min_block_size = min_block_size
-                
+                self.min_block_size = min_block_size
+
             _ = self.generate_blocks_geometry()
 
         for idx, block_row in self.blocks.iterrows():
-            window=block_row['window_readarray']
+            window = block_row["window_readarray"]
             yield idx, window, block_row
-
 
     def to_file(self):
         pass
 
-
     def __iter__(self):
-        if not hasattr(self,'blocks'):
+        if not hasattr(self, "blocks"):
             _ = self.generate_blocks()
 
         for idx, block_row in self.blocks.iterrows():
-            window=block_row['window_readarray']
+            window = block_row["window_readarray"]
             block = self._read_array(window=window)
             yield window, block
-            
 
     def __repr__(self):
         if self.exists():
@@ -346,41 +328,43 @@ variables: {get_variables(self)}
         metadata : RasterMetadata instance
         nodata: int
         """
-        #Check if function should continue.
+        # Check if function should continue.
         if verbose:
             print(f"creating output raster: {self.path}")
-        target_ds = hrt.create_new_raster_file(file_name=self.path,
-                                                nodata=nodata,
-                                                meta=metadata,
-                                                datatype=datatype,
-                                                create_options=create_options,
-                                                overwrite=overwrite,)
+        target_ds = hrt.create_new_raster_file(
+            file_name=self.path,
+            nodata=nodata,
+            meta=metadata,
+            datatype=datatype,
+            create_options=create_options,
+            overwrite=overwrite,
+        )
         target_ds = None
 
-        #Reset source, if raster is deleted and recreated with different resolution
-        #this would otherwise cause issues. 
-        self.source_set=False
-        self.source=None #Update raster now it exists
-
+        # Reset source, if raster is deleted and recreated with different resolution
+        # this would otherwise cause issues.
+        self.source_set = False
+        self.source = None  # Update raster now it exists
 
     def sum(self):
         """calculate sum of raster"""
         raster_sum = 0
         for window, block in self:
-            block[block==self.nodata] = np.nan
-            raster_sum+=np.nansum(block)
+            block[block == self.nodata] = np.nan
+            raster_sum += np.nansum(block)
         return raster_sum
 
 
-class RasterMetadata():
+class RasterMetadata:
     """Metadata object of a raster. Resolution can be changed
     so that a new raster with another resolution can be created.
-    
-    Metadata can be created by supplying either: 
+
+    Metadata can be created by supplying either:
     1. gdal_src
     2. res, bounds
     """
-    def __init__(self, gdal_src=None, res=None, bounds_dict=None, proj='epsg:28992'):
+
+    def __init__(self, gdal_src=None, res=None, bounds_dict=None, proj="epsg:28992"):
         """gdal_src = gdal.Open(raster_source)
         bounds = {"minx":, "maxx":, "miny":, "maxy":}
         Projection only implemented for epsg:28992"""
@@ -393,15 +377,18 @@ class RasterMetadata():
             self.y_res = gdal_src.RasterYSize
 
         elif res is not None and bounds_dict is not None:
-            projections = {'epsg:28992':'PROJCS["Amersfoort / RD New",GEOGCS["Amersfoort",DATUM["Amersfoort",SPHEROID["Bessel 1841",6377397.155,299.1528128,AUTHORITY["EPSG","7004"]],TOWGS84[565.2369,50.0087,465.658,-0.406857,0.350733,-1.87035,4.0812],AUTHORITY["EPSG","6289"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4289"]],PROJECTION["Oblique_Stereographic"],PARAMETER["latitude_of_origin",52.15616055555555],PARAMETER["central_meridian",5.38763888888889],PARAMETER["scale_factor",0.9999079],PARAMETER["false_easting",155000],PARAMETER["false_northing",463000],UNIT["metre",1,AUTHORITY["EPSG","9001"]],AXIS["X",EAST],AXIS["Y",NORTH],AUTHORITY["EPSG","28992"]]'}
-            
-            self.proj=projections[proj]
-            self.georef = (int(np.floor(bounds_dict['minx'])), res, 0.0, int(np.ceil(bounds_dict['maxy'])), 0.0, -res)
-            self.x_res = int((int(np.ceil(bounds_dict['maxx']))-int(np.floor(bounds_dict['minx'])))/res)
-            self.y_res = int((int(np.ceil(bounds_dict['maxy']))-int(np.floor(bounds_dict['miny'])))/res)
+            projections = {
+                "epsg:28992": 'PROJCS["Amersfoort / RD New",GEOGCS["Amersfoort",DATUM["Amersfoort",SPHEROID["Bessel 1841",6377397.155,299.1528128,AUTHORITY["EPSG","7004"]],TOWGS84[565.2369,50.0087,465.658,-0.406857,0.350733,-1.87035,4.0812],AUTHORITY["EPSG","6289"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4289"]],PROJECTION["Oblique_Stereographic"],PARAMETER["latitude_of_origin",52.15616055555555],PARAMETER["central_meridian",5.38763888888889],PARAMETER["scale_factor",0.9999079],PARAMETER["false_easting",155000],PARAMETER["false_northing",463000],UNIT["metre",1,AUTHORITY["EPSG","9001"]],AXIS["X",EAST],AXIS["Y",NORTH],AUTHORITY["EPSG","28992"]]'
+            }
+
+            self.proj = projections[proj]
+            self.georef = (int(np.floor(bounds_dict["minx"])), res, 0.0, int(np.ceil(bounds_dict["maxy"])), 0.0, -res)
+            self.x_res = int((int(np.ceil(bounds_dict["maxx"])) - int(np.floor(bounds_dict["minx"]))) / res)
+            self.y_res = int((int(np.ceil(bounds_dict["maxy"])) - int(np.floor(bounds_dict["miny"]))) / res)
 
         else:
-            raise Exception('Metadata class called without proper input.')
+            raise Exception("Metadata class called without proper input.")
+
     @property
     def pixel_width(self):
         return self.georef[1]
@@ -430,7 +417,7 @@ class RasterMetadata():
     def bounds(self):
         return [self.x_min, self.x_max, self.y_min, self.y_max]
 
-    #TODO deprecated. Remove in future release.
+    # TODO deprecated. Remove in future release.
     @property
     def bounds_dl(self):
         """Lizard v3 bounds"""
@@ -454,11 +441,11 @@ class RasterMetadata():
     @property
     def pixelarea(self):
         return abs(self.georef[1] * self.georef[5])
-    
+
     @property
     def projection(self):
         try:
-            proj_str = self.proj.split('AUTHORITY')[-1][2:-3].split('","')
+            proj_str = self.proj.split("AUTHORITY")[-1][2:-3].split('","')
             return f"{proj_str[0]}:{proj_str[1]}"
         except:
             return None
@@ -470,28 +457,36 @@ class RasterMetadata():
                 return resolution
             if georef_i == -self.pixel_width:
                 return -resolution
-                
+
         georef_new = list(self.georef)
         georef_new[1] = res_str(georef_new[1])
         georef_new[5] = res_str(georef_new[5])
         return tuple(georef_new)
 
-
     def update_resolution(self, resolution_new):
         """Create new resolution metdata, only works for refining now."""
         resolution_current = self.pixel_width
         if (resolution_current / resolution_new).is_integer():
-            self.x_res = int((resolution_current/resolution_new) *  self.x_res)
-            self.y_res = int((resolution_current/resolution_new) *  self.y_res)
+            self.x_res = int((resolution_current / resolution_new) * self.x_res)
+            self.y_res = int((resolution_current / resolution_new) * self.y_res)
             self.georef = self._update_georef(resolution_new)
-            print(f'updated metadata resolution from {resolution_current}m to {resolution_new}m')
+            print(f"updated metadata resolution from {resolution_current}m to {resolution_new}m")
         else:
-            raise Exception(f'New resolution ({resolution_new}) can currently only be smaller than old resolution ({resolution_current})')
+            raise Exception(
+                f"New resolution ({resolution_new}) can currently only be smaller than old resolution ({resolution_current})"
+            )
 
     def __repr__(self):
-        funcs = '.'+' .'.join([i for i in dir(self) if not i.startswith('_') and hasattr(inspect.getattr_static(self,i), '__call__')]) #getattr resulted in RecursionError. https://stackoverflow.com/questions/1091259/how-to-test-if-a-class-attribute-is-an-instance-method
-        variables = '.'+' .'.join([i for i in dir(self) if not i.startswith('__') and not hasattr(inspect.getattr_static(self,i)
-                        , '__call__')])
+        funcs = "." + " .".join(
+            [i for i in dir(self) if not i.startswith("_") and hasattr(inspect.getattr_static(self, i), "__call__")]
+        )  # getattr resulted in RecursionError. https://stackoverflow.com/questions/1091259/how-to-test-if-a-class-attribute-is-an-instance-method
+        variables = "." + " .".join(
+            [
+                i
+                for i in dir(self)
+                if not i.startswith("__") and not hasattr(inspect.getattr_static(self, i), "__call__")
+            ]
+        )
         repr_str = f"""functions: {funcs}
 variables: {variables}"""
         return f""".projection : {self.projection} 
@@ -507,8 +502,10 @@ variables: {variables}"""
         return getattr(self, item)
 
 
-if __name__ == '__main__':
-    dem_path = Path(r"G:\02_Werkplaatsen\06_HYD\Projecten\HKC16015 Wateropgave 2.0\11. DCMB\hhnk-modelbuilder-master\data\fixed_data\DEM\DEM_AHN4_int.vrt")
+if __name__ == "__main__":
+    dem_path = Path(
+        r"G:\02_Werkplaatsen\06_HYD\Projecten\HKC16015 Wateropgave 2.0\11. DCMB\hhnk-modelbuilder-master\data\fixed_data\DEM\DEM_AHN4_int.vrt"
+    )
     if dem_path.exists():
-        r=Raster(str(dem_path))
+        r = Raster(str(dem_path))
         print(r)

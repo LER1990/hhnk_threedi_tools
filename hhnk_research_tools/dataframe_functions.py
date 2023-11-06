@@ -1,18 +1,23 @@
 # %%
-import geopandas as gpd
-from shapely import wkt
-from shapely import wkb
 import os
-from hhnk_research_tools.variables import WKT, GPKG_DRIVER
+
+import geopandas as gpd
+from shapely import wkb, wkt
+
+from hhnk_research_tools.general_functions import ensure_file_path
 from hhnk_research_tools.variables import (
+    CSV,
+    DEF_DELIMITER,
+    DEF_ENCODING,
     DEF_GEOMETRY_COL,
     DEF_SRC_CRS,
     DEF_TRGT_CRS,
-    DEF_DELIMITER,
-    DEF_ENCODING,
+    GPKG,
+    GPKG_DRIVER,
+    WKT,
+    file_types_dict,
 )
-from hhnk_research_tools.variables import file_types_dict, GPKG, CSV
-from hhnk_research_tools.general_functions import ensure_file_path
+
 
 # Conversion
 def _set_geometry_by_type(df, geom_col_type, col=DEF_GEOMETRY_COL):
@@ -31,12 +36,13 @@ def _set_geometry_by_type(df, geom_col_type, col=DEF_GEOMETRY_COL):
             df[col] = df[col].apply(wkt.loads)
         except Exception as e:
             raise e from None
-            
+
     if geom_col_type == "wkb":
         try:
             df[col] = df[col].apply(wkb.loads)
         except Exception as e:
             raise e from None
+
 
 # TODO convert_df_to_gdf en create_gdf_from_df zijn geworden; df_convert_to_gdf
 # TODO make this more logical, it now handles two types of geometry_cols under the same variable.
@@ -94,7 +100,7 @@ def df_add_geometry_to_gdf(df, geometry_col, crs=DEF_TRGT_CRS) -> gpd.GeoDataFra
 
 
 # Saving
-#TODO is dit nodig? Staat vooral nog in banklevels
+# TODO is dit nodig? Staat vooral nog in banklevels
 def gdf_write_to_geopackage(gdf, path=None, filename=None, filepath=None, driver=GPKG_DRIVER, index=False):
     """
     Functions outputs DataFrame of GeoDataFrame to .gpkg document
@@ -111,7 +117,7 @@ def gdf_write_to_geopackage(gdf, path=None, filename=None, filepath=None, driver
     ext = file_types_dict[GPKG]
     if filepath is None:
         filepath = os.path.join(path, filename + ext)
-    
+
     try:
         if os.path.exists(filepath):
             os.remove(filepath)
@@ -127,7 +133,8 @@ def gdf_write_to_geopackage(gdf, path=None, filename=None, filepath=None, driver
     except Exception as e:
         raise e from None
 
-#TODO is dit nog nodig? staat alleen in banklevels
+
+# TODO is dit nog nodig? staat alleen in banklevels
 def gdf_write_to_csv(gdf, path=None, filename=None, filepath=None, mode="w", cols=None, index=False):
     """
     Functions outputs DataFrame of GeoDataFrame to .csv document

@@ -10,6 +10,7 @@ from osgeo import gdal, ogr
 # Drivers
 DRIVER_GDAL_MEM = gdal.GetDriverByName("MEM")
 
+
 def rasterize(
     vector_path,
     rows,
@@ -26,7 +27,7 @@ def rasterize(
     ds = ogr.Open(vector_path)
     layer = ds[0]
     target_ds = DRIVER_GDAL_MEM.Create("rasterize", columns, rows, 1, data_type)
-    
+
     # set nodata
     band = target_ds.GetRasterBand(1)
     band.SetNoDataValue(nodata)
