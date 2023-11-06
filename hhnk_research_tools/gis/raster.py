@@ -541,7 +541,7 @@ class RasterMetadata():
 
     @property
     def bbox(self):
-        """Lizard v4 bbox; x1, y1, x2, y2"""
+        """Lizard v4 bbox; str(x1, y1, x2, y2)"""
         return f"{self.x_min}, {self.y_min}, {self.x_max}, {self.y_max}"
 
     @property

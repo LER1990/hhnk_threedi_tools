@@ -70,29 +70,35 @@ class Folder(BasePath):
         return file_list
 
 
-    def full_path(self, name):
+    def full_path(self, name, return_only_file_class=False):
         """
         returns the full path of a file or a folder when only a name is known.
         Will return the object based on suffix
         
+        return_only_file_class (bool): only return file class, can speed up
+            some functions because hrt.Raster initialization takes some time.
         """
         name = str(name)
         if name.startswith("\\") or name.startswith("/"):
             name = name[1:]
 
         filepath = self.path.joinpath(name)
+        
         if name in [None, ""]:
-            new_file = Path("")
-        elif filepath.suffix == "":
-            new_file = Folder(filepath)
-        elif filepath.suffix in [".gdb", ".gpkg", ".shp"]:
-            new_file = FileGDB(filepath)
-        elif filepath.suffix in [".tif", ".tiff", ".vrt"]:
-            new_file = Raster(filepath)
-        elif filepath.suffix in [".sqlite"]:
-            new_file = Sqlite(filepath)
-        else:
+            new_file = self #TODO was, Path(""), gaat dit goed?
+        elif return_only_file_class:
             new_file = File(filepath)
+        else:
+            if filepath.suffix == "":
+                new_file = Folder(filepath)
+            elif filepath.suffix in [".gdb", ".gpkg", ".shp"]:
+                new_file = FileGDB(filepath)
+            elif filepath.suffix in [".tif", ".tiff", ".vrt"]:
+                new_file = Raster(filepath)
+            elif filepath.suffix in [".sqlite"]:
+                new_file = Sqlite(filepath)
+            else:
+                new_file = File(filepath)
         return new_file
 
 
@@ -191,7 +197,6 @@ layers (access through .layers): {self.layerlist}"""
         return repr_str
 
 
-
 class FileGDBLayer():
     def __init__(self, name:str,  parent:FileGDB):
         self.name=name
@@ -199,7 +204,3 @@ class FileGDBLayer():
 
     def load(self):
         return gpd.read_file(self.parent.base, layer=self.name)
-
-folder = Folder(r"d:\repositories\hhnk-research-tools\hhnk_research_tools\folder_file_classes")
-
-folder.add_file("mijn_file", "mijn_file.ext")
