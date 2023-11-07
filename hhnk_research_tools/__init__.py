@@ -1,3 +1,4 @@
+from hhnk_research_tools.gis.raster import Raster, RasterMetadata
 import hhnk_research_tools.threedi as threedi
 import hhnk_research_tools.variables as variables
 import hhnk_research_tools.waterschadeschatter.resources
@@ -34,7 +35,7 @@ from hhnk_research_tools.general_functions import (
     get_variables,
     load_source,
 )
-from hhnk_research_tools.gis.raster import Raster, RasterMetadata
+
 from hhnk_research_tools.raster_functions import (
     RasterCalculator,
     build_vrt,
