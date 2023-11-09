@@ -1,16 +1,10 @@
 # -*- coding: utf-8 -*-
 import multiprocessing as mp
+
 from tqdm import tqdm
 
 
-def multiprocess(
-    df,
-    target_function,
-    processes=mp.cpu_count(),
-    use_pbar=True,
-    stepsize=None,
-    **kwargs
-):
+def multiprocess(df, target_function, processes=mp.cpu_count(), use_pbar=True, stepsize=None, **kwargs):
     """Input every row of the df in the target function. the target function should always contain (idx,row) as the first two arguments
     subsequent arguments are passed with the kwargs.
     Stepsize splits the dataframe into smaller pieces to prevent the loop from breaking.
@@ -23,11 +17,9 @@ def multiprocess(
     if stepsize == None:
         stepsize = len(df)
 
-
     def update_pbar(*a):
         """show progress of the function"""
         pbar.update()
-
 
     def main_multi():
         multi_step = {0: 0}
@@ -46,13 +38,10 @@ def multiprocess(
                         kwds=kwargs,
                         callback=update_pbar,
                     )
-                    for idx, row in df.iloc[
-                        multi_step[i - 1] : multi_step[i]
-                    ].iterrows()
+                    for idx, row in df.iloc[multi_step[i - 1] : multi_step[i]].iterrows()
                 ]
                 results_local[i] = [p.get() for p in results_local[i]]
         return results_local
-
 
     # Call target function with or without pbar
     if use_pbar == True:
