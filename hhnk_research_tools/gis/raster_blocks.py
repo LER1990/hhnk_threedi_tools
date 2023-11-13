@@ -27,7 +27,7 @@ class RasterBlocks:
         wont load other rasters if all values are nodata.
     mask_keys (list): list of keys to create a nodata mask for
     """
-    
+
     def __post_init__(self):
         self.cont = True
         self.blocks = {}
@@ -36,20 +36,20 @@ class RasterBlocks:
         try:
             for key in self.nodata_keys:
                 self.blocks[key] = self.read_array_window(key)
-                self.masks[key] = self.blocks[key]==self.raster_paths_dict[key].nodata
+                self.masks[key] = self.blocks[key] == self.raster_paths_dict[key].nodata
 
                 if np.all(self.masks[key]):
                     """if all values in masks are nodata then we can break loading"""
                     self.cont = False
                     break
-            
-            #Load other rasters
+
+            # Load other rasters
             if self.cont:
                 for key in self.raster_paths_dict:
                     if key not in self.blocks.keys():
                         self.blocks[key] = self.read_array_window(key)
                     if (key in self.mask_keys) and (key not in self.masks.keys()):
-                        self.masks[key] = self.blocks[key]==self.raster_paths_dict[key].nodata
+                        self.masks[key] = self.blocks[key] == self.raster_paths_dict[key].nodata
         except Exception as e:
             raise Exception("Something went wrong. Do all inputs exist?", e)
 
@@ -57,9 +57,7 @@ class RasterBlocks:
         """read window from hrt.Raster"""
         return self.raster_paths_dict[key]._read_array(window=self.window)
 
-
     @property
     def masks_all(self):
         """Combine nodata masks"""
-        return np.any([self.masks[i] for i in self.masks],0)
-
+        return np.any([self.masks[i] for i in self.masks], 0)
