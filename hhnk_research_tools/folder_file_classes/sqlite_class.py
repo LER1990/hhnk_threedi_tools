@@ -1,21 +1,22 @@
 import os
 import sqlite3
+
 import pandas as pd
+
 import hhnk_research_tools as hrt
 from hhnk_research_tools.folder_file_classes.file_class import File
 from hhnk_research_tools.variables import MOD_SPATIALITE_PATH
 
+
 class Sqlite(File):
     def __init__(self, base):
         super().__init__(base)
-
 
     def connect(self):
         if self.exists():
             return self.create_sqlite_connection()
         else:
             return None
-
 
     def create_sqlite_connection(self):
         """Create connection to database. On windows with conda envs this requires the mod_spatialaite extension
@@ -45,9 +46,8 @@ class Sqlite(File):
 
         except Exception as e:
             raise e from None
-        
 
-    def read_table(self, table_name:str, id_col:str=None, columns:list=[]):
+    def read_table(self, table_name: str, id_col: str = None, columns: list = []):
         """read table as (geo)dataframe. If there is a geometry column
         then it will load as a gdf in epsg 28992.
         Run .list_tables to get an overview over available (v2) tables
@@ -64,7 +64,7 @@ class Sqlite(File):
                 query = f"SELECT *, AsWKT(the_geom) as 'geometry' \nFROM {table_name}"
 
                 df = pd.read_sql(query, conn)
-                df.drop("the_geom",axis=1, inplace=True)
+                df.drop("the_geom", axis=1, inplace=True)
 
                 df = hrt.df_convert_to_gdf(df=df, src_crs="4326")
 
@@ -72,28 +72,26 @@ class Sqlite(File):
                 query = f"SELECT * \nFROM {table_name}"
                 df = pd.read_sql(query, conn)
 
-
             if columns:
-                df=df[columns]
+                df = df[columns]
             if id_col:
                 df.set_index(id_col, drop=True, inplace=True)
 
             return df
         except KeyError as e:
-            raise Exception(e, f"available columns are: {table_meta['name'].values}") 
+            raise Exception(e, f"available columns are: {table_meta['name'].values}")
         except Exception as e:
             raise e from None
         finally:
             if conn:
                 conn.close()
 
-
     def execute_sql_selection(self, query, conn=None, **kwargs) -> pd.DataFrame:
         """
         Execute sql query. Creates own connection if database path is given.
         Returns pandas dataframe
         """
-        kill_connection = conn is None #Only kill connection when it was not provided as input
+        kill_connection = conn is None  # Only kill connection when it was not provided as input
         try:
             if conn is None:
                 conn = self.connect()
@@ -107,7 +105,6 @@ class Sqlite(File):
             if kill_connection and conn is not None:
                 conn.close()
 
-
     def execute_sql_changes(self, query, conn=None):
         """
         Takes a query that changes the database and tries
@@ -118,7 +115,7 @@ class Sqlite(File):
         The explicit begin and commit statements are necessary
         to make sure we can roll back the transaction
         """
-        kill_connection = conn is None #Only kill connection when it was not provided as input
+        kill_connection = conn is None  # Only kill connection when it was not provided as input
         try:
             if conn is None:
                 conn = self.connect()
@@ -133,8 +130,7 @@ class Sqlite(File):
             if kill_connection and conn is not None:
                 conn.close()
 
-
-    #TODO was sql_table_exists
+    # TODO was sql_table_exists
     def sql_table_info(self, table_name, conn=None):
         """
         Returns table info if it exists
@@ -143,16 +139,16 @@ class Sqlite(File):
         df = self.execute_sql_selection(query=query, conn=conn)
         return df
 
-
     def list_tables(self):
         """Get a list of all v2 tables."""
-        query="""SELECT name
+        query = """SELECT name
                     FROM sqlite_schema 
                     WHERE type='table' 
                     AND name LIKE 'v2_%'
                     ORDER BY name
                 """
         return self.execute_sql_selection(query=query)
+
 
 # %%
 
@@ -161,5 +157,5 @@ if __name__ == "__main__":
 
     table_name = "v2_channel"
 
-    df = self.read_table(table_name=table_name, columns=["id","geometry"])
+    df = self.read_table(table_name=table_name, columns=["id", "geometry"])
     display(df)

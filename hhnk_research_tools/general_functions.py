@@ -1,33 +1,36 @@
-from pathlib import Path
-import geopandas as gpd
-import sys
+import datetime
 import importlib
 import importlib.resources as pkg_resources  # Load resource from package
 import inspect
+import sys
+from pathlib import Path
 from uuid import uuid4
-import datetime
+
+import geopandas as gpd
+
 
 def get_functions(cls, stringify=True):
     """Get a string with functions (methods) in a class."""
-    funcs = [f".{i}" for i in dir(cls) if not i.startswith('__') 
-                            and hasattr(inspect.getattr_static(cls,i)
-                            , '__call__')]
+    funcs = [
+        f".{i}" for i in dir(cls) if not i.startswith("__") and hasattr(inspect.getattr_static(cls, i), "__call__")
+    ]
     if stringify:
         funcs = " ".join(funcs)
     return funcs
 
+
 def get_variables(cls, stringify=True):
     """Get a string with variables (properties) in a class."""
-    variables = [i for i in dir(cls) if not i.startswith('__') 
-                            and not hasattr(inspect.getattr_static(cls,i)
-                            , '__call__')]
+    variables = [
+        i for i in dir(cls) if not i.startswith("__") and not hasattr(inspect.getattr_static(cls, i), "__call__")
+    ]
     if stringify:
         variables = " ".join(variables)
     return variables
 
 
 def ensure_file_path(filepath):
-    #TODO add to file class? still needed?
+    # TODO add to file class? still needed?
     """
     Functions makes sure all folders in a given file path exist. Creates them if they don't.
     """
@@ -53,32 +56,34 @@ def convert_gdb_to_gpkg(gdb, gpkg, overwrite=False, verbose=True):
                 gdf.to_file(str(gpkg), layer=layer, driver="GPKG")
 
 
-def check_create_new_file(output_file:str, overwrite:bool=False, input_files:list=[], check_is_file=True) -> bool:
+def check_create_new_file(
+    output_file: str, overwrite: bool = False, input_files: list = [], check_is_file=True
+) -> bool:
     """
-    Check if we should continue to create a new file. 
+    Check if we should continue to create a new file.
 
     output_file: The file under evaluation
-    overwrite: When overwriting is True the output_file will be removed.  
-    input_files: if input files are provided the edit time of the input will be 
+    overwrite: When overwriting is True the output_file will be removed.
+    input_files: if input files are provided the edit time of the input will be
                  compared to the output. If edit time is after the output, it will
                  recreate the output.
     check_is_file: check if output_file is a file
     """
-    create=False
+    create = False
     output_file = Path(str(output_file))
 
-    #Als geen suffix (dus geen file), dan error
-    if check_is_file: #
+    # Als geen suffix (dus geen file), dan error
+    if check_is_file:  #
         if not output_file.suffix:
             raise TypeError(f"{output_file} is not a file.")
-    
+
     # Rasterize regions
     if not output_file.exists():
         create = True
     else:
         if overwrite:
             output_file.unlink()
-            create=True
+            create = True
 
         if input_files:
             # Check edit times. To see if raster needs to be updated.
@@ -88,7 +93,7 @@ def check_create_new_file(output_file:str, overwrite:bool=False, input_files:lis
                 input_file = Path(input_file)
                 if input_file.exists():
                     input_mtime = input_file.stat().st_mtime
-                    
+
                     if input_mtime > output_mtime:
                         output_file.unlink()
                         create = True
@@ -98,19 +103,19 @@ def check_create_new_file(output_file:str, overwrite:bool=False, input_files:lis
 
 def load_source(name: str, path: str):
     """
-    Load python file as module. 
-    
+    Load python file as module.
+
     Replacement for deprecated imp.load_source()
     Inspiration from https://github.com/cuthbertLab/music21/blob/master/music21/test/commonTest.py"""
     spec = importlib.util.spec_from_file_location(name, str(path))
     if spec is None or spec.loader is None:
-        raise FileNotFoundError(f'No such file or directory: {path!r}')
+        raise FileNotFoundError(f"No such file or directory: {path!r}")
     if name in sys.modules:
         module = sys.modules[name]
     else:
         module = importlib.util.module_from_spec(spec)
         if module is None:
-            raise FileNotFoundError(f'No such file or directory: {path!r}')
+            raise FileNotFoundError(f"No such file or directory: {path!r}")
         sys.modules[name] = module
     spec.loader.exec_module(module)
 
@@ -126,7 +131,7 @@ def get_pkg_resource_path(package_resource, name) -> Path:
     """return path to resource in a python package, so it can be loaded"""
     with pkg_resources.path(package_resource, name) as p:
         return p.absolute().resolve()
-    
+
 
 def current_time(time_format="%H:%M:%S"):
     return datetime.datetime.now().strftime(time_format)
@@ -138,11 +143,12 @@ def time_delta(start_time: datetime.datetime):
 
     start_time (datetime.datetime): get by using datetime.datetime.now()
     """
-    return round((datetime.datetime.now()-start_time).total_seconds(), 2)
+    return round((datetime.datetime.now() - start_time).total_seconds(), 2)
 
 
 class dict_to_class(dict):
     """dot.notation access to dictionary attributes"""
+
     __getattr__ = dict.get
     __setattr__ = dict.__setitem__
     __delattr__ = dict.__delitem__

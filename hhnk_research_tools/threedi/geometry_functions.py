@@ -1,6 +1,7 @@
-import numpy as np
-from shapely.geometry import Point, LineString
 import geopandas as gpd
+import numpy as np
+from shapely.geometry import LineString, Point
+
 
 def coordinates_to_points(nodes):
     """Input is r.nodes"""

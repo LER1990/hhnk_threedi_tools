@@ -1,0 +1,1 @@
+"%appdata%\Python\Python39\Scripts\black.exe" ../hhnk_research_tools -l 119
