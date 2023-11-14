@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+
 import numpy as np
 
 
@@ -39,7 +40,7 @@ class RasterBlocks:
                 self.masks[key] = self.blocks[key] == self.raster_paths_dict[key].nodata
 
                 if np.all(self.masks[key]):
-                    """if all values in masks are nodata then we can break loading"""
+                    # if all values in masks are nodata then we can break loading
                     self.cont = False
                     break
 
@@ -51,7 +52,7 @@ class RasterBlocks:
                     if (key in self.mask_keys) and (key not in self.masks.keys()):
                         self.masks[key] = self.blocks[key] == self.raster_paths_dict[key].nodata
         except Exception as e:
-            raise Exception("Something went wrong. Do all inputs exist?", e)
+            raise Exception("Something went wrong. Do all inputs exist?") from e
 
     def read_array_window(self, key):
         """read window from hrt.Raster"""
