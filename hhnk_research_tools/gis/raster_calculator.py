@@ -1,20 +1,19 @@
+import datetime
+import types
 from dataclasses import dataclass
 
 import numpy as np
 
+import hhnk_research_tools as hrt
+
 
 @dataclass
 class RasterBlocks:
-    window: list
-    raster_paths_dict: dict
-    nodata_keys: list = None
-    mask_keys: list = None
-
     """
     General function to load blocks of selected files with a given window.
     Also loads the masks and can check if a blcok is fully nodata, in which
     case it stopts loading.
-    Input files should have the same extent, so make a vrt of them first if 
+    Input files should have the same extent, so make a vrt of them first if
     they are not.
 
     for speed this class does not check if all inputs exist. This should still
@@ -28,6 +27,11 @@ class RasterBlocks:
         wont load other rasters if all values are nodata.
     mask_keys (list): list of keys to create a nodata mask for
     """
+
+    window: list
+    raster_paths_dict: dict
+    nodata_keys: list = None
+    mask_keys: list = None
 
     def __post_init__(self):
         self.cont = True
@@ -62,3 +66,167 @@ class RasterBlocks:
     def masks_all(self):
         """Combine nodata masks"""
         return np.any([self.masks[i] for i in self.masks], 0)
+
+
+class RasterCalculatorV2:
+    """
+    Base setup for raster calculations. The input rasters defined in raster_paths_dict
+    are looped over per block. Note that all input rasters should have the same extent.
+    This can be achieved with .vrt if the original rasters do not have the same extent.
+    For each block the custom_run_window_function will be run. This always takes a
+    block as input and also returns the block. For example:
+
+    def run_dem_window(block):
+        block_out = block.blocks['dem']
+
+        #Watervlakken ophogen naar +10mNAP
+        block_out[block.blocks['watervlakken']==1] = 10
+
+        block_out[block.masks_all] = nodata
+        return block_out
+
+
+    raster_out (hrt.Raster): output raster location
+    raster_paths_dict (dict): {key:hrt.Raster} these rasters will have blocks loaded.
+    nodata_keys (list): keys to check if all values are nodata, if yes then skip
+    mask_keys (list): keys to add to nodatamask
+    metadata_key (str): key in raster_paths_dict that will be used to
+        create blocks and metadata
+    custom_run_window_function: function that does calculation with blocks.
+        function takes block (hrt.RasterBlocks) and kwargs as input and must return block
+    output_nodata (int): nodata of output raster
+    min_block_size (int): min block size for generator blocks_df, higher is faster but
+        uses more RAM.
+    verbose (bool): print progress
+    """
+
+    def __init__(
+        self,
+        raster_out: hrt.Raster,
+        raster_paths_dict: dict,
+        nodata_keys: list,
+        mask_keys: list,
+        metadata_key: str,
+        custom_run_window_function: types.MethodType,
+        output_nodata: int = -9999,
+        min_block_size: int = 4096,
+        verbose: bool = False,
+    ):
+        self.raster_out = raster_out
+        self.raster_paths_dict = raster_paths_dict
+        self.nodata_keys = nodata_keys
+        self.mask_keys = mask_keys
+        self.metadata_key = metadata_key
+        self.custom_run_window_function = custom_run_window_function
+        self.output_nodata = output_nodata
+        self.min_block_size = min_block_size
+        self.verbose = verbose
+
+        # Filled when running
+        self.blocks_df = None
+
+    @property
+    def metadata_raster(self) -> hrt.Raster:
+        """Raster of which metadata is used to create output."""
+        return self.raster_paths_dict[self.metadata_key]
+
+    def verify(self, overwrite) -> bool:
+        """Verify if all inputs can be accessed and if they have the same bounds."""
+        cont = True
+
+        # Check if all input rasters have the same bounds
+        bounds = {}
+        for key, r in self.raster_paths_dict.items():
+            if cont:
+                if not r.exists():
+                    print(f"Missing input raster key: {key} @ {r}")
+                    cont = False
+                    continue
+                bounds[key] = r.metadata.bounds
+
+        first_val = list(bounds.values())[0]
+        for val in bounds.values():
+            if val != first_val:
+                cont = False
+                print(f"input rasters dont have the same bounds:\n{bounds}")
+                break
+
+        # Check if we should create new file
+        if cont:
+            cont = hrt.check_create_new_file(output_file=self.raster_out, overwrite=overwrite)
+            if cont is False:
+                if self.verbose:
+                    print(f"output raster already exists: {self.raster_out.name} @ {self.raster_out.path}")
+
+        return cont
+
+    def create(self) -> bool:
+        """Create empty output raster"""
+        if self.verbose:
+            print(f"creating output raster: {self.raster_out.name} @ {self.raster_out.path}")
+
+        self.raster_out.create(metadata=self.metadata_raster.metadata, nodata=self.output_nodata)
+
+    def run(self, overwrite=False, **kwargs):
+        """start raster calculation.
+
+        Parameters
+        ----------
+        overwrite : bool, optional, by default False
+            False -> if output already exists this will not run.
+            True  -> remove existing output and continue
+        """
+        try:
+            cont = self.verify(overwrite=overwrite)
+            if cont:
+                self.create()
+
+            if cont:
+                if self.verbose:
+                    time_start = datetime.datetime.now()
+
+                self.metadata_raster.min_block_size = self.min_block_size
+                self.blocks_df = self.metadata_raster.generate_blocks()
+                blocks_total = len(self.blocks_df)
+
+                # Open output raster for writing
+                gdal_src = self.raster_out.open_gdal_source_write()
+                band_out = gdal_src.GetRasterBand(1)
+
+                # Loop over generated blocks and do calculation per block
+                for idx, block_row in self.blocks_df.iterrows():
+                    window = block_row["window_readarray"]
+
+                    # Load the blocks for the given window.
+                    block = RasterBlocks(
+                        window=window,
+                        raster_paths_dict=self.raster_paths_dict,
+                        nodata_keys=self.nodata_keys,
+                        mask_keys=self.mask_keys,
+                    )
+
+                    # The blocks have an attribute that can prevent further calculation
+                    # if certain conditions are met. It is False when a raster in the
+                    # nodata keys has all value as nodata. Output should be nodata as well
+                    if block.cont:
+                        # Calculate output raster block with custom function.
+                        block_out = self.custom_run_window_function(block=block, **kwargs)
+
+                        self.raster_out.write_array(array=block_out, window=window, band=band_out)
+
+                        if self.verbose:
+                            time_duration = hrt.time_delta(time_start)
+                            print(f"{idx} / {blocks_total} ({time_duration}s) - {self.raster_out.name}", end="\r")
+
+                # band_out.FlushCache()  # close file after writing, slow, needed?
+                band_out = None
+                if self.verbose:
+                    print("\nDone")
+            else:
+                if self.verbose:
+                    print(f"{self.raster_out.name} not created, .verify was false.")
+        except Exception as e:
+            band_out.FlushCache()
+            band_out = None
+            self.raster_out.unlink()
+            raise e
