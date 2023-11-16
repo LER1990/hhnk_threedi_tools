@@ -3,9 +3,6 @@ import tempfile
 import types
 from dataclasses import dataclass
 from typing import TypedDict
-
-import numpy as np
-
 import hhnk_research_tools as hrt
 
 
