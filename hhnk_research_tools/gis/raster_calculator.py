@@ -1,6 +1,8 @@
 import datetime
+import tempfile
 import types
 from dataclasses import dataclass
+from typing import TypedDict
 
 import numpy as np
 
@@ -14,12 +16,13 @@ class RasterBlocks:
     Also loads the masks and can check if a blcok is fully nodata, in which
     case it stopts loading.
     Input files should have the same extent, so make a vrt of them first if
-    they are not.
+    they are not. This is handled in RasterCalculator.
 
-    for speed this class does not check if all inputs exist. This should still
-    be these case.
+    For speed this class does not check if all inputs exist. This should still
+    be the case.
 
-    Input parameters
+    Parameters
+    ----------
     window (list): [xmin, ymin, xsize, ysize]; same as row['windows_readarray']
     raster_paths_dict (dict): {key:hrt.Raster}, path items should be of type
         hrt.Raster.
@@ -29,9 +32,9 @@ class RasterBlocks:
     """
 
     window: list
-    raster_paths_dict: dict
-    nodata_keys: list = None
-    mask_keys: list = None
+    raster_paths_dict: dict[str : hrt.Raster]
+    nodata_keys: list[str] = None
+    mask_keys: list[str] = None
 
     def __post_init__(self):
         self.cont = True
@@ -85,11 +88,12 @@ class RasterCalculatorV2:
         block_out[block.masks_all] = nodata
         return block_out
 
-
+    Parameters
+    ----------
     raster_out (hrt.Raster): output raster location
-    raster_paths_dict (dict): {key:hrt.Raster} these rasters will have blocks loaded.
-    nodata_keys (list): keys to check if all values are nodata, if yes then skip
-    mask_keys (list): keys to add to nodatamask
+    raster_paths_dict (dict[str : hrt.Raster]): these rasters will have blocks loaded.
+    nodata_keys (list [str]): keys to check if all values are nodata, if yes then skip
+    mask_keys (list[str]): keys to add to nodatamask
     metadata_key (str): key in raster_paths_dict that will be used to
         create blocks and metadata
     custom_run_window_function: function that does calculation with blocks.
@@ -103,9 +107,9 @@ class RasterCalculatorV2:
     def __init__(
         self,
         raster_out: hrt.Raster,
-        raster_paths_dict: dict,
-        nodata_keys: list,
-        mask_keys: list,
+        raster_paths_dict: dict[str : hrt.Raster],
+        nodata_keys: list[str],
+        mask_keys: list[str],
         metadata_key: str,
         custom_run_window_function: types.MethodType,
         output_nodata: int = -9999,
@@ -122,6 +126,12 @@ class RasterCalculatorV2:
         self.min_block_size = min_block_size
         self.verbose = verbose
 
+        # Local vars
+        self.tempdir = hrt.Folder(tempfile.TemporaryDirectory().name)
+        # If bounds of input rasters are not the same a temp vrt is created
+        # The path to these files are stored here.
+        self.raster_paths_same_bounds = self.raster_paths_dict.copy()
+
         # Filled when running
         self.blocks_df = None
 
@@ -130,7 +140,7 @@ class RasterCalculatorV2:
         """Raster of which metadata is used to create output."""
         return self.raster_paths_dict[self.metadata_key]
 
-    def verify(self, overwrite) -> bool:
+    def verify(self, overwrite: bool) -> bool:
         """Verify if all inputs can be accessed and if they have the same bounds."""
         cont = True
 
@@ -144,12 +154,18 @@ class RasterCalculatorV2:
                     continue
                 bounds[key] = r.metadata.bounds
 
-        first_val = list(bounds.values())[0]
-        for val in bounds.values():
-            if val != first_val:
-                cont = False
-                print(f"input rasters dont have the same bounds:\n{bounds}")
-                break
+        # Check resolution
+        if cont:
+            for key, r in self.raster_paths_dict.items():
+                if r.metadata.pixelarea != self.metadata_raster.metadata.pixelarea:
+                    cont = False
+                    print(f"Resolution of {key} is not the same as metadataraster {self.metadata_key}")
+
+        # Check bounds, if they are not the same as the metadata_raster, create a vrt
+        if cont:
+            for key, r in self.raster_paths_dict.items():
+                if r.metadata.bounds != self.metadata_raster.metadata.bounds:
+                    self.create_vrt(key)
 
         # Check if we should create new file
         if cont:
@@ -167,14 +183,37 @@ class RasterCalculatorV2:
 
         self.raster_out.create(metadata=self.metadata_raster.metadata, nodata=self.output_nodata)
 
-    def run(self, overwrite=False, **kwargs):
-        """start raster calculation.
+    def create_vrt(self, raster_key: str):
+        """Create vrt of input rasters with the extent of the metadata raster
+
+        Parameters
+        ----------
+        raster_key : key in self.raster_paths_dict to create vrt from.
+        """
+        input_raster = self.raster_paths_dict[raster_key]
+
+        # Create temp output folder.
+        output_raster = self.tempdir.full_path(f"{input_raster.stem}.vrt")
+
+        output_raster.build_vrt(
+            overwrite=True,
+            bounds=self.metadata_raster.metadata.bbox_gdal,
+            input_files=input_raster,
+            resolution=self.metadata_raster.metadata.pixel_width,
+        )
+
+        self.raster_paths_same_bounds[raster_key] = output_raster
+
+    def run(self, overwrite: bool = False, **kwargs):
+        """Start raster calculation.
 
         Parameters
         ----------
         overwrite : bool, optional, by default False
             False -> if output already exists this will not run.
             True  -> remove existing output and continue
+        **kwargs:
+            extra arguments that can be passed to the custom_run_window_function
         """
         try:
             cont = self.verify(overwrite=overwrite)
@@ -200,7 +239,7 @@ class RasterCalculatorV2:
                     # Load the blocks for the given window.
                     block = RasterBlocks(
                         window=window,
-                        raster_paths_dict=self.raster_paths_dict,
+                        raster_paths_dict=self.raster_paths_same_bounds,
                         nodata_keys=self.nodata_keys,
                         mask_keys=self.mask_keys,
                     )

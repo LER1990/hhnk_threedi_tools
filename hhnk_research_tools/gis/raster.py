@@ -451,7 +451,7 @@ class RasterMetadata:
     2. res, bounds
     """
 
-    def __init__(self, gdal_src=None, res=None, bounds_dict=None, proj="epsg:28992"):
+    def __init__(self, gdal_src=None, res: float = None, bounds_dict=None, proj="epsg:28992"):
         """gdal_src = gdal.Open(raster_source)
         bounds = {"minx":, "maxx":, "miny":, "maxy":}
         Projection only implemented for epsg:28992"""
@@ -508,7 +508,7 @@ class RasterMetadata:
     @property
     def bounds_dl(self):
         """Lizard v3 bounds"""
-        raise Exception("use .bbox instead. lizard v4 api no longer suppers bounds_dl")
+        raise Exception("use .bbox instead. lizard v4 api no longer supports bounds_dl")
         return {
             "west": self.x_min,
             "south": self.y_min,
@@ -520,6 +520,11 @@ class RasterMetadata:
     def bbox(self):
         """Lizard v4 bbox; str(x1, y1, x2, y2)"""
         return f"{self.x_min}, {self.y_min}, {self.x_max}, {self.y_max}"
+
+    @property
+    def bbox_gdal(self):
+        """gdal takes bbox as list, for instance in vrt creation."""
+        return [self.x_min, self.y_min, self.x_max, self.y_max]
 
     @property
     def shape(self):
