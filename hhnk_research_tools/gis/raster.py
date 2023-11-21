@@ -37,10 +37,12 @@ class Raster(File):
         self._array = raster_array
 
     def _read_array(self, band=None, window=None):
+        # TODO hidden to public?
         """window=[x0, y0, x1, y1]--oud.
         window=[x0, y0, xsize, ysize]
-        x0, y0 is left top corner!!"""
-        if band == None:
+        x0, y0 is left top corner!!
+        """
+        if band is None:
             gdal_src = self.open_gdal_source_read()
             band = gdal_src.GetRasterBand(1)
 
@@ -60,6 +62,8 @@ class Raster(File):
         return raster_array
 
     def get_array(self, window=None, band_count=None):
+        # TODO hoe deze gebruiken tov _read_array? is het nuttig om
+        # array ook in cls weg te schrijven.
         try:
             if band_count is None:
                 band_count = self.band_count
@@ -569,8 +573,15 @@ class RasterMetadata:
             )
 
     def __repr__(self):
-        funcs = "." + " .".join(
-            [i for i in dir(self) if not i.startswith("_") and hasattr(inspect.getattr_static(self, i), "__call__")]
+        funcs = (
+            "."
+            + " .".join(
+                [
+                    i
+                    for i in dir(self)
+                    if not i.startswith("_") and hasattr(inspect.getattr_static(self, i), "__call__")
+                ]
+            )
         )  # getattr resulted in RecursionError. https://stackoverflow.com/questions/1091259/how-to-test-if-a-class-attribute-is-an-instance-method
         variables = "." + " .".join(
             [

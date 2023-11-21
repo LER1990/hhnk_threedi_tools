@@ -423,7 +423,7 @@ class RasterCalculator:
 
         # If all are true (or all false) we know that the rasters fully overlap.
         if raster1.metadata.pixel_width != raster2.metadata.pixel_width:
-            raise Exception("""Rasters do not have equal resolution""")
+            raise Exception("Rasters do not have equal resolution")
 
         if np.all(check_arr):
             # In this case raster1 is the bigger raster.
@@ -432,17 +432,18 @@ class RasterCalculator:
             # In this case raster2 is the bigger raster
             return raster2, raster1, {"raster1": "small", "raster2": "big"}
         else:
-            raise Exception("""Raster bounds do not overlap. We cannot use this.""")
+            raise Exception("Raster bounds do not overlap. We cannot use this.")
 
     def create(self, overwrite=False) -> bool:
         """Create empty output raster
-        returns bool wether the rest of the function should continue"""
+        returns bool wether the rest of the function should continue
+        """
         # Check if function should continue.
         cont = True
         if not overwrite and self.raster_out.exists():
             cont = False
 
-        if cont == True:
+        if cont is True:
             if self.verbose:
                 print(f"creating output raster: {self.raster_out.path}")
             target_ds = create_new_raster_file(
@@ -457,7 +458,7 @@ class RasterCalculator:
         return cont
 
     def run(self, overwrite=False, **kwargs):
-        """loop over the small raster blocks, load both arrays and apply a custom function to it."""
+        """Loop over the small raster blocks, load both arrays and apply a custom function to it."""
         cont = self.create(overwrite=overwrite)
 
         if cont:
@@ -489,10 +490,10 @@ class RasterCalculator:
 
 
 def reproject(src: Raster, target_res: float, output_path: str):
-    """
-    src : hrt.Raster
+    """src : hrt.Raster
     output_path : str
-    meta_new : hrt.core"""
+    meta_new : hrt.core
+    """
     # https://svn.osgeo.org/gdal/trunk/autotest/alg/reproject.py
     src.metadata.update_resolution(target_res)
 

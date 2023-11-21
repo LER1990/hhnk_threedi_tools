@@ -37,7 +37,7 @@ class BasePath:
         import warnings
 
         warnings.warn(
-            ".pl is deprecated and will be removed in a future release. Please use .path instead",
+            ".pl is deprecated since v2023.4 and will be removed in a future release. Please use .path instead",
             DeprecationWarning,
             stacklevel=2,
         )
@@ -88,6 +88,13 @@ class File(BasePath):
 
     def ensure_file_path(self):
         ensure_file_path(self.path)
+
+    @property
+    def parent(self):
+        """Return """
+        from hhnk_research_tools.folder_file_classes.folder_file_classes import Folder
+
+        return Folder(self.path.parent)
 
     def __repr__(self):
         repr_str = f"""{self.path.name} @ {self.path}
