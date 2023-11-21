@@ -30,11 +30,11 @@ def test_raster_blocks():
 def test_raster_calculator():
     """Test raster calculator"""
     raster_depth = hrt.Raster(TEST_DIRECTORY / r"depth_test.tif")
-    raster_lu = hrt.Raster(TEST_DIRECTORY / r"landuse_test.tif")
+    raster_small = hrt.Raster(TEST_DIRECTORY / r"lu_small.tif")
     raster_out = hrt.Raster(TEMP_DIR / f"rastercalc_{hrt.get_uuid()}.tif")
 
     def run_window(block):
-        block_out = block.blocks["lu"]
+        block_out = block.blocks["small_raster"]
 
         # Nodatamasks toepassen
         block_out[block.masks_all] = 0
@@ -44,10 +44,10 @@ def test_raster_calculator():
         raster_out=raster_out,
         raster_paths_dict={
             "depth": raster_depth,
-            "lu": raster_lu,
+            "small_raster": raster_small,
         },
-        nodata_keys=["lu"],
-        mask_keys=["depth", "lu"],
+        nodata_keys=["depth"],
+        mask_keys=["depth", "small_raster"],
         metadata_key="depth",
         custom_run_window_function=run_window,
         output_nodata=0,
@@ -57,10 +57,12 @@ def test_raster_calculator():
 
     calc.run(overwrite=False)
 
-    assert raster_out.sum() == 261581
+    assert raster_out.sum() == 70914
 
 
 # %%
 if __name__ == "__main__":
     test_raster_blocks()
     test_raster_calculator()
+
+# %%

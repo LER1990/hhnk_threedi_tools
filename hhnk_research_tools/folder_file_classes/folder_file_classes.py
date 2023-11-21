@@ -51,7 +51,8 @@ class Folder(BasePath):
 
     def create(self, parents=False, verbose=False):
         """Create folder, if parents==False path wont be
-        created if parent doesnt exist."""
+        created if parent doesnt exist.
+        """
         if not parents:
             if not self.path.parent.exists():
                 if verbose:
@@ -60,7 +61,7 @@ class Folder(BasePath):
         self.path.mkdir(parents=parents, exist_ok=True)
 
     def find_ext(self, ext: list):
-        """finds files with a certain extension"""
+        """Find files with a certain extension"""
         if type(ext) == str:
             ext = [ext]
         file_list = []
@@ -70,7 +71,7 @@ class Folder(BasePath):
 
     def full_path(self, name, return_only_file_class=False):
         """
-        returns the full path of a file or a folder when only a name is known.
+        Return the full path of a file or a folder when only a name is known.
         Will return the object based on suffix
 
         return_only_file_class (bool): only return file class, can speed up
@@ -107,7 +108,9 @@ class Folder(BasePath):
         setattr(self, objectname, new_file)
 
     def unlink_contents(self, names=[], rmfiles=True, rmdirs=False):
-        """unlink all content when names is an empty list. Otherwise just remove the names."""
+        """Unlink all content when names is an empty list.
+        Otherwise just remove the names.
+        """
         if not names:
             names = self.content
         for name in names:

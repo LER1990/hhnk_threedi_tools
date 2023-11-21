@@ -2,7 +2,9 @@ import datetime
 import tempfile
 import types
 from dataclasses import dataclass
-from typing import TypedDict
+
+import numpy as np
+
 import hhnk_research_tools as hrt
 
 
@@ -59,7 +61,7 @@ class RasterBlocks:
             raise Exception("Something went wrong. Do all inputs exist?") from e
 
     def read_array_window(self, key):
-        """read window from hrt.Raster"""
+        """Read window from hrt.Raster"""
         return self.raster_paths_dict[key]._read_array(window=self.window)
 
     @property
@@ -124,7 +126,7 @@ class RasterCalculatorV2:
         self.verbose = verbose
 
         # Local vars
-        self.tempdir = hrt.Folder(tempfile.TemporaryDirectory().name)
+        self.tempdir = hrt.Folder(raster_out.parent.joinpath(f"temp_{hrt.current_time(date=True)}"))
         # If bounds of input rasters are not the same a temp vrt is created
         # The path to these files are stored here.
         self.raster_paths_same_bounds = self.raster_paths_dict.copy()
@@ -145,6 +147,8 @@ class RasterCalculatorV2:
         bounds = {}
         for key, r in self.raster_paths_dict.items():
             if cont:
+                if not isinstance(r, hrt.Raster):
+                    raise TypeError(f"{key}:{r} in raster_paths_dict is not of type hrt.Raster")
                 if not r.exists():
                     print(f"Missing input raster key: {key} @ {r}")
                     cont = False
@@ -164,6 +168,8 @@ class RasterCalculatorV2:
                 if r.metadata.bounds != self.metadata_raster.metadata.bounds:
                     self.create_vrt(key)
 
+                    if self.verbose:
+                        print(f"{key} does not have same extent as {self.metadata_key}")
         # Check if we should create new file
         if cont:
             cont = hrt.check_create_new_file(output_file=self.raster_out, overwrite=overwrite)
@@ -174,7 +180,7 @@ class RasterCalculatorV2:
         return cont
 
     def create(self) -> bool:
-        """Create empty output raster"""
+        """Create empty output raster with metadata of metadata_raster"""
         if self.verbose:
             print(f"creating output raster: {self.raster_out.name} @ {self.raster_out.path}")
 
@@ -185,11 +191,13 @@ class RasterCalculatorV2:
 
         Parameters
         ----------
-        raster_key : key in self.raster_paths_dict to create vrt from.
+        raster_key (str) : key in self.raster_paths_dict to create vrt from.
         """
         input_raster = self.raster_paths_dict[raster_key]
+        print(f"Creating {input_raster}")
 
         # Create temp output folder.
+        self.tempdir.create()
         output_raster = self.tempdir.full_path(f"{input_raster.stem}.vrt")
 
         output_raster.build_vrt(

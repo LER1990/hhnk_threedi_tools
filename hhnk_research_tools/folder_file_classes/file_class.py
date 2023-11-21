@@ -18,16 +18,17 @@ class BasePath:
     # decorated properties
     @property
     def base(self):
-        """path as posix string (foreward slashes)"""
+        """Path as posix string (foreward slashes)"""
         return self.path.as_posix()
 
     @property
     def name(self):
-        """name with suffix"""
+        """Name with suffix"""
         return self.path.name
 
     @property
     def parent(self):
+        # TODO how to return hrt.Folder without circular imports?
         return self.path.parent
 
     # TODO remove in future release
@@ -44,7 +45,7 @@ class BasePath:
 
     @property
     def path_if_exists(self):
-        """return filepath if the file exists otherwise return None"""
+        """Return filepath if the file exists otherwise return None"""
         if self.exists():
             return str(self.path)
         return None
@@ -53,7 +54,7 @@ class BasePath:
     #     return self.path.suffix != ""
 
     def exists(self):
-        """dont return true on empty path."""
+        """Dont return true on empty path."""
         if not self._base:
             return False
         return self.path.exists()
