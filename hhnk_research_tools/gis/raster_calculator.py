@@ -101,6 +101,7 @@ class RasterCalculatorV2:
     min_block_size (int): min block size for generator blocks_df, higher is faster but
         uses more RAM.
     verbose (bool): print progress
+    tempdir (hrt.Folder): pass if you want temp vrt's to be created a specific tempdir
     """
 
     def __init__(
@@ -138,15 +139,6 @@ class RasterCalculatorV2:
 
         # Filled when running
         self.blocks_df = None
-
-    @property
-    def tempdir(self):
-        return self._tempdir
-
-    @tempdir.setter
-    def tempdir(self, tempdir):
-        tempdir.create()
-        self._tempdir = tempdir
 
     @property
     def metadata_raster(self) -> hrt.Raster:
@@ -221,6 +213,7 @@ this is not implemented or tested if it works."
         input_raster = self.raster_paths_dict[raster_key]
 
         # Create temp output folder.
+        self.tempdir.create()
         output_raster = self.tempdir.full_path(f"{input_raster.stem}.vrt")
         print(f"Creating temporary vrt; {output_raster.name} @ {output_raster}")
 
