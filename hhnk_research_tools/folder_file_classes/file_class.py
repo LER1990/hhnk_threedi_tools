@@ -26,11 +26,6 @@ class BasePath:
         """Name with suffix"""
         return self.path.name
 
-    @property
-    def parent(self):
-        # TODO how to return hrt.Folder without circular imports?
-        return self.path.parent
-
     # TODO remove in future release
     @property
     def pl(self):
@@ -84,14 +79,16 @@ class File(BasePath):
     def read_json(self):
         if self.path.suffix == ".json":
             return json.loads(self.path.read_text())
-        raise Exception(f"{self.name} is not a json.")
+        raise TypeError(f"{self.name} is not a json.")
 
     def ensure_file_path(self):
         ensure_file_path(self.path)
 
     @property
     def parent(self):
-        """Return """
+        """Return hrt.Folder instance. Import needs to happen here
+        to prevent circular imports.
+        """
         from hhnk_research_tools.folder_file_classes.folder_file_classes import Folder
 
         return Folder(self.path.parent)
@@ -105,6 +102,11 @@ variables: {get_variables(self)}
 """
         return repr_str
 
-    def view_name_with_parents(self, parents=0):
+    def view_name_with_parents(self, parents: int = 0):
+        """Display name of file with number of parents
+
+        parents (int): defaults to 0
+            number of parents to show
+        """
         parents = min(len(self.path.parts) - 2, parents)  # avoids index-error
-        return self.base.split(self.path.parents[parents].as_posix())[-1]
+        return self.base.split(self.path.parents[parents].as_posix(), maxsplit=1)[-1]

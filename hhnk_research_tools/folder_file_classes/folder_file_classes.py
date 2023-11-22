@@ -49,12 +49,19 @@ class Folder(BasePath):
     #     """Check if paths are instance of Folder."""
     #     return [i for i in self.paths if not isinstance(getattr(self, i), Folder)]
 
+    @property
+    def parent(self):
+        """Return hrt.Folder instance. Import needs to happen here
+        to prevent circular imports.
+        """
+        return Folder(self.path.parent)
+
     def create(self, parents=False, verbose=False):
         """Create folder, if parents==False path wont be
         created if parent doesnt exist.
         """
         if not parents:
-            if not self.path.parent.exists():
+            if not self.parent.exists():
                 if verbose:
                     print(f"'{self.path}' not created, parent does not exist.")
                 return

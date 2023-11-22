@@ -126,7 +126,7 @@ class RasterCalculatorV2:
         self.verbose = verbose
 
         # Local vars
-        self.tempdir = hrt.Folder(raster_out.parent.joinpath(f"temp_{hrt.current_time(date=True)}"))
+        self.tempdir = raster_out.parent.full_path(f"temp_{hrt.current_time(date=True)}")
         # If bounds of input rasters are not the same a temp vrt is created
         # The path to these files are stored here.
         self.raster_paths_same_bounds = self.raster_paths_dict.copy()
