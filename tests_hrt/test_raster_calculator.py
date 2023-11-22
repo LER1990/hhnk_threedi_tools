@@ -53,6 +53,7 @@ def test_raster_calculator():
         output_nodata=0,
         min_block_size=4096,
         verbose=True,
+        tempdir=hrt.Folder(TEMP_DIR / "temprasters"),
     )
 
     calc.run(overwrite=False)

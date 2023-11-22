@@ -114,6 +114,7 @@ class RasterCalculatorV2:
         output_nodata: int = -9999,
         min_block_size: int = 4096,
         verbose: bool = False,
+        tempdir: hrt.Folder = None,
     ):
         self.raster_out = raster_out
         self.raster_paths_dict = raster_paths_dict
@@ -126,13 +127,26 @@ class RasterCalculatorV2:
         self.verbose = verbose
 
         # Local vars
-        self.tempdir = raster_out.parent.full_path(f"temp_{hrt.current_time(date=True)}")
+        if tempdir is None:
+            self.tempdir = raster_out.parent.full_path(f"temp_{hrt.current_time(date=True)}")
+        else:
+            self.tempdir = tempdir
+
         # If bounds of input rasters are not the same a temp vrt is created
         # The path to these files are stored here.
         self.raster_paths_same_bounds = self.raster_paths_dict.copy()
 
         # Filled when running
         self.blocks_df = None
+
+    @property
+    def tempdir(self):
+        return self._tempdir
+
+    @tempdir.setter
+    def tempdir(self, tempdir):
+        tempdir.create()
+        self._tempdir = tempdir
 
     @property
     def metadata_raster(self) -> hrt.Raster:
@@ -157,19 +171,30 @@ class RasterCalculatorV2:
 
         # Check resolution
         if cont:
+            vrt_keys = []
             for key, r in self.raster_paths_dict.items():
-                if r.metadata.pixelarea != self.metadata_raster.metadata.pixelarea:
+                if r.metadata.pixelarea > self.metadata_raster.metadata.pixelarea:
+                    print(f"Resolution of {key} is not the same as metadataraster {self.metadata_key}, creating vrt")
+                    self.create_vrt(key)
+                    vrt_keys.append(key)
+                if r.metadata.pixelarea < self.metadata_raster.metadata.pixelarea:
                     cont = False
-                    print(f"Resolution of {key} is not the same as metadataraster {self.metadata_key}")
+                    raise NotImplementedError(
+                        f"Resolution of {key} is smaller than metadataraster {self.metadata_key}, \
+this is not implemented or tested if it works."
+                    )
 
         # Check bounds, if they are not the same as the metadata_raster, create a vrt
         if cont:
             for key, r in self.raster_paths_dict.items():
                 if r.metadata.bounds != self.metadata_raster.metadata.bounds:
-                    self.create_vrt(key)
+                    # Create vrt if it was not already created in resolution check
+                    if key not in vrt_keys:
+                        self.create_vrt(key)
 
                     if self.verbose:
-                        print(f"{key} does not have same extent as {self.metadata_key}")
+                        print(f"{key} does not have same extent as {self.metadata_key}, creating vrt")
+
         # Check if we should create new file
         if cont:
             cont = hrt.check_create_new_file(output_file=self.raster_out, overwrite=overwrite)
@@ -182,7 +207,7 @@ class RasterCalculatorV2:
     def create(self) -> bool:
         """Create empty output raster with metadata of metadata_raster"""
         if self.verbose:
-            print(f"creating output raster: {self.raster_out.name} @ {self.raster_out.path}")
+            print(f"Creating output raster: {self.raster_out.name} @ {self.raster_out.path}")
 
         self.raster_out.create(metadata=self.metadata_raster.metadata, nodata=self.output_nodata)
 
@@ -194,11 +219,10 @@ class RasterCalculatorV2:
         raster_key (str) : key in self.raster_paths_dict to create vrt from.
         """
         input_raster = self.raster_paths_dict[raster_key]
-        print(f"Creating {input_raster}")
 
         # Create temp output folder.
-        self.tempdir.create()
         output_raster = self.tempdir.full_path(f"{input_raster.stem}.vrt")
+        print(f"Creating temporary vrt; {output_raster.name} @ {output_raster}")
 
         output_raster.build_vrt(
             overwrite=True,
