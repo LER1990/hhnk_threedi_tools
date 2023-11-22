@@ -1,4 +1,12 @@
-from hhnk_research_tools.gis.raster import Raster, RasterMetadata
+# hhnk_research_tools/__init__.py
+from typing import TYPE_CHECKING
+
+from hhnk_research_tools.gis.raster import Raster, RasterMetadata  # noqa: F401
+
+if TYPE_CHECKING:
+    # TODO waarom dee ik ookalweer typechecking
+    import hhnk_research_tools as hrt
+
 import hhnk_research_tools.threedi as threedi
 import hhnk_research_tools.variables as variables
 import hhnk_research_tools.waterschadeschatter.resources
@@ -34,8 +42,9 @@ from hhnk_research_tools.general_functions import (
     get_uuid,
     get_variables,
     load_source,
+    time_delta,
 )
-
+from hhnk_research_tools.gis.raster_calculator import RasterBlocks, RasterCalculatorV2
 from hhnk_research_tools.raster_functions import (
     RasterCalculator,
     build_vrt,

@@ -49,18 +49,26 @@ class Folder(BasePath):
     #     """Check if paths are instance of Folder."""
     #     return [i for i in self.paths if not isinstance(getattr(self, i), Folder)]
 
+    @property
+    def parent(self):
+        """Return hrt.Folder instance. Import needs to happen here
+        to prevent circular imports.
+        """
+        return Folder(self.path.parent)
+
     def create(self, parents=False, verbose=False):
         """Create folder, if parents==False path wont be
-        created if parent doesnt exist."""
+        created if parent doesnt exist.
+        """
         if not parents:
-            if not self.path.parent.exists():
+            if not self.parent.exists():
                 if verbose:
                     print(f"'{self.path}' not created, parent does not exist.")
                 return
         self.path.mkdir(parents=parents, exist_ok=True)
 
     def find_ext(self, ext: list):
-        """finds files with a certain extension"""
+        """Find files with a certain extension"""
         if type(ext) == str:
             ext = [ext]
         file_list = []
@@ -70,7 +78,7 @@ class Folder(BasePath):
 
     def full_path(self, name, return_only_file_class=False):
         """
-        returns the full path of a file or a folder when only a name is known.
+        Return the full path of a file or a folder when only a name is known.
         Will return the object based on suffix
 
         return_only_file_class (bool): only return file class, can speed up
@@ -107,7 +115,9 @@ class Folder(BasePath):
         setattr(self, objectname, new_file)
 
     def unlink_contents(self, names=[], rmfiles=True, rmdirs=False):
-        """unlink all content when names is an empty list. Otherwise just remove the names."""
+        """Unlink all content when names is an empty list.
+        Otherwise just remove the names.
+        """
         if not names:
             names = self.content
         for name in names:

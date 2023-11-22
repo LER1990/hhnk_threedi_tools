@@ -37,16 +37,21 @@ class Raster(File):
         self._array = raster_array
 
     def _read_array(self, band=None, window=None):
+        # TODO hidden to public?
         """window=[x0, y0, x1, y1]--oud.
         window=[x0, y0, xsize, ysize]
-        x0, y0 is left top corner!!"""
-        if band == None:
+        x0, y0 is left top corner!!
+        """
+        if band is None:
             gdal_src = self.open_gdal_source_read()
             band = gdal_src.GetRasterBand(1)
 
         if window is not None:
             raster_array = band.ReadAsArray(
-                xoff=int(window[0]), yoff=int(window[1]), win_xsize=int(window[2]), win_ysize=int(window[3])
+                xoff=int(window[0]),
+                yoff=int(window[1]),
+                win_xsize=int(window[2]),
+                win_ysize=int(window[3]),
             )
         else:
             raster_array = band.ReadAsArray()
@@ -57,6 +62,8 @@ class Raster(File):
         return raster_array
 
     def get_array(self, window=None, band_count=None):
+        # TODO hoe deze gebruiken tov _read_array? is het nuttig om
+        # array ook in cls weg te schrijven.
         try:
             if band_count is None:
                 band_count = self.band_count
@@ -183,7 +190,8 @@ class Raster(File):
     def generate_blocks(self, blocksize_from_source: bool = False) -> pd.DataFrame:
         """Generate blocks with the blocksize of the band.
         These blocks can be used as window to load the raster iteratively.
-        from_source (bool): read
+        blocksize_from_source (bool): read the blocksize from the source raster
+            if its bigger than min_blocksize, use that.
         """
 
         if blocksize_from_source:
@@ -293,6 +301,88 @@ class Raster(File):
     def to_file(self):
         pass
 
+    def build_vrt(self, overwrite: bool, bounds, input_files: list, resolution="highest", bandlist=[1]):
+        """Build vrt from input files.
+        overwrite (bool)
+        bounds (np.array): format should be; (xmin, ymin, xmax, ymax)
+            if None will use input files.
+        input_files (list): list of paths to input rasters
+        resolution: "highest"|"lowest"|"average"
+            instead of "user" option, provide a float for manual target_resolution
+        bandList: doesnt work as expected, passing [1] works.
+        """
+        if hrt.check_create_new_file(output_file=self.path, overwrite=overwrite):
+            # Set inputfiles to list of strings.
+            if type(input_files) != list:
+                input_files = [str(input_files)]
+            else:
+                input_files = [str(i) for i in input_files]
+
+            if type(resolution) in (float, int):
+                kwargs = {}
+                xRes = resolution
+                yRes = resolution
+                resolution = "user"
+            else:
+                xRes = None
+                yRes = None
+
+            # Check resolution of input files
+            input_resolutions = []
+            for r in input_files:
+                r = Raster(r)
+                input_resolutions.append(r.metadata.pixel_width)
+            if len(np.unique(input_resolutions)) > 1:
+                raise Exception(
+                    f"Multiple resolutions ({input_resolutions}) found in input_files. We cannot handle that yet."
+                )
+
+            # Build vrt
+            vrt_options = gdal.BuildVRTOptions(
+                resolution=resolution,
+                separate=False,
+                resampleAlg="nearest",
+                addAlpha=False,
+                outputBounds=bounds,
+                bandList=bandlist,
+                xRes=xRes,
+                yRes=yRes,
+            )
+            ds = gdal.BuildVRT(destName=str(self.path), srcDSOrSrcDSTab=input_files, options=vrt_options)
+            ds.FlushCache()
+
+    # FIXME hoe hier het beste omgaan met Folder zonder circular imports?
+    # def build_vrt_from_folder(self, folder_path):
+    #     """"""
+    #     raster_folder = Folder(raster_folder)
+    #     output_path = raster_folder.full_path(f'{vrt_name}.vrt')
+
+    #     if output_path.exists() and not overwrite:
+    #         print(f'vrt already exists: {output_path}')
+    #         return
+
+    #     tifs_list = [str(i) for i in raster_folder.find_ext(["tif", "tiff"])]
+
+    def write_array(self, array, window, band=None):
+        """
+        Note that providing the band may be faster.
+
+        array (np.array([])): block or raster array
+        window (list): [x0, y0, xsize, ysize]
+        x0, y0 is left top corner!!"""
+        flushband = False
+        if band is None:
+            gdal_src = self.open_gdal_source_write()
+            band = gdal_src.GetRasterBand(1)
+            flushband = True
+
+        band.WriteArray(array, xoff=window[0], yoff=window[1])
+
+        if flushband:
+            # Only flush band if it was not provided
+            # band.FlushCache()  # close file after writing
+            band = None
+
     def __iter__(self):
         if not hasattr(self, "blocks"):
             _ = self.generate_blocks()
@@ -325,8 +415,9 @@ variables: {get_variables(self)}
 
     def create(self, metadata, nodata, datatype=None, create_options=None, verbose=False, overwrite=False):
         """Create empty raster
-        metadata : RasterMetadata instance
-        nodata: int
+
+        metadata (RasterMetadata): metadata
+        nodata (int): nodata value
         """
         # Check if function should continue.
         if verbose:
@@ -350,7 +441,7 @@ variables: {get_variables(self)}
         """calculate sum of raster"""
         raster_sum = 0
         for window, block in self:
-            block[block == self.nodata] = np.nan
+            block[block == self.nodata] = 0
             raster_sum += np.nansum(block)
         return raster_sum
 
@@ -364,7 +455,7 @@ class RasterMetadata:
     2. res, bounds
     """
 
-    def __init__(self, gdal_src=None, res=None, bounds_dict=None, proj="epsg:28992"):
+    def __init__(self, gdal_src=None, res: float = None, bounds_dict=None, proj="epsg:28992"):
         """gdal_src = gdal.Open(raster_source)
         bounds = {"minx":, "maxx":, "miny":, "maxy":}
         Projection only implemented for epsg:28992"""
@@ -421,7 +512,7 @@ class RasterMetadata:
     @property
     def bounds_dl(self):
         """Lizard v3 bounds"""
-        raise Exception("use .bbox instead. lizard v4 api no longer suppers bounds_dl")
+        raise Exception("use .bbox instead. lizard v4 api no longer supports bounds_dl")
         return {
             "west": self.x_min,
             "south": self.y_min,
@@ -433,6 +524,11 @@ class RasterMetadata:
     def bbox(self):
         """Lizard v4 bbox; str(x1, y1, x2, y2)"""
         return f"{self.x_min}, {self.y_min}, {self.x_max}, {self.y_max}"
+
+    @property
+    def bbox_gdal(self):
+        """gdal takes bbox as list, for instance in vrt creation."""
+        return [self.x_min, self.y_min, self.x_max, self.y_max]
 
     @property
     def shape(self):
@@ -477,8 +573,15 @@ class RasterMetadata:
             )
 
     def __repr__(self):
-        funcs = "." + " .".join(
-            [i for i in dir(self) if not i.startswith("_") and hasattr(inspect.getattr_static(self, i), "__call__")]
+        funcs = (
+            "."
+            + " .".join(
+                [
+                    i
+                    for i in dir(self)
+                    if not i.startswith("_") and hasattr(inspect.getattr_static(self, i), "__call__")
+                ]
+            )
         )  # getattr resulted in RecursionError. https://stackoverflow.com/questions/1091259/how-to-test-if-a-class-attribute-is-an-instance-method
         variables = "." + " .".join(
             [

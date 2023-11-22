@@ -4,6 +4,7 @@ import importlib.resources as pkg_resources  # Load resource from package
 import inspect
 import sys
 from pathlib import Path
+from typing import Union
 from uuid import uuid4
 
 import geopandas as gpd
@@ -31,8 +32,8 @@ def get_variables(cls, stringify=True):
 
 def ensure_file_path(filepath):
     # TODO add to file class? still needed?
-    """
-    Functions makes sure all folders in a given file path exist. Creates them if they don't.
+    """Make sure all folders in a given file path exist.
+    Creates them if they don't.
     """
     try:
         path = Path(filepath)
@@ -57,7 +58,10 @@ def convert_gdb_to_gpkg(gdb, gpkg, overwrite=False, verbose=True):
 
 
 def check_create_new_file(
-    output_file: str, overwrite: bool = False, input_files: list = [], check_is_file=True
+    output_file: Union[Path, str],
+    overwrite: bool = False,
+    input_files: list = [],
+    check_is_file=True,
 ) -> bool:
     """
     Check if we should continue to create a new file.
@@ -70,7 +74,7 @@ def check_create_new_file(
     check_is_file: check if output_file is a file
     """
     create = False
-    output_file = Path(str(output_file))
+    output_file = Path(str(output_file))  # noqa
 
     # Als geen suffix (dus geen file), dan error
     if check_is_file:  #
@@ -102,11 +106,11 @@ def check_create_new_file(
 
 
 def load_source(name: str, path: str):
-    """
-    Load python file as module.
+    """Load python file as module.
 
     Replacement for deprecated imp.load_source()
-    Inspiration from https://github.com/cuthbertLab/music21/blob/master/music21/test/commonTest.py"""
+    Inspiration from https://github.com/cuthbertLab/music21/blob/master/music21/test/commonTest.py
+    """
     spec = importlib.util.spec_from_file_location(name, str(path))
     if spec is None or spec.loader is None:
         raise FileNotFoundError(f"No such file or directory: {path!r}")
@@ -123,18 +127,28 @@ def load_source(name: str, path: str):
 
 
 def get_uuid(chars=8):
-    """max chars = 36"""
+    """Max chars is 36"""
     return str(uuid4())[:chars]
 
 
 def get_pkg_resource_path(package_resource, name) -> Path:
-    """return path to resource in a python package, so it can be loaded"""
+    """Return path to resource in a python package, so it can be loaded"""
     with pkg_resources.path(package_resource, name) as p:
         return p.absolute().resolve()
 
 
-def current_time(time_format="%H:%M:%S"):
+def current_time(time_format="%H:%M:%S", date: bool = False):
+    if date is True:
+        time_format = "%Y%m%d_%H%M%S_%f"
     return datetime.datetime.now().strftime(time_format)
+
+
+def time_delta(start_time: datetime.datetime):
+    """Difference between starttime in seconds.
+
+    start_time (datetime.datetime): get by using datetime.datetime.now()
+    """
+    return round((datetime.datetime.now() - start_time).total_seconds(), 2)
 
 
 class dict_to_class(dict):

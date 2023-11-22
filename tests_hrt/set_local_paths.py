@@ -1,9 +1,9 @@
-import sys
 import os
+import sys
 
 sys_paths = [
-    fr"E:\github\{os.getlogin()}\hhnk-threedi-tools",
-    fr"E:\github\{os.getlogin()}\hhnk-research-tools",
+    rf"E:\github\{os.getlogin()}\hhnk-threedi-tools",
+    rf"E:\github\{os.getlogin()}\hhnk-research-tools",
 ]
 for sys_path in sys_paths:
     if sys_path not in sys.path:

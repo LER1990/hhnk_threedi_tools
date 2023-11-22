@@ -1,8 +1,10 @@
 # %%
+import datetime
 import json
 import types
 
 import numpy as np
+from IPython.display import display
 from osgeo import gdal, ogr
 
 from hhnk_research_tools.folder_file_classes.folder_file_classes import Folder
@@ -281,8 +283,11 @@ def save_raster_array_to_tiff(
 
 def build_vrt(raster_folder, vrt_name="combined_rasters", bandlist=[1], bounds=None, overwrite=False):
     """create vrt from all rasters in a folder.
-    bounds=(xmin, ymin, xmax, ymax)
-    bandList doesnt work as expected."""
+
+    raster_folder (str)
+    bounds (np.array): format should be; (xmin, ymin, xmax, ymax),
+        if None will use input files.
+    bandList doesnt work as expected, passing [1] works."""
     raster_folder = Folder(raster_folder)
     output_path = raster_folder.full_path(f"{vrt_name}.vrt")
 
@@ -418,7 +423,7 @@ class RasterCalculator:
 
         # If all are true (or all false) we know that the rasters fully overlap.
         if raster1.metadata.pixel_width != raster2.metadata.pixel_width:
-            raise Exception("""Rasters do not have equal resolution""")
+            raise Exception("Rasters do not have equal resolution")
 
         if np.all(check_arr):
             # In this case raster1 is the bigger raster.
@@ -427,17 +432,18 @@ class RasterCalculator:
             # In this case raster2 is the bigger raster
             return raster2, raster1, {"raster1": "small", "raster2": "big"}
         else:
-            raise Exception("""Raster bounds do not overlap. We cannot use this.""")
+            raise Exception("Raster bounds do not overlap. We cannot use this.")
 
     def create(self, overwrite=False) -> bool:
         """Create empty output raster
-        returns bool wether the rest of the function should continue"""
+        returns bool wether the rest of the function should continue
+        """
         # Check if function should continue.
         cont = True
         if not overwrite and self.raster_out.exists():
             cont = False
 
-        if cont == True:
+        if cont is True:
             if self.verbose:
                 print(f"creating output raster: {self.raster_out.path}")
             target_ds = create_new_raster_file(
@@ -452,7 +458,7 @@ class RasterCalculator:
         return cont
 
     def run(self, overwrite=False, **kwargs):
-        """loop over the small raster blocks, load both arrays and apply a custom function to it."""
+        """Loop over the small raster blocks, load both arrays and apply a custom function to it."""
         cont = self.create(overwrite=overwrite)
 
         if cont:
@@ -484,10 +490,10 @@ class RasterCalculator:
 
 
 def reproject(src: Raster, target_res: float, output_path: str):
-    """
-    src : hrt.Raster
+    """src : hrt.Raster
     output_path : str
-    meta_new : hrt.core"""
+    meta_new : hrt.core
+    """
     # https://svn.osgeo.org/gdal/trunk/autotest/alg/reproject.py
     src.metadata.update_resolution(target_res)
 

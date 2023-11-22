@@ -4,6 +4,7 @@ from osgeo import gdal
 import hhnk_research_tools as hrt
 import hhnk_research_tools.waterschadeschatter.wss_calculations as wss_calculations
 import hhnk_research_tools.waterschadeschatter.wss_loading as wss_loading
+from hhnk_research_tools.gis.raster import Raster
 
 gdal.UseExceptions()
 
@@ -37,8 +38,8 @@ class Waterschadeschatter:
     ):
         self.wss_settings = wss_settings
         self.min_block_size = min_block_size
-        self.lu_raster = hrt.Raster(landuse_file)
-        self.depth_raster = hrt.Raster(depth_file, self.min_block_size)
+        self.lu_raster = Raster(landuse_file)
+        self.depth_raster = Raster(depth_file, self.min_block_size)
         self.gamma_inundatiediepte = None
 
         self.validate()
@@ -64,7 +65,7 @@ class Waterschadeschatter:
 
     def run(
         self,
-        output_raster: hrt.Raster,
+        output_raster: Raster,
         calculation_type="sum",
         verbose=False,
         overwrite=False,
@@ -108,25 +109,26 @@ class Waterschadeschatter:
             lu_block = self.lu_raster._read_array(window=window_lu)
             lu_block = lu_block.astype(int)
             lu_block[lu_block == self.lu_raster.nodata] = 0
+            # TODO np.all(self.polder==folder.dst.tmp.polder.nodata) is mogelijk net iets sneller.
             if lu_block.mean() != 0:
                 # Load depth
                 depth_block = self.depth_raster._read_array(window=window_depth)
                 # depth_mask = depth_block==self.depth_raster.nodata
                 # depth_block[depth_mask] = np.nan #Schadetabel loopt vanaf -0.01cm
 
-                # Calculate damage
-                damage_block = wss_calculations.calculate_damage(
-                    caller=self,
-                    lu_block=lu_block,
-                    depth_block=depth_block,
-                    indices=self.indices,
-                    dmg_table_landuse=self.dmg_table_landuse,
-                    dmg_table_general=self.dmg_table_general,
-                    pixel_factor=pixel_factor,
-                    calculation_type=calculation_type,
-                )
-                # Write to file
-                dmg_band.WriteArray(damage_block, xoff=window_depth[0], yoff=window_depth[1])
+            # Calculate damage
+            damage_block = wss_calculations.calculate_damage(
+                caller=self,
+                lu_block=lu_block,
+                depth_block=depth_block,
+                indices=self.indices,
+                dmg_table_landuse=self.dmg_table_landuse,
+                dmg_table_general=self.dmg_table_general,
+                pixel_factor=pixel_factor,
+                calculation_type=calculation_type,
+            )
+            # Write to file
+            dmg_band.WriteArray(damage_block, xoff=window_depth[0], yoff=window_depth[1])
 
             print(f"{idx} / {len_total}", end="\r")
             # break
@@ -176,7 +178,7 @@ if __name__ == "__main__":
 
         # Berkenen schaderaster
         self.run(
-            output_raster=hrt.Raster(output_file),
+            output_raster=Raster(output_file),
             calculation_type="sum",
             verbose=True,
             overwrite=False,
