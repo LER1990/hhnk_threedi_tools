@@ -148,7 +148,8 @@ class ThreediSchematisation(Folder):
 
 class ThreediResult(Folder):
     """Result of threedi simulation. Base files are .nc and .h5.
-    Use .grid to access GridH5ResultAdmin and .admin to access GridH5Admin"""
+    Use .grid to access GridH5ResultAdmin and .admin to access GridH5Admin
+    """
 
     def __init__(self, base, create=False):
         super().__init__(base, create=create)
