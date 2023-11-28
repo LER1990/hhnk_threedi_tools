@@ -57,16 +57,16 @@ class ThreediSchematisation(Folder):
 
     @property
     def sqlite_paths(self):
-        """returns all sqlites in folder"""
+        """Return all sqlites in folder"""
         return self.find_ext("sqlite")
 
     @property
     def sqlite_names(self):
-        """returns all sqlites in folder"""
+        """Return all sqlites in folder"""
         return [sp.stem for sp in self.sqlite_paths]
 
     def model_path(self, idx=0, name=None):
-        """finds a model using an index"""
+        """Find a model using an index"""
         if name:
             try:
                 idx = self.sqlite_names.index(name)
@@ -115,7 +115,8 @@ class ThreediSchematisation(Folder):
         def get_raster_path(self, table_name, col_name):
             """Read the sqlite to check which rasters are used in the model.
             This only works for models from Klondike release onwards, where we only have
-            one global settings row."""
+            one global settings row.
+            """
 
             if self.caller.database.exists():
                 df = hrt.sqlite_table_to_df(database_path=self.caller.database.path, table_name=table_name)
@@ -126,7 +127,7 @@ class ThreediSchematisation(Folder):
                 else:
                     raster_name = df.iloc[0][col_name]
 
-                if raster_name == None:
+                if raster_name is None:
                     raster_path = ""
                 else:
                     raster_path = self.caller.full_path(raster_name)
