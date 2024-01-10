@@ -32,8 +32,9 @@ class RasterBlocks:
     yesdata_dict (dict): {key:list[float]}
         Inverse of nodata_keys. Checks if any of of the provided values in the
         list are available. Creates a mask of all values not equal.
-    mask_keys (list):
-        list of keys to create a nodata mask for
+    mask_keys (list[str]):
+        Keys to add to nodatamask. Keys already listed in nodata_keys and yesdata_dict
+        do not have to be defined here.
     """
 
     window: list
@@ -57,6 +58,7 @@ class RasterBlocks:
                     self.cont = False
                     break
             if self.yesdata_dict is not None:
+                print(self.yesdata_dict)
                 for key, val in self.yesdata_dict.items():
                     self.blocks[key] = self.read_array_window(key)
                     self.masks[key] = np.isin(self.blocks[key], val)
@@ -64,10 +66,11 @@ class RasterBlocks:
             # Load other rasters
             if self.cont:
                 for key in self.raster_paths_dict:
-                    if key not in self.blocks.keys():
+                    if key not in self.blocks:
                         self.blocks[key] = self.read_array_window(key)
-                    if (key in self.mask_keys) and (key not in self.masks.keys()):
+                    if (key in self.mask_keys) and (key not in self.masks):
                         self.masks[key] = self.blocks[key] == self.raster_paths_dict[key].nodata
+
         except Exception as e:
             raise Exception("Something went wrong. Do all inputs exist?") from e
 
@@ -103,16 +106,21 @@ class RasterCalculatorV2:
     raster_out (hrt.Raster): output raster location
     raster_paths_dict (dict[str : hrt.Raster]): these rasters will have blocks loaded.
     nodata_keys (list [str]): keys to check if all values are nodata, if yes then skip
-    mask_keys (list[str]): keys to add to nodatamask
+    mask_keys (list[str]):
+        Keys to add to nodatamask. Keys already listed in nodata_keys and yesdata_dict
+        do not have to be defined here.
     metadata_key (str): key in raster_paths_dict that will be used to
         create blocks and metadata
     custom_run_window_function: function that does calculation with blocks.
         function takes block (hrt.RasterBlocks) and kwargs as input and must return block
+    yesdata_dict (dict): {key:list[float]}
+        Inverse of nodata_keys. Checks if any of of the provided values in the
+        list are available. Creates a mask of all values not equal.
     output_nodata (int): nodata of output raster
     min_block_size (int): min block size for generator blocks_df, higher is faster but
         uses more RAM.
     verbose (bool): print progress
-    tempdir (hrt.Folder): pass if you want temp vrt's to be created a specific tempdir
+    tempdir (hrt.Folder): pass if you want temp vrt's to be created in a specific tempdir
     """
 
     def __init__(
