@@ -3,6 +3,7 @@ import types
 from dataclasses import dataclass
 
 import numpy as np
+import pandas as pd
 
 import hhnk_research_tools as hrt
 
@@ -11,7 +12,7 @@ import hhnk_research_tools as hrt
 class RasterBlocks:
     """
     General function to load blocks of selected files with a given window.
-    Also loads the masks and can check if a blcok is fully nodata, in which
+    Also loads the masks and can check if a block is fully nodata, in which
     case it stopts loading.
     Input files should have the same extent, so make a vrt of them first if
     they are not. This is handled in RasterCalculator.
@@ -21,17 +22,24 @@ class RasterBlocks:
 
     Parameters
     ----------
-    window (list): [xmin, ymin, xsize, ysize]; same as row['windows_readarray']
-    raster_paths_dict (dict): {key:hrt.Raster}, path items should be of type
-        hrt.Raster.
-    nodata_keys (list): the keys in raster_paths to check for all nodata values
-        wont load other rasters if all values are nodata.
-    mask_keys (list): list of keys to create a nodata mask for
+    window (list): [xmin, ymin, xsize, ysize]
+        same as row['windows_readarray']
+    raster_paths_dict (dict): {key:hrt.Raster}
+        path items should be of type hrt.Raster.
+    nodata_keys (list):
+        the keys in raster_paths to check for all nodata values wont load other
+        rasters if all values are nodata.
+    yesdata_dict (dict): {key:list[float]}
+        Inverse of nodata_keys. Checks if any of of the provided values in the
+        list are available. Creates a mask of all values not equal.
+    mask_keys (list):
+        list of keys to create a nodata mask for
     """
 
     window: list
     raster_paths_dict: dict[str : hrt.Raster]
     nodata_keys: list[str] = None
+    yesdata_dict: dict[str : list[float]] = None
     mask_keys: list[str] = None
 
     def __post_init__(self):
@@ -48,6 +56,10 @@ class RasterBlocks:
                     # if all values in masks are nodata then we can break loading
                     self.cont = False
                     break
+            if self.yesdata_dict is not None:
+                for key, val in self.yesdata_dict.items():
+                    self.blocks[key] = self.read_array_window(key)
+                    self.masks[key] = np.isin(self.blocks[key], val)
 
             # Load other rasters
             if self.cont:
@@ -111,6 +123,7 @@ class RasterCalculatorV2:
         mask_keys: list[str],
         metadata_key: str,
         custom_run_window_function: types.MethodType,
+        yesdata_dict: dict[str : list[float]] = None,
         output_nodata: int = -9999,
         min_block_size: int = 4096,
         verbose: bool = False,
@@ -122,6 +135,7 @@ class RasterCalculatorV2:
         self.mask_keys = mask_keys
         self.metadata_key = metadata_key
         self.custom_run_window_function = custom_run_window_function
+        self.yesdata_dict = yesdata_dict
         self.output_nodata = output_nodata
         self.min_block_size = min_block_size
         self.verbose = verbose
@@ -137,7 +151,7 @@ class RasterCalculatorV2:
         self.raster_paths_same_bounds = self.raster_paths_dict.copy()
 
         # Filled when running
-        self.blocks_df = None
+        self.blocks_df: pd.DataFrame
 
     @property
     def metadata_raster(self) -> hrt.Raster:
@@ -159,6 +173,12 @@ class RasterCalculatorV2:
                     cont = False
                     continue
                 bounds[key] = r.metadata.bounds
+
+        # nodata_keys and yesdata_dict are mutually exclusive.
+        if self.yesdata_dict is not None:
+            for key in self.yesdata_dict:
+                if key in self.nodata_keys:
+                    raise ValueError(f"Key:'{key}' not allowed to be passed to both yesdata_dict and nodata_keys.")
 
         # Check resolution
         if cont:
@@ -195,7 +215,7 @@ this is not implemented or tested if it works."
 
         return cont
 
-    def create(self) -> bool:
+    def create(self):
         """Create empty output raster with metadata of metadata_raster"""
         if self.verbose:
             print(f"Creating output raster: {self.raster_out.name} @ {self.raster_out.path}")
@@ -245,6 +265,7 @@ this is not implemented or tested if it works."
                 if self.verbose:
                     time_start = datetime.datetime.now()
 
+                # Create blocks dataframe
                 self.metadata_raster.min_block_size = self.min_block_size
                 self.blocks_df = self.metadata_raster.generate_blocks()
                 blocks_total = len(self.blocks_df)
@@ -262,6 +283,7 @@ this is not implemented or tested if it works."
                         window=window,
                         raster_paths_dict=self.raster_paths_same_bounds,
                         nodata_keys=self.nodata_keys,
+                        yesdata_dict=self.yesdata_dict,
                         mask_keys=self.mask_keys,
                     )
 
@@ -275,8 +297,10 @@ this is not implemented or tested if it works."
                         self.raster_out.write_array(array=block_out, window=window, band=band_out)
 
                         if self.verbose:
-                            time_duration = hrt.time_delta(time_start)
-                            print(f"{idx} / {blocks_total} ({time_duration}s) - {self.raster_out.name}", end="\r")
+                            print(
+                                f"{idx} / {blocks_total} ({hrt.time_delta(time_start)}s) - {self.raster_out.name}",
+                                end="\r",
+                            )
 
                 # band_out.FlushCache()  # close file after writing, slow, needed?
                 band_out = None

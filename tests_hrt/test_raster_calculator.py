@@ -1,4 +1,6 @@
 # %%
+import pytest
+
 import hhnk_research_tools as hrt
 from tests_hrt.config import TEMP_DIR, TEST_DIRECTORY
 
@@ -40,6 +42,28 @@ def test_raster_calculator():
         block_out[block.masks_all] = 0
         return block_out
 
+    # Check error in nodata_keys and yesdata_dict
+    with pytest.raises(UnboundLocalError):
+        calc = hrt.RasterCalculatorV2(
+            raster_out=raster_out,
+            raster_paths_dict={
+                "depth": raster_depth,
+                "small_raster": raster_small,
+            },
+            nodata_keys=["depth"],
+            mask_keys=["depth", "small_raster"],
+            metadata_key="depth",
+            custom_run_window_function=run_window,
+            yesdata_dict={"depth": [-99]},
+            output_nodata=0,
+            min_block_size=4096,
+            verbose=True,
+            tempdir=hrt.Folder(TEMP_DIR / "temprasters"),
+        )
+
+        calc.run(overwrite=False)
+
+    # Working calculator
     calc = hrt.RasterCalculatorV2(
         raster_out=raster_out,
         raster_paths_dict={
