@@ -133,7 +133,11 @@ def test_raster_label_stats():
     )
 
     calc.run_label_stats(
-        label_gdf=label_gdf, label_col="id", stats_json=stats_json, decimals=0, output_nodata=calc.output_nodata
+        label_gdf=label_gdf,
+        label_col="id",
+        stats_json=stats_json,
+        decimals=0,
+        output_nodata=calc.output_nodata,
     )
 
     stats_dict = json.loads(stats_json.path.read_text())
