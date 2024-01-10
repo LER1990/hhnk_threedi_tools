@@ -1,4 +1,7 @@
 # %%
+import json
+
+import geopandas as gpd
 import pytest
 
 import hhnk_research_tools as hrt
@@ -74,7 +77,7 @@ def test_raster_calculator():
         mask_keys=["depth", "small_raster"],
         metadata_key="depth",
         custom_run_window_function=run_window,
-        yesdata_dict={"small_raster": [-99]},
+        yesdata_dict={"small_raster": [2, 28]},
         output_nodata=0,
         min_block_size=4096,
         verbose=True,
@@ -83,79 +86,62 @@ def test_raster_calculator():
 
     calc.run(overwrite=False)
 
-    assert raster_out.sum() == 70914
+    assert raster_out.sum() == 19834
+
+
+def test_raster_label_stats():
+    """Test calculation of statistics per label"""
+
+    def run_stats_window(block, output_nodata):
+        """custom_run_window_function on blocks in hrt.RasterCalculator"""
+        block_out = block.blocks["lu"]
+
+        # Apply nodatamasks
+        block_out[block.masks_all] = output_nodata
+        return block_out
+
+    label_shape = hrt.FileGDB(TEST_DIRECTORY / r"area_test_labels.gpkg")
+    label_raster = hrt.Raster(TEST_DIRECTORY / r"area_test_labels.tif")
+    lu_raster = hrt.Raster(TEST_DIRECTORY / r"landuse_test.tif")
+    stats_json = hrt.File(TEMP_DIR / f"rasterstats_{hrt.get_uuid()}.json")
+
+    label_gdf = gpd.read_file(label_shape.path)
+
+    if not label_raster.exists():
+        hrt.gdf_to_raster(
+            gdf=label_gdf,
+            value_field="id",
+            raster_out=label_raster,
+            nodata=-9999,
+            metadata=hrt.create_meta_from_gdf(gdf=label_gdf, res=lu_raster.metadata.pixel_width),
+        )
+
+    calc = hrt.RasterCalculatorV2(
+        raster_out=None,
+        raster_paths_dict={
+            "lu": lu_raster,
+            "label": label_raster,
+        },
+        nodata_keys=None,
+        mask_keys=["label"],
+        metadata_key="label",
+        custom_run_window_function=run_stats_window,
+        output_nodata=-9999,
+        min_block_size=4096,
+        verbose=True,
+        tempdir=hrt.Folder(TEMP_DIR / "temprasters"),
+    )
+
+    calc.run_label_stats(
+        label_gdf=label_gdf, label_col="id", stats_json=stats_json, decimals=0, output_nodata=calc.output_nodata
+    )
+
+    stats_dict = json.loads(stats_json.path.read_text())
+    assert stats_dict["0"] == {"2": 61, "6": 2358, "15": 267, "28": 1005, "29": 2262, "241": 279}
 
 
 # %%
 if __name__ == "__main__":
     test_raster_blocks()
     test_raster_calculator()
-
-# %%
-self = calc
-self.raster_out = hrt.Raster(TEMP_DIR / f"rastercalc_{hrt.get_uuid()}.tif")
-from hhnk_research_tools.gis.raster_calculator import RasterBlocks
-
-overwrite = True
-kwargs = {}
-import datetime
-
-if True:
-    try:
-        cont = self.verify(overwrite=overwrite)
-        if cont:
-            self.create()
-
-        if cont:
-            if self.verbose:
-                time_start = datetime.datetime.now()
-
-            # Create blocks dataframe
-            self.metadata_raster.min_block_size = self.min_block_size
-            self.blocks_df = self.metadata_raster.generate_blocks()
-            blocks_total = len(self.blocks_df)
-
-            # Open output raster for writing
-            gdal_src = self.raster_out.open_gdal_source_write()
-            band_out = gdal_src.GetRasterBand(1)
-
-            # Loop over generated blocks and do calculation per block
-            for idx, block_row in self.blocks_df.iterrows():
-                window = block_row["window_readarray"]
-
-                # Load the blocks for the given window.
-                block = RasterBlocks(
-                    window=window,
-                    raster_paths_dict=self.raster_paths_same_bounds,
-                    nodata_keys=self.nodata_keys,
-                    yesdata_dict=self.yesdata_dict,
-                    mask_keys=self.mask_keys,
-                )
-
-                # The blocks have an attribute that can prevent further calculation
-                # if certain conditions are met. It is False when a raster in the
-                # nodata keys has all value as nodata. Output should be nodata as well
-                if block.cont:
-                    # Calculate output raster block with custom function.
-                    block_out = self.custom_run_window_function(block=block, **kwargs)
-
-                    self.raster_out.write_array(array=block_out, window=window, band=band_out)
-
-                    if self.verbose:
-                        print(
-                            f"{idx} / {blocks_total} ({hrt.time_delta(time_start)}s) - {self.raster_out.name}",
-                            end="\r",
-                        )
-
-            # band_out.FlushCache()  # close file after writing, slow, needed?
-            band_out = None
-            if self.verbose:
-                print("\nDone")
-        else:
-            if self.verbose:
-                print(f"{self.raster_out.name} not created, .verify was false.")
-    except Exception as e:
-        band_out.FlushCache()
-        band_out = None
-        self.raster_out.unlink()
-        raise e
+    test_raster_label_stats()

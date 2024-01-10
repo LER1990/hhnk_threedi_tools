@@ -108,11 +108,12 @@ class Folder(BasePath):
         return new_file
 
     def add_file(self, objectname, filename):
-        """"""
+        """Add file as attribute. type is determined by filename extension."""
         new_file = self.full_path(filename)
 
         self.files[objectname] = new_file
         setattr(self, objectname, new_file)
+        return new_file
 
     def unlink_contents(self, names=[], rmfiles=True, rmdirs=False):
         """Unlink all content when names is an empty list.

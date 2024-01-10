@@ -1,7 +1,9 @@
 import datetime
+import json
 import types
 from dataclasses import dataclass
 
+import geopandas as gpd
 import numpy as np
 import pandas as pd
 
@@ -49,21 +51,29 @@ class RasterBlocks:
         self.masks = {}
 
         try:
-            for key in self.nodata_keys:
-                self.blocks[key] = self.read_array_window(key)
-                self.masks[key] = self.blocks[key] == self.raster_paths_dict[key].nodata
+            # Creates a mask of all values equal to nodata
+            if self.nodata_keys is not None:
+                for key in self.nodata_keys:
+                    self.blocks[key] = self.read_array_window(key)
+                    self.masks[key] = self.blocks[key] == self.raster_paths_dict[key].nodata
 
-                if np.all(self.masks[key]):
-                    # if all values in masks are nodata then we can break loading
-                    self.cont = False
-                    break
+                    if np.all(self.masks[key]):
+                        # if all values in masks are nodata then we can break loading
+                        self.cont = False
+                        break
+
+            # Creates a mask of all values not equal to values in key list
             if self.yesdata_dict is not None:
-                print(self.yesdata_dict)
                 for key, val in self.yesdata_dict.items():
                     self.blocks[key] = self.read_array_window(key)
-                    self.masks[key] = np.isin(self.blocks[key], val)
+                    self.masks[key] = ~np.isin(self.blocks[key], val)  # inverse matches.
 
-            # Load other rasters
+                    if np.all(self.masks[key]):
+                        # if all values in masks are nodata then we can break loading
+                        self.cont = False
+                        break
+
+            # Load other rasters if masks are not all True.
             if self.cont:
                 for key in self.raster_paths_dict:
                     if key not in self.blocks:
@@ -166,7 +176,7 @@ class RasterCalculatorV2:
         """Raster of which metadata is used to create output."""
         return self.raster_paths_dict[self.metadata_key]
 
-    def verify(self, overwrite: bool) -> bool:
+    def verify(self, overwrite: bool = False) -> bool:
         """Verify if all inputs can be accessed and if they have the same bounds."""
         cont = True
 
@@ -216,10 +226,11 @@ this is not implemented or tested if it works."
 
         # Check if we should create new file
         if cont:
-            cont = hrt.check_create_new_file(output_file=self.raster_out, overwrite=overwrite)
-            if cont is False:
-                if self.verbose:
-                    print(f"output raster already exists: {self.raster_out.name} @ {self.raster_out.path}")
+            if self.raster_out is not None:
+                cont = hrt.check_create_new_file(output_file=self.raster_out, overwrite=overwrite)
+                if cont is False:
+                    if self.verbose:
+                        print(f"output raster already exists: {self.raster_out.name} @ {self.raster_out.path}")
 
         return cont
 
@@ -264,21 +275,22 @@ this is not implemented or tested if it works."
         **kwargs:
             extra arguments that can be passed to the custom_run_window_function
         """
+
         try:
             cont = self.verify(overwrite=overwrite)
             if cont:
                 self.create()
 
             if cont:
-                if self.verbose:
-                    time_start = datetime.datetime.now()
-
                 # Create blocks dataframe
                 self.metadata_raster.min_block_size = self.min_block_size
                 self.blocks_df = self.metadata_raster.generate_blocks()
-                blocks_total = len(self.blocks_df)
 
-                # Open output raster for writing
+                if self.verbose:
+                    time_start = datetime.datetime.now()
+                    blocks_total = len(self.blocks_df)
+
+                # # Open output raster for writing
                 gdal_src = self.raster_out.open_gdal_source_write()
                 band_out = gdal_src.GetRasterBand(1)
 
@@ -302,7 +314,7 @@ this is not implemented or tested if it works."
                         # Calculate output raster block with custom function.
                         block_out = self.custom_run_window_function(block=block, **kwargs)
 
-                        self.raster_out.write_array(array=block_out, window=window, band=band_out)
+                        band_out.WriteArray(block_out, xoff=window[0], yoff=window[1])
 
                         if self.verbose:
                             print(
@@ -311,6 +323,7 @@ this is not implemented or tested if it works."
                             )
 
                 # band_out.FlushCache()  # close file after writing, slow, needed?
+                gdal_src = None  # Very important..
                 band_out = None
                 if self.verbose:
                     print("\nDone")
@@ -321,4 +334,128 @@ this is not implemented or tested if it works."
             band_out.FlushCache()
             band_out = None
             self.raster_out.unlink()
+            raise e
+
+    def run_label_stats(
+        self,
+        label_gdf: gpd.GeoDataFrame,
+        label_col: str,
+        stats_json: hrt.File,
+        decimals: int,
+        **kwargs,
+    ):
+        """Create statistics per label (shape in a shapefile). The shapefile must be rasterized.
+        This label_raster is passed by the metadata_key.
+
+        Will create a histogram of all value counts per label. Output is a dictionary
+        per label with the value counts. Takes into account decimals, as only integers
+        are saved. self.outputdata is ignored.
+        Example output:
+        {
+            'DECIMALS': 0,
+            '0': {'2': 61, '6': 2358, '15': 267, '28': 1005, '29': 2262, '241': 279},
+            '2': {'2': 2144, '6': 470, '15': 756, '28': 664, '29': 2880, '241': 302},
+        }
+
+        Parameters
+        ----------
+        label_gdf : gpd.GeoDataFrame
+            Dataframe with the shapes to calculate statistics on. This dataframe must also
+            have a raster which must be set as metadata_key.
+        label_col : str
+            Column of label_gdf that was used to create label_raster
+        statistics_json : hrt.File
+            .json file with statistics per label.
+        decimals : int
+            number of decimals to save. The result will be saves as integer.
+            example with value 1.23;
+                decimals=0 -> 1
+                decimals=2 -> 123
+        """
+        try:
+            cont = self.verify()
+
+            if cont:
+                if self.verbose:
+                    time_start = datetime.datetime.now()
+                    blocks_total = len(label_gdf)
+
+                if stats_json.exists():
+                    stats_dict = json.loads(stats_json.path.read_text())
+                else:
+                    stats_dict = {"DECIMALS": decimals}
+
+                # For each label calculate the statistics. This is done by creating metadata from the
+                # label and then looping the blocks of this smaller part.
+                for index, (row_index, row_label) in enumerate(label_gdf.iterrows()):
+                    key = f"{row_index}"
+
+                    if key not in stats_dict:
+                        meta = hrt.create_meta_from_gdf(
+                            label_gdf.loc[[row_index]], res=self.metadata_raster.metadata.pixel_width
+                        )
+
+                        # Hack the metadata into a dummy raster file so we can create blocks
+                        r = hrt.Raster("dummy")
+                        r._metadata = meta
+
+                        def exists_dummy():
+                            return True
+
+                        r.exists = exists_dummy
+                        r.source_set = True
+                        blocks_df = r.generate_blocks()
+
+                        # Difference between single label and bigger raster
+                        dx_dy_label = hrt.dx_dy_between_rasters(
+                            meta_big=self.metadata_raster.metadata, meta_small=meta
+                        )
+
+                        # Calculate histogram, valuecounts per label
+                        hist_label = {}
+
+                        # Iterate over generated blocks and do calculation
+                        for idx, block_row in blocks_df.iterrows():
+                            window_label = block_row["window_readarray"]
+                            window_big = window_label.copy()
+                            window_big[0] += dx_dy_label[0]
+                            window_big[1] += dx_dy_label[1]
+
+                            # Load the blocks for the given window.
+                            block = RasterBlocks(
+                                window=window_big,
+                                raster_paths_dict=self.raster_paths_same_bounds,
+                                nodata_keys=self.nodata_keys,
+                                yesdata_dict={self.metadata_key: row_label[label_col]},
+                                mask_keys=self.mask_keys,
+                            )
+
+                            # The blocks have an attribute that can prevent further calculation
+                            # if certain conditions are met. It is False when a raster in the
+                            # nodata keys has all value as nodata. Output should be nodata as well
+                            if block.cont:
+                                block_out = self.custom_run_window_function(block=block, **kwargs)
+
+                                # Create histogram of unique values of dem and count
+                                val, count = np.unique(block_out, return_counts=True)
+                                for v, c in zip(val, count):
+                                    v = int(v * 10**decimals)
+                                    if v not in hist_label.keys():
+                                        hist_label[v] = int(c)
+                                    else:
+                                        hist_label[v] += int(c)
+
+                        if self.output_nodata * 10**decimals in hist_label:
+                            hist_label.pop(self.output_nodata * 10**decimals)
+
+                        stats_dict[key] = hist_label.copy()
+                        if self.verbose:
+                            print(
+                                f"{index+1} / {blocks_total} ({hrt.time_delta(time_start)}s) - {stats_json.name}",
+                                end="\r",
+                            )
+
+                stats_json.path.write_text(json.dumps(stats_dict))
+
+        except Exception as e:
             raise e
