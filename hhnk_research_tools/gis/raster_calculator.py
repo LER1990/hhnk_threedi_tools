@@ -66,7 +66,7 @@ class RasterBlocks:
             if self.yesdata_dict is not None:
                 for key, val in self.yesdata_dict.items():
                     self.blocks[key] = self.read_array_window(key)
-                    self.masks[key] = ~np.isin(self.blocks[key], val)  # inverse matches.
+                    self.masks[key] = ~np.isin(self.blocks[key], [int(i) for i in val])  # inverse matches.
 
                     if np.all(self.masks[key]):
                         # if all values in masks are nodata then we can break loading
@@ -387,6 +387,8 @@ this is not implemented or tested if it works."
 
                 # For each label calculate the statistics. This is done by creating metadata from the
                 # label and then looping the blocks of this smaller part.
+                calc_count = 0
+
                 for index, (row_index, row_label) in enumerate(label_gdf.iterrows()):
                     key = f"{row_index}"
 
@@ -426,7 +428,7 @@ this is not implemented or tested if it works."
                                 window=window_big,
                                 raster_paths_dict=self.raster_paths_same_bounds,
                                 nodata_keys=self.nodata_keys,
-                                yesdata_dict={self.metadata_key: row_label[label_col]},
+                                yesdata_dict={self.metadata_key: [row_label[label_col]]},
                                 mask_keys=self.mask_keys,
                             )
 
@@ -449,11 +451,18 @@ this is not implemented or tested if it works."
                             hist_label.pop(self.output_nodata * 10**decimals)
 
                         stats_dict[key] = hist_label.copy()
+                        calc_count += 1
+
                         if self.verbose:
                             print(
                                 f"{index+1} / {blocks_total} ({hrt.time_delta(time_start)}s) - {stats_json.name}",
                                 end="\r",
                             )
+
+                    # Save intermediate results
+                    if calc_count == 100:
+                        calc_count = 0
+                        stats_json.path.write_text(json.dumps(stats_dict))
 
                 stats_json.path.write_text(json.dumps(stats_dict))
 
