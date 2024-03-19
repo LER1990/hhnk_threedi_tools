@@ -67,6 +67,10 @@ class Folder(BasePath):
                 return
         self.path.mkdir(parents=parents, exist_ok=True)
 
+    def mkdir(self, parents=False, verbose=False):
+        # TODO create should probably be renamed to mkdir for easier use.
+        self.create(parents=parents, verbose=verbose)
+
     def find_ext(self, ext: list):
         """Find files with a certain extension"""
         if type(ext) == str:

@@ -377,6 +377,7 @@ this is not implemented or tested if it works."
 
             if cont:
                 if self.verbose:
+                    print("Starting run_label_stats")
                     time_start = datetime.datetime.now()
                     blocks_total = len(label_gdf)
 
@@ -392,7 +393,12 @@ this is not implemented or tested if it works."
                 for index, (row_index, row_label) in enumerate(label_gdf.iterrows()):
                     key = f"{row_index}"
 
-                    if key not in stats_dict:
+                    cont2 = True
+                    if key in stats_dict:
+                        if stats_dict[key] != {}:
+                            cont2 = False
+
+                    if cont2:
                         meta = hrt.create_meta_from_gdf(
                             label_gdf.loc[[row_index]], res=self.metadata_raster.metadata.pixel_width
                         )
@@ -464,6 +470,7 @@ this is not implemented or tested if it works."
                         calc_count = 0
                         stats_json.path.write_text(json.dumps(stats_dict))
 
+                print("\n")
                 stats_json.path.write_text(json.dumps(stats_dict))
 
         except Exception as e:
