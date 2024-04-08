@@ -116,19 +116,19 @@ class Waterschadeschatter:
                 # depth_mask = depth_block==self.depth_raster.nodata
                 # depth_block[depth_mask] = np.nan #Schadetabel loopt vanaf -0.01cm
 
-            # Calculate damage
-            damage_block = wss_calculations.calculate_damage(
-                caller=self,
-                lu_block=lu_block,
-                depth_block=depth_block,
-                indices=self.indices,
-                dmg_table_landuse=self.dmg_table_landuse,
-                dmg_table_general=self.dmg_table_general,
-                pixel_factor=pixel_factor,
-                calculation_type=calculation_type,
-            )
-            # Write to file
-            dmg_band.WriteArray(damage_block, xoff=window_depth[0], yoff=window_depth[1])
+                # Calculate damage
+                damage_block = wss_calculations.calculate_damage(
+                    caller=self,
+                    lu_block=lu_block,
+                    depth_block=depth_block,
+                    indices=self.indices,
+                    dmg_table_landuse=self.dmg_table_landuse,
+                    dmg_table_general=self.dmg_table_general,
+                    pixel_factor=pixel_factor,
+                    calculation_type=calculation_type,
+                )
+                # Write to file
+                dmg_band.WriteArray(damage_block, xoff=window_depth[0], yoff=window_depth[1])
 
             print(f"{idx} / {len_total}", end="\r")
             # break
