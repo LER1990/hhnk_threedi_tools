@@ -1,5 +1,6 @@
 # %%
 import types
+import warnings
 from pathlib import Path
 
 import fiona
@@ -9,6 +10,8 @@ from hhnk_research_tools import Raster
 from hhnk_research_tools.folder_file_classes.file_class import BasePath, File
 from hhnk_research_tools.folder_file_classes.sqlite_class import Sqlite
 from hhnk_research_tools.general_functions import get_functions, get_variables
+
+# %%
 
 
 class Folder(BasePath):
@@ -60,6 +63,23 @@ class Folder(BasePath):
         """Create folder, if parents==False path wont be
         created if parent doesnt exist.
         """
+        warnings.warn(
+            ".create is deprecated v2024.1 and will be removed in a future release. Please use .mkdir instead",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+
+        self.mkdir(parents=parents, verbose=verbose)
+
+    def mkdir(self, parents=False, verbose=False):
+        """Create folder and parents
+
+        Parameters
+        ----------
+        parents; Bool
+            False: dont create if parent don't exist.
+            True: also create parents.
+        """
         if not parents:
             if not self.parent.exists():
                 if verbose:
@@ -108,11 +128,12 @@ class Folder(BasePath):
         return new_file
 
     def add_file(self, objectname, filename):
-        """"""
+        """Add file as attribute. type is determined by filename extension."""
         new_file = self.full_path(filename)
 
         self.files[objectname] = new_file
         setattr(self, objectname, new_file)
+        return new_file
 
     def unlink_contents(self, names=[], rmfiles=True, rmdirs=False):
         """Unlink all content when names is an empty list.
