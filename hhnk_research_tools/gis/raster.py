@@ -14,9 +14,12 @@ import hhnk_research_tools as hrt
 from hhnk_research_tools.folder_file_classes.file_class import File
 from hhnk_research_tools.general_functions import get_functions, get_variables
 
+# If anything goes wrong in gdal, make sure we raise the errors instead
+# of silenty ignoring the issues.
 gdal.UseExceptions()
 
 
+# %%
 class Raster(File):
     def __init__(self, base, min_block_size=1024):
         super().__init__(base)

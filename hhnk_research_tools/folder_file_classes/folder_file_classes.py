@@ -1,5 +1,6 @@
 # %%
 import types
+import warnings
 from pathlib import Path
 
 import fiona
@@ -9,6 +10,8 @@ from hhnk_research_tools import Raster
 from hhnk_research_tools.folder_file_classes.file_class import BasePath, File
 from hhnk_research_tools.folder_file_classes.sqlite_class import Sqlite
 from hhnk_research_tools.general_functions import get_functions, get_variables
+
+# %%
 
 
 class Folder(BasePath):
@@ -60,16 +63,29 @@ class Folder(BasePath):
         """Create folder, if parents==False path wont be
         created if parent doesnt exist.
         """
+        warnings.warn(
+            ".create is deprecated v2024.1 and will be removed in a future release. Please use .mkdir instead",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+
+        self.mkdir(parents=parents, verbose=verbose)
+
+    def mkdir(self, parents=False, verbose=False):
+        """Create folder and parents
+
+        Parameters
+        ----------
+        parents; Bool
+            False: dont create if parent don't exist.
+            True: also create parents.
+        """
         if not parents:
             if not self.parent.exists():
                 if verbose:
                     print(f"'{self.path}' not created, parent does not exist.")
                 return
         self.path.mkdir(parents=parents, exist_ok=True)
-
-    def mkdir(self, parents=False, verbose=False):
-        # TODO create should probably be renamed to mkdir for easier use.
-        self.create(parents=parents, verbose=verbose)
 
     def find_ext(self, ext: list):
         """Find files with a certain extension"""
