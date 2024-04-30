@@ -1,3 +1,4 @@
+# %%
 import os
 import sqlite3
 
@@ -116,6 +117,11 @@ class Sqlite(File):
         The explicit begin and commit statements are necessary
         to make sure we can roll back the transaction
         """
+
+        # Dont execute empty str.
+        if query in [None, ""]:
+            return
+
         kill_connection = conn is None  # Only kill connection when it was not provided as input
         try:
             if conn is None:
