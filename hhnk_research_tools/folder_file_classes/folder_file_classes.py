@@ -179,13 +179,13 @@ class FileGDB(File):
         self.layers = types.SimpleNamespace()  # empty class
 
     def load(self, layer=None):
-        if layer == None:
+        if layer is None:
             avail_layers = self.available_layers()
             if len(avail_layers) == 1:
                 layer = avail_layers[0]
             else:
                 layer = input(f"Select layer [{avail_layers}]:")
-        return gpd.read_file(self.base, layer=layer)
+        return gpd.read_file(self.path, layer=layer, engine="pyogrio")
 
     def add_layer(self, name: str):
         """Predefine layers so we can write output to that layer."""
