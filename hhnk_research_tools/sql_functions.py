@@ -1,4 +1,5 @@
 import os
+import re
 import sqlite3
 
 import geopandas as gpd
@@ -343,8 +344,15 @@ def database_to_gdf(db_dict: dict, sql: str, columns: list[str] = None, crs="EPS
 
         df = pd.DataFrame(cur.fetchall(), columns=columns)
 
-        if "SDO_UTIL.TO_WKTGEOMETRY(SHAPE)" in df.columns:
-            df.rename({"SDO_UTIL.TO_WKTGEOMETRY(SHAPE)": "geometry"}, axis=1, inplace=True)
+        pattern = r"SDO_UTIL.TO_WK[BT]+GEOMETRY\([^)]*\)"
+        cols = []
+        for col in df.columns:
+            if re.findall(pattern=pattern, string=col):
+                cols.append("geometry")
+            else:
+                cols.append(col)
+        df.columns = cols
+
         if "geometry" in df.columns:
             df = df.set_geometry(gpd.GeoSeries(df["geometry"].apply(lambda x: wkt.loads(str(x)))), crs=crs)
         return df
