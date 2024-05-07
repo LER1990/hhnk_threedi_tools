@@ -344,7 +344,7 @@ def database_to_gdf(db_dict: dict, sql: str, columns: list[str] = None, crs="EPS
 
         df = pd.DataFrame(cur.fetchall(), columns=columns)
 
-        pattern = r"SDO_UTIL.TO_WK[BT]+GEOMETRY\([^)]*\)"
+        pattern = r"SDO_UTIL.TO_WKTGEOMETRY\([^)]*\)"
         cols = []
         for col in df.columns:
             if re.findall(pattern=pattern, string=col):
