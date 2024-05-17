@@ -4,6 +4,7 @@ Created on Mon May  2 15:08:39 2022
 
 @author: chris.kerklaan
 """
+
 # Third party imports
 from osgeo import gdal, ogr
 
