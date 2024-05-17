@@ -4,20 +4,20 @@
 # 
 """ Compare the local WSS to the lizard WSS.
 # Use: zwartedijkspolder_sted_DPRA160"""
-import threedi_scenario_downloader.downloader as dl
 import os
-import geopandas as gpd
-from osgeo import gdal
-import numpy as np
-import hhnk_threedi_tools as htt
+
 # from functions.create_folders_dict import create_folders_dict_wss
 # import functions.wsa_tools as wsa #general tools used across all scripts
-
-
 import sys
+
+import geopandas as gpd
+import hhnk_threedi_tools as htt
+import numpy as np
+import threedi_scenario_downloader.downloader as dl
+from osgeo import gdal
+
 # sys.path.remove( 'C:\\Users\\wvangerwen\\AppData\\Roaming\\Python\\Python37\\site-packages',)
 import hhnk_research_tools as hrt
-
 
 # this allows GDAL to throw Python Exceptions
 gdal.UseExceptions()
@@ -111,6 +111,7 @@ bounds_new['north'] = bounds['maxy']
 
 # %%
 import sys
+
 sys.path.append('../..')
 import hhnk_schadeschatter.functions.wss_main as wss_main
 
@@ -241,6 +242,7 @@ direct_gem* gamma_duur * gamma_maand * gamma_diepte * pixel_factor + gamma_herst
 
 # %%
 import numpy as np
+
 x=4
 index_boven = np.searchsorted(xp, [[4]], side='left')
 

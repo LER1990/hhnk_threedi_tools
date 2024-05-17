@@ -1,6 +1,5 @@
-
 # %%
-#Under construction..
+# Under construction..
 # if __name__ == "__main__":
 #     import set_local_paths  # add local git repos.
 
@@ -10,7 +9,6 @@
 # import hhnk_research_tools as hrt
 
 
-
 # print(hrt.__file__)
 # from hhnk_research_tools.waterschadeschatter import wss_main
 # from tests_hrt.config import TEST_DIRECTORY
@@ -18,7 +16,7 @@
 
 # class TestSql():
 
-#     df = 
+#     df =
 
 
 # if __name__ == "__main__":
@@ -30,4 +28,4 @@
 #     for i in dir(selftest):
 #         if i.startswith('test_') and hasattr(inspect.getattr_static(selftest,i), '__call__'):
 #             print(i)
-#             getattr(selftest, i)()  
+#             getattr(selftest, i)()

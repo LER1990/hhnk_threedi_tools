@@ -35,6 +35,3 @@ def test_folder():
 if __name__ == "__main__":
     test_file()
     test_folder()
-
-
-    
