@@ -15,6 +15,8 @@ def get_logger(name: str, level=logging.INFO, format_short=False):
     Use:
         self.logger = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
 
+    In the __init__.py of hrt the hrt logger is initiated. We only need logging.GetLogger to add
+    loggers to functions and classes. Same can be done for other packages.
 
     Parameters
     ----------
@@ -36,7 +38,7 @@ def get_logger(name: str, level=logging.INFO, format_short=False):
     if format_short is True:
         stdout_log_format = "%(levelname)-5s | %(message)s"
     else:
-        stdout_log_format = "%(asctime)s | %(levelname)-8s | %(name)s:%(lineno)-4s| %(message)s"
+        stdout_log_format = "%(asctime)s|%(levelname)-7s| %(name)s:%(lineno)-4s| %(message)s"
 
     stdout_log_formatter = logging.Formatter(stdout_log_format, date_format_short, style="%")
 
@@ -66,14 +68,40 @@ def get_logger(name: str, level=logging.INFO, format_short=False):
             # make sure no duplicate handlers are added
             if not isinstance(handler, logging.FileHandler) and not isinstance(handler, logging.StreamHandler):
                 logger.addHandler(handler)
-                logger.info("added logger hashandlers")
+                # logger.info("added logger hashandlers")
+
     else:
         logger.addHandler(handler)
-        logger.info("added logger no handlers")
+        # logger.info("added logger no handlers")
 
     return logger
 
 
+# File logger example, unused.
+# def file_log_filter(record):
+#     if record.name == "root":
+#         record.qualifiedFuncName = "." + record.funcName
+#     else:
+#         record.qualifiedFuncName = record.name + "." + record.funcName
+#     return True
+
+
+# # Log file entry format:
+# # [<time>][<level> ][ <file>:<line> ][ <class>.<function>() ] <message>
+# file_log_format = (
+#     "[%(asctime)s]" "[%(levelname)-8s]" "[ %(filename)s:%(lineno)s ]" "[ %(qualifiedFuncName)s() ] " "%(message)s"
+# )
+# file_log_formatter = logging.Formatter(file_log_format, date_format)
+
+
+# def add_file_handler(logfile: Path, loglevel: int = logging.DEBUG):
+#     logfile.parent.mkdir(parents=True, exist_ok=True)
+#     logfile.unlink(missing_ok=True)
+#     handler = logging.FileHandler(str(logfile))
+#     handler.setLevel(loglevel)
+#     handler.addFilter(file_log_filter)
+#     handler.setFormatter(file_log_formatter)
+#     root.addHandler(handler)
+
+
 # %%
-import inspect
-import sys
