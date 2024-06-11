@@ -6,6 +6,62 @@ import sys
 from logging import *  # noqa: F401,F403 # type: ignore
 from pathlib import Path
 
+LOGGING_CONFIG = {
+    "version": 1,
+    "disable_existing_loggers": True,
+    "loggers": {
+        "": {  # root logger
+            "level": "NOTSET",
+            "handlers": ["debug_console_handler"],  # , 'info_rotating_file_handler'],
+        },
+        "hhnk_research_tools": {
+            "level": "INFO",
+            "propagate": False,
+            "handlers": ["debug_console_handler"],
+        },
+        "fiona": {  # Quiet by default!
+            "handlers": ["null"],
+            "propagate": False,
+            "level": "ERROR",
+        },
+        "rasterio": {  # Quiet by default!
+            "handlers": ["null"],
+            "propagate": False,
+            "level": "ERROR",
+        },
+    },
+    "handlers": {
+        "null": {
+            "level": "INFO",
+            "class": "logging.NullHandler",
+        },
+        "debug_console_handler": {
+            "level": "DEBUG",
+            "formatter": "info",
+            "class": "logging.StreamHandler",
+            "stream": "ext://sys.stdout",
+        },
+        # 'info_rotating_file_handler': {
+        #     'level': 'INFO',
+        #     'formatter': 'info',
+        #     'class': 'logging.handlers.RotatingFileHandler',
+        #     'filename': 'info.log',
+        #     'mode': 'a',
+        #     'maxBytes': 1048576,
+        #     'backupCount': 10
+        # },
+    },
+    "formatters": {
+        "info": {
+            "format": "%(asctime)s|%(levelname)-7s| %(name)s:%(lineno)-4s| %(message)s",
+            "datefmt": "%H:%M:%S",
+        },
+        # "error": {"format": "%(asctime)s-%(levelname)s-%(name)s-%(process)d::%(module)s|%(lineno)s:: %(message)s"},
+    },
+}
+
+logging.config.dictConfig(LOGGING_CONFIG)
+
 
 def get_logger(name: str, level=logging.INFO, format_short=False):
     """

@@ -74,9 +74,9 @@ from hhnk_research_tools.threedi.read_api_file import read_api_file
 from hhnk_research_tools.waterschadeschatter.wss_main import Waterschadeschatter
 
 # Initiate logging to console
-LOG_LEVEL = "WARNING"
-_ = logging.get_logger(name="hhnk_research_tools", level=LOG_LEVEL)
-_ = logging.get_logger(name="__main__", level=LOG_LEVEL)
+LOG_LEVEL = "INFO"
+# _ = logging.get_logger(name="hhnk_research_tools", level=LOG_LEVEL)
+# _ = logging.get_logger(name="__main__", level=LOG_LEVEL)
 
 # TODO how does this versioning work?
 # Threedigrid version number is automatic updated with zest.releaser. Geopandas uses versioneer.py.
