@@ -13,6 +13,7 @@ CHUNKSIZE = 4096
 def create_landuse_polder_clip(
     dem: hrt.Raster,
     landuse_name: str,
+    output_dir: Union[hrt.Folder, str] = None,
     landuse_hhnk: Union[
         hrt.Raster, str
     ] = r"\\corp.hhnk.nl\data\Hydrologen_data\Data\01.basisgegevens\rasters\landgebruik\landuse2019_tiles\combined_rasters.vrt",
@@ -27,13 +28,17 @@ def create_landuse_polder_clip(
         default: folder.model.schema_base.rasters.dem
     landuse_name : str
         f"landuse_{landuse_name}.tif" -> name to use in the output. 'landuse_' will be prepended.
+    output_dir : hrt.Folder, str
+        Default to the dem dir. Otherwise provide something.
     landuse_hhnk : hrt.Raster, str
         The 'big raster' that should cover the whole dem area.
         default at hhnk provided.
     overwrite : bool
     """
+    if output_dir is None:
+        output_dir = dem.parent
 
-    landuse_tif = hrt.Folder(dem.parent).full_path(f"landuse_{landuse_name}.tif")
+    landuse_tif = hrt.Folder(output_dir).full_path(f"landuse_{landuse_name}.tif")
     landuse_hhnk = hrt.Raster(landuse_hhnk)
     create = hrt.check_create_new_file(output_file=landuse_tif, overwrite=overwrite)
 
@@ -75,9 +80,12 @@ if __name__ == "__main__":
 
     dem = folder.model.schema_base.rasters.dem
     landuse_name = "lange_weeren_ref"
+    output_dir = None
     landuse_hhnk = hrt.Raster(
         r"\\corp.hhnk.nl\data\Hydrologen_data\Data\01.basisgegevens\rasters\landgebruik\landuse2019_tiles\combined_rasters.vrt"
     )
     overwrite = False
 
-    create_landuse_polder_clip(dem=dem, landuse_name=landuse_name, landuse_hhnk=landuse_hhnk, overwrite=overwrite)
+    create_landuse_polder_clip(
+        dem=dem, landuse_name=landuse_name, output_dir=output_dir, landuse_hhnk=landuse_hhnk, overwrite=overwrite
+    )
