@@ -69,6 +69,7 @@ from hhnk_research_tools.sql_functions import (
     sqlite_table_to_gdf,
 )
 from hhnk_research_tools.threedi.call_api import call_threedi_api
+from hhnk_research_tools.threedi.create_landuse_polder_clip import create_landuse_polder_clip
 from hhnk_research_tools.threedi.read_api_file import read_api_file
 from hhnk_research_tools.waterschadeschatter.wss_main import Waterschadeschatter
 
