@@ -311,7 +311,7 @@ class Raster(File):
         """Build vrt from input files.
         overwrite (bool)
         bounds (np.array): format should be; (xmin, ymin, xmax, ymax)
-            if None will use input files.
+            if None will use input files. -> hrt.Raster.metadata.bbox_gdal
         input_files (list): list of paths to input rasters
         resolution: "highest"|"lowest"|"average"
             instead of "user" option, provide a float for manual target_resolution
