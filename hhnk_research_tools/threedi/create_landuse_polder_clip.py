@@ -18,7 +18,7 @@ def create_landuse_polder_clip(
         hrt.Raster, str
     ] = r"\\corp.hhnk.nl\data\Hydrologen_data\Data\01.basisgegevens\rasters\landgebruik\landuse2019_tiles\combined_rasters.vrt",
     overwrite: bool = False,
-):
+) -> tuple[hrt.Raster, bool]:
     """Clip landuse raster on the model extent using the dem.
     Also burn dem nodata into landuse.
 
@@ -34,6 +34,11 @@ def create_landuse_polder_clip(
         The 'big raster' that should cover the whole dem area.
         default at hhnk provided.
     overwrite : bool
+
+    Returns
+    -------
+    hrt.Raster -> the output raster.
+    bool -> created or not.
     """
     if output_dir is None:
         output_dir = dem.parent
@@ -45,7 +50,7 @@ def create_landuse_polder_clip(
     if create:
         # Create tempdir with landuse vrt then rasterize it.
         with tempfile.TemporaryDirectory() as tmpdirname:
-            print("created temporary directory", tmpdirname)
+            # print("created temporary directory", tmpdirname)
 
             landuse_vrt = hrt.Folder(tmpdirname).full_path(f"landuse_{landuse_name}.vrt")
 
@@ -70,8 +75,10 @@ def create_landuse_polder_clip(
                 dtype="int16",
             )
         print(f"{landuse_tif.name} created")
+        return landuse_tif, True
     else:
         print(f"{landuse_tif.name} already on system")
+        return landuse_tif, False
 
 
 # %%
