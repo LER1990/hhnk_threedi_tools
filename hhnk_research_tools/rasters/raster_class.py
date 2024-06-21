@@ -1,20 +1,80 @@
-from xml.dom import NoDataAllowedErr
-from fiona import Properties
-
-
+import rioxarray as rxr
+from osgeo import gdal
+from hhnk_research_tools.folder_file_classes.file_class import File
 class Raster(File):
-    pass
+    def __init__(self, base, chunksize=4096):
+        super().__init__(base)
 
+        self.chunksize = chunksize
+        self._rxr = None
+
+    #DEPRECATED
+    def deprecation_warn(self, txt):   
+        return DeprecationWarning(f"Not available since 2024.2{txt}")
+    
+    @property
+    def array(self):
+        raise self.deprecation_warn()
+    @property
+    def _array(self):
+        raise self.deprecation_warn()
+    
+    @property
+    def _read_array(self):
+        raise self.deprecation_warn()
+    @property
+    def get_array(self):
+        raise self.deprecation_warn()
+    @property
+    def source(self):
+        raise self.deprecation_warn(", use .open_gdal_source_read()")
+    @property
+    def source_set(self):
+        raise self.deprecation_warn()
 
     @property
-    nodata
+    def source_set(self):
+        raise self.deprecation_warn()
+    @property
+    def band_count(self):
+        raise self.deprecation_warn()
+    @property
+    def plot(self):
+        #TODO rxr versie maken
+        # plt.imshow(self._array)
+        raise self.deprecation_warn()
+    
 
-    def read_array(self):
+    @property
+    def nodata(self):
+        return self.metadata.nodata
+
+    @property
+    def shape(self):
+        return self.metadata.shape
+
+    @property
+    def pixelarea(self):
+        return self.metadata.pixelarea
+
+    @property
+    def rxr(self):
+        if self._rxr is None:
+            self._rxr = rxr.open_rasterio(self.base, chunks={"x": self.chunksize, "y": self.chunksize})
+        return self._rxr
 
 
-    def source_read():
+    def open_gdal_source_read(self):
+        """usage;
+        with self.open_gdal_source_read() as gdal_src: doesnt work.
+        just dont write it to the class, and it should be fine..
+        """
+        return gdal.Open(self.base, gdal.GA_ReadOnly)
 
-    def source_write():
+    def open_gdal_source_write(self):
+        """Open source with write access"""
+        return gdal.Open(self.base, gdal.GA_Update)
+    
 
     def statistics():
     def metadata():
@@ -46,7 +106,7 @@ class Raster(File):
 gdf_to_raster
 create_new_raster_file
 save_raster_array_to_tiff
-build_vrt
+build_vrt -> losse functie
 create_meta_from_gdf
 dx_dy_between_rasters
 reproject -> as method under hrt.Raster
