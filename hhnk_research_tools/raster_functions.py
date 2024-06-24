@@ -320,6 +320,7 @@ def build_vrt(raster_folder, vrt_name="combined_rasters", bandlist=[1], bounds=N
         print("Something went wrong, vrt not created.")
 
 
+# TODO vervangen door Metadata.from_gdf
 def create_meta_from_gdf(gdf, res) -> dict:
     """Create metadata that can be used in raster creation based on gdf bounds.
     Projection is 28992 default, only option."""
@@ -334,6 +335,7 @@ def create_meta_from_gdf(gdf, res) -> dict:
     return RasterMetadata(res=res, bounds_dict=bounds_dict)
 
 
+# TODO uitfaseren, dit kan door .vrt te maken dan zijn alle bounds direct goed.
 def dx_dy_between_rasters(meta_big, meta_small):
     """create window to subset a large 2-d array with a smaller rectangle. Usage:
     shapes_array[dy_min:dy_max, dx_min:dx_max]
