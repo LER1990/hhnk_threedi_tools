@@ -17,11 +17,11 @@ class TestRaster:
         assert self.raster.nodata == -9999
         assert self.raster.band_count == 1
         assert self.raster.pixelarea == 0.25
-        assert self.raster.statistics(approve_ok=True, force=True) == {
-            "min": -0.009426,
+        assert self.raster.statistics(approx_ok=False, force=True) == {
+            "min": -0.00988,
             "max": 0.484222,
-            "mean": 0.137308,
-            "std": 0.096939,
+            "mean": 0.133442,
+            "std": 0.09345,
         }
 
         gdal_src = self.raster.open_gdal_source_read()
