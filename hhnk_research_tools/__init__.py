@@ -2,6 +2,7 @@
 from typing import TYPE_CHECKING
 
 from hhnk_research_tools.gis.raster import Raster, RasterMetadata  # noqa: F401
+from hhnk_research_tools.rasters.raster_class import RasterV2
 
 if TYPE_CHECKING:
     # TODO zou moeten werken met typehints van imports. Maar vraag is maar of het werkt.

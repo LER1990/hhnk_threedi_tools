@@ -8,7 +8,7 @@ import xarray as xr
 import numpy as np
 
 CHUNKSIZE=4096
-class Raster(File):
+class RasterV2(File):
     def __init__(self, base, chunksize=CHUNKSIZE):
         super().__init__(base)
 
@@ -133,13 +133,13 @@ class Raster(File):
     def statistics():
 
 
-    def generate_blocks:
-        #TODO deze zou ook van een extent moeten werken, 
-        #of vanaf een gdf.
+    # def generate_blocks:
+    #     #TODO deze zou ook van een extent moeten werken, 
+    #     #of vanaf een gdf.
 
-    def generate_blocks_geometry:
-        # Twee opties: rxr + hrt   
-        #Is er reden om dit niet te doen?
+    # def generate_blocks_geometry:
+    #     # Twee opties: rxr + hrt   
+    #     #Is er reden om dit niet te doen?
     
 
 
@@ -269,23 +269,23 @@ class Raster(File):
         return vrt_out
     
     #Bewerkingen
-    def sum_labels
+    # def sum_labels
 
 
 
-    def reproject
+    # def reproject
 
 
 
 
-#Calculator
-gdf_to_raster
-create_new_raster_file
-save_raster_array_to_tiff
-build_vrt -> losse functie
-create_meta_from_gdf
-dx_dy_between_rasters
-reproject -> as method under hrt.Raster
-hist_stats
+# #Calculator
+# gdf_to_raster
+# create_new_raster_file
+# save_raster_array_to_tiff
+# build_vrt -> losse functie
+# create_meta_from_gdf
+# dx_dy_between_rasters
+# reproject -> as method under hrt.Raster
+# hist_stats
 
 
