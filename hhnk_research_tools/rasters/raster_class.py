@@ -1,13 +1,25 @@
+# %%
+from dataclasses import dataclass
+from pathlib import Path
+from re import X
+from typing import Union
+
+import geopandas as gpd
+import numpy as np
+import pandas as pd
+import rasterio as rio
 import rioxarray as rxr
+import xarray as xr
 from osgeo import gdal
+from shapely import geometry
+
 from hhnk_research_tools.folder_file_classes.file_class import File
 from hhnk_research_tools.general_functions import check_create_new_file
-from hhnk_research_tools.rasters.raster_metadata import RasterMetadata
-import rasterio as rio
-import xarray as xr
-import numpy as np
+from hhnk_research_tools.rasters.raster_metadata import RasterMetadataV2
 
-CHUNKSIZE=4096
+CHUNKSIZE = 4096
+
+
 class RasterV2(File):
     def __init__(self, base, chunksize=CHUNKSIZE):
         super().__init__(base)
@@ -16,26 +28,30 @@ class RasterV2(File):
         self._rxr = None
         self._metadata = None
 
-    #DEPRECATED
-    def deprecation_warn(self, txt):   
+    # DEPRECATED
+    def deprecation_warn(self, txt=""):
         return DeprecationWarning(f"Not available since 2024.2{txt}")
-    
+
     @property
     def array(self):
         raise self.deprecation_warn()
+
     @property
     def _array(self):
         raise self.deprecation_warn()
-    
+
     @property
     def _read_array(self):
         raise self.deprecation_warn()
+
     @property
     def get_array(self):
         raise self.deprecation_warn()
+
     @property
     def source(self):
-        raise self.deprecation_warn(", use .open_gdal_source_read()")
+        raise self.deprecation_warn(", use .open_gdal()")
+
     @property
     def source_set(self):
         raise self.deprecation_warn()
@@ -43,22 +59,22 @@ class RasterV2(File):
     @property
     def source_set(self):
         raise self.deprecation_warn()
+
     @property
     def band_count(self):
         raise self.deprecation_warn()
+
     @property
     def plot(self):
-        #TODO rxr versie maken
+        # TODO rxr versie maken
         # plt.imshow(self._array)
         raise self.deprecation_warn()
-    
 
     @property
     def metadata(self):
         if self._metadata is None:
-            self._metadata = RasterMetadata.from_gdal_src(gdal_src=self.open_gdal_read())
+            self._metadata = RasterMetadataV2.from_gdal_src(gdal_src=self.open_gdal())
         return self._metadata
-
 
     @property
     def nodata(self):
@@ -78,21 +94,34 @@ class RasterV2(File):
     #         self._rxr = rxr.open_rasterio(self.base, chunks={"x": self.chunksize, "y": self.chunksize})
     #     return self._rxr
 
+    def open_gdal_source_read(self):
+        raise self.deprecation_warn(", use: .open_gdal()")
 
-    def open_gdal_read(self):
+    def open_gdal_source_write(self):
+        raise self.deprecation_warn(', use: .open_gdal(mode="r+")')
+
+    def open_gdal(self, mode="r"):
         """usage;
-        with self.open_gdal_read() as gdal_src: doesnt work.
+        with self.open_gdal() as gdal_src: doesnt work.
         just dont write it to the class, and it should be fine..
         """
-        return gdal.Open(self.base, gdal.GA_ReadOnly)
+        if mode == "r":  # Read mode
+            return gdal.Open(self.base, gdal.GA_ReadOnly)
+        elif mode == "r+":  # Write mode
+            return gdal.Open(self.base, gdal.GA_Update)
+        else:
+            raise ValueError(f"mode '{mode}' not in ['r','r+']")
 
-    def open_gdal_write(self):
-        """Open source with write access"""
-        return gdal.Open(self.base, gdal.GA_Update)
+    def open_rio(self, mode="r"):
+        """Open raster with rasterio.
+        Can be both read (r) and write (r+)
 
-    def open_rio_write(self):
-        return rio.open(self.base, 'r+')
-    
+        Parameters
+        ----------
+        mode : str, by default "r"
+            use "r+" for write access.
+        """
+        return rio.open(self.base, mode)
 
     def open_rxr(self, mask_and_scale=False):
         """Open raster as rxr.DataArray
@@ -102,66 +131,63 @@ class RasterV2(File):
         mask_and_scale : bool, default=False
             Lazily scale (using the scales and offsets from rasterio) and mask.
         """
-        rxr.open_rasterio(self.base, chunks={"x": self.chunksize, "y": self.chunksize}, masked=True, mask_and_scale=mask_and_scale)
+        rxr.open_rasterio(
+            self.base, chunks={"x": self.chunksize, "y": self.chunksize}, masked=True, mask_and_scale=mask_and_scale
+        )
 
-
-    def overviews_build(self, factors:list=[16], resampling="average"):
+    def overviews_build(self, factors: list = [10, 50], resampling="average"):
         """Build overviews for faster rendering.
         documentation: https://gdal.org/programs/gdaladdo.html
         """
-        with self.open_rio_write() as dst:
+        with self.open_rio("r+") as dst:
             dst.build_overviews(factors, getattr(rio.enums.Resampling, resampling))
-            dst.update_tags(ns='rio_overview', resampling=resampling)
+            dst.update_tags(ns="rio_overview", resampling=resampling)
 
-        #TODO this seems to give a nice result, can we incorparte it here somewhre or can rio do the same?
+        # TODO this seems to give a nice result, can we incorparte it here somewhre or can rio do the same?
         # !gdaladdo -ro -r nearest --config COMPRESS_OVERVIEW ZSTD --config PREDICTOR_OVERVIEW 2 --config ZSTD_LEVEL_OVERVIEW 1 "C:\Users\Wietse\Documents\HHNK\playground\dem_schemer_hoog_zuid_compressed_v4.tif" 8 32
 
-    
     def overviews_available(self):
         """Display available overviews on raster."""
-        src = rio.open(self.base, "r")
-        print([src.overviews(i) for i in src.indexes])
+        with self.open_rio() as src:
+            print([src.overviews(i) for i in src.indexes])
 
     def overviews_remove(self):
-        """Remove overviews from raster"""
-        ds = self.open_gdal_source_write()
-        ds.BuildOverviews("NONE")
-        ds = None
+        """Remove overviews from raster
+        Note that this only unlinks the overview. It is still in the file.
+        """
+        with self.open_gdal(mode="r+") as ds:
+            ds.BuildOverviews("NONE")
+            ds = None
 
         print(f"Removed overviews: {self.view_name_with_parents(2)}")
 
     def statistics():
+        pass
 
-
-    # def generate_blocks:
-    #     #TODO deze zou ook van een extent moeten werken, 
-    #     #of vanaf een gdf.
-
-    # def generate_blocks_geometry:
-    #     # Twee opties: rxr + hrt   
-    #     #Is er reden om dit niet te doen?
-    
-
-
-    #Bewerkingen
+    # Bewerkingen
     def sum(self):
         """Calculate sum of raster"""
         raster_sum = 0
-        #TODO Hoe rxr
+        # TODO Hoe rxr
         for window, block in self:
             block[block == self.nodata] = 0
             raster_sum += np.nansum(block)
         return raster_sum
-    
+
         da = self.open_rxr()
         return da.values.sum()
-    
-
 
     @classmethod
-    def write(cls, raster_out:str, result: xr.DataArray, dtype:str="float32", scale_factor:float=None, chunksize:int=CHUNKSIZE):
+    def write(
+        cls,
+        raster_out: Union[str, Path],
+        result: xr.DataArray,
+        dtype: str = "float32",
+        scale_factor: float = None,
+        chunksize: int = CHUNKSIZE,
+    ):
         """
-        used to create a raster.
+        Write a rxr result to raster.
         works both for rasters and gdf.
 
         from geocube.api.core import make_geocube
@@ -174,21 +200,20 @@ class RasterV2(File):
         raster_out : str, Path, Raster
             output location
         result : xr.DataArray
-            output array, either the result of an rxr calcultation or a dataframe turned into geocube 
+            output array, either the result of an rxr calcultation or a dataframe turned into geocube
         dtype : str
             output raster dtype
         scale_factor: float
             When saving as int, use a scale_factor to get back to original scale.
         chunksize : int
-        
+
         """
-        """Write a rxr result to file."""
         raster_out = cls(raster_out, chunksize=chunksize)
 
         if "float" in dtype:
-            compress="LERC_DEFLATE"
+            compress = "LERC_DEFLATE"
         else:
-            compress="ZSTD"
+            compress = "ZSTD"
 
         result.rio.to_raster(
             raster_out.base,
@@ -197,24 +222,32 @@ class RasterV2(File):
             # lock=threading.Lock(), #Use dask multithread
             lock=True,
             tiled=True,
-            windowed=True, #If lock is False, window doesnt work.
-            COMPRESS=compress, #gdal options
-            PREDICTOR=2,#gdal options
-            ZSTD_LEVEL=1,#gdal options
-            MAX_Z_ERROR=0.001, #gdal options
-            NUM_THREADS="ALL_CPUS",#gdal options
+            windowed=True,  # If lock is False, window doesnt work.
+            COMPRESS=compress,  # gdal options
+            PREDICTOR=2,  # gdal options
+            ZSTD_LEVEL=1,  # gdal options
+            MAX_Z_ERROR=0.001,  # gdal options
+            NUM_THREADS="ALL_CPUS",  # gdal options
             dtype=dtype,
         )
 
         # Settings the scale_factor does not work with rioxarray. Update the result
         if scale_factor:
-            with raster_out.open_rio_write() as src:
+            with raster_out.open_rio("r+") as src:
                 src.scales = (scale_factor,)
 
         return raster_out
 
     @classmethod
-    def build_vrt(cls, vrt_out:str, input_files: str|list,bounds=None, overwrite: bool=False, resolution="highest", bandlist=[1]):
+    def build_vrt(
+        cls,
+        vrt_out: str,
+        input_files: Union[str, list],
+        bounds=None,
+        overwrite: bool = False,
+        resolution="highest",
+        bandlist=[1],
+    ):
         """Build vrt from input files.
         overwrite (bool)
         bounds (np.array): format should be; (xmin, ymin, xmax, ymax)
@@ -267,25 +300,136 @@ class RasterV2(File):
             ds = gdal.BuildVRT(destName=str(vrt_out), srcDSOrSrcDSTab=input_files, options=vrt_options)
             ds.FlushCache()
         return vrt_out
-    
-    #Bewerkingen
-    # def sum_labels
+
+    # Bewerkingen
+    def sum_labels(self):
+        pass
+
+    def reproject(self):
+        pass
 
 
+@dataclass
+class RasterChunks:
+    """Represents the chunks on a raster as dataframe or geodataframe.
 
-    # def reproject
+    Call .to_df and .to_gdf respectively to get the dataframe.
+    """
+
+    metadata: RasterMetadataV2
+    chunksize: int = CHUNKSIZE
+
+    @classmethod
+    def from_raster(cls, raster: RasterV2):
+        return cls(metadata=raster.metadata, chunksize=raster.chunksize)
+
+    def from_gdf(cls, gdf: gpd.GeoDataFrame, res: float, chunksize=CHUNKSIZE):
+        metadata = RasterMetadataV2.from_gdf(gdf=gdf, res=res)
+        return cls(metadata=metadata, chunksize=chunksize)
+
+    def to_df(self) -> pd.DataFrame:
+        """Generate blocks with the blocksize of the band.
+        These blocks can be used as window to load the raster iteratively.
+        """
+        ncols = int(np.floor(self.metadata.x_res / self.chunksize))
+        nrows = int(np.floor(self.metadata.y_res / self.chunksize))
+
+        # Create arrays with index of where windows end. These are square blocks.
+        xparts = np.linspace(0, self.chunksize * ncols, ncols + 1).astype(int)
+        yparts = np.linspace(0, self.chunksize * nrows, nrows + 1).astype(int)
+
+        # If raster has some extra data that didnt fall within a block it is added to the parts here.
+        # These blocks are not square.
+        if self.chunksize * ncols != self.metadata.x_res:
+            xparts = np.append(xparts, self.metadata.x_res)
+            ncols += 1
+        if self.chunksize * nrows != self.metadata.y_res:
+            yparts = np.append(yparts, self.metadata.y_res)
+            nrows += 1
+
+        blocks_df = pd.DataFrame(index=np.arange(nrows * ncols) + 1, columns=["ix", "iy", "window"])
+        i = 0
+        for ix in range(ncols):
+            for iy in range(nrows):
+                i += 1
+                blocks_df.loc[i, :] = np.array(
+                    (ix, iy, [xparts[ix], yparts[iy], xparts[ix + 1], yparts[iy + 1]]), dtype=object
+                )
+
+        blocks_df["window_readarray"] = blocks_df["window"].apply(
+            lambda x: [int(x[0]), int(x[1]), int(x[2] - x[0]), int(x[3] - x[1])]
+        )
+
+        return blocks_df
+
+    def _generate_window_geometry(self, window: list[int], geom_type="box"):
+        """Create a geometry from a given window. Either return (box) polygons
+        or create a point shape with only the centrepoint.
+
+        Parameters
+        ----------
+        window : list[int]
+            window in the raster has below format
+            [
+                xoff:int,  pixelcount offset from x_min
+                yoff:int,  pixelcount offset from y_max
+                xsize:int, pixels to right
+                ysize:int, pixels down
+            ]
+
+        geom_type : str, options ["box","point"], by default "box"
+            returntype of geometry. Box or centrepoint
+        """
+        minx = self.metadata.x_min
+        maxy = self.metadata.y_max
+
+        # find window bounds, account for pixel size
+        minx += window[0] * self.metadata.pixel_width
+        maxy += window[1] * self.metadata.pixel_height
+        maxx = minx + window[2] * self.metadata.pixel_width
+        miny = maxy + window[3] * self.metadata.pixel_height
+
+        # rxr gebruikt bij xy het midden van de cel.
+        rxr_minx = minx + self.metadata.pixel_width * 0.5
+        rxr_maxy = maxy + self.metadata.pixel_height * 0.5
+
+        if geom_type == "point":  # TODO do we need point?
+            geom = geometry.Point(rxr_minx, rxr_maxy)
+        elif geom_type == "box":
+            geom = geometry.box(minx=minx, miny=miny, maxx=maxx, maxy=maxy)
+        return rxr_minx, rxr_maxy, geom
+
+    def to_gdf(self, geom_type="box") -> gpd.GeoDataFrame:
+        """Create blocks with shapely geometry"""
+        blocks_df = self.to_df()
+
+        blocks_df[["minx", "maxy", "geometry"]] = blocks_df.apply(
+            lambda x: self._generate_window_geometry(
+                window=x["window_readarray"],
+                geom_type=geom_type,
+            ),
+            axis=1,
+            result_type="expand",
+        )
+
+        blocks_df["xy"] = blocks_df.apply(lambda x: f"{x['minx']},{x['maxy']}", axis=1)
+
+        blocks_df = gpd.GeoDataFrame(
+            blocks_df,
+            geometry="geometry",
+            crs=self.metadata.projection,
+        )
+
+        return blocks_df
 
 
+# %%
+from tests_hrt.config import TEMP_DIR, TEST_DIRECTORY
 
+raster = RasterV2(TEST_DIRECTORY / r"depth_test.tif", chunksize=40)
 
-# #Calculator
-# gdf_to_raster
-# create_new_raster_file
-# save_raster_array_to_tiff
-# build_vrt -> losse functie
-# create_meta_from_gdf
-# dx_dy_between_rasters
-# reproject -> as method under hrt.Raster
-# hist_stats
+chunks = RasterChunks.from_raster(raster=raster)
+df = chunks.to_gdf()
 
-
+df.plot()
+# %%

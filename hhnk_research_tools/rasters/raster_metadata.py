@@ -10,7 +10,7 @@ from hhnk_research_tools.general_functions import get_functions, get_variables
 
 
 @dataclass
-class RasterMetadata:
+class RasterMetadataV2:
     """Metadata object of a raster. Resolution can be changed
     so that a new raster with another resolution can be created.
 
@@ -19,10 +19,10 @@ class RasterMetadata:
     2. res, bounds
     """
 
-    projection: str = "EPSG:28992"
     georef: None
     x_res: int
     y_res: int
+    projection: str = "EPSG:28992"
 
     @classmethod
     def from_gdal_src(cls, gdal_src):
@@ -31,7 +31,7 @@ class RasterMetadata:
         Parameters
         ----------
         gdal_src : _type_
-            hrt.Raster.open_gdal_read()
+            hrt.Raster.open_gdal()
         """
 
         proj = gdal_src.GetProjection()
@@ -43,7 +43,7 @@ class RasterMetadata:
         x_res = gdal_src.RasterXSize
         y_res = gdal_src.RasterYSize
 
-        return cls(projection=projection, georef=georef, x_res=x_res, y_res=y_res)
+        return cls(georef=georef, x_res=x_res, y_res=y_res, projection=projection)
 
     @classmethod
     def from_bounds(cls, bounds_dict, res: float, projection="EPSG:28992"):
@@ -62,7 +62,7 @@ class RasterMetadata:
         georef = (int(np.floor(bounds_dict["minx"])), res, 0.0, int(np.ceil(bounds_dict["maxy"])), 0.0, -res)
         x_res = int((int(np.ceil(bounds_dict["maxx"])) - int(np.floor(bounds_dict["minx"]))) / res)
         y_res = int((int(np.ceil(bounds_dict["maxy"])) - int(np.floor(bounds_dict["miny"]))) / res)
-        return cls(projection=projection, georef=georef, x_res=x_res, y_res=y_res)
+        return cls(georef=georef, x_res=x_res, y_res=y_res, projection=projection)
 
     def from_gdf(cls, gdf: gpd.GeoDataFrame, res: float):
         """Create metadata that can be used in raster creation based on gdf bounds.
@@ -76,7 +76,7 @@ class RasterMetadata:
         x_res = int((int(np.ceil(bounds["maxx"].max())) - int(np.floor(bounds["minx"].min()))) / res)
         y_res = int((int(np.ceil(bounds["maxy"].max())) - int(np.floor(bounds["miny"].min()))) / res)
 
-        return cls(projection=projection, georef=georef, x_res=x_res, y_res=y_res)
+        return cls(georef=georef, x_res=x_res, y_res=y_res, projection=projection)
 
     @property
     def pixel_width(self):
@@ -167,8 +167,8 @@ class RasterMetadata:
             )
 
     def __repr__(self):
-        repr_str = f"""functions: {get_functions()}
-variables: {get_variables()}"""
+        repr_str = f"""functions: {get_functions(self)}
+variables: {get_variables(self)}"""
 
         return f""".projection : {self.projection} 
 .georef : {self.georef}
