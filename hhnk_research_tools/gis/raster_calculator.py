@@ -399,7 +399,7 @@ this is not implemented or tested if it works."
                             cont2 = False
 
                     if cont2:
-                        meta = hrt.create_meta_from_gdf(
+                        meta = hrt.RasterMetadataV2.from_gdf(
                             label_gdf.loc[[row_index]], res=self.metadata_raster.metadata.pixel_width
                         )
 

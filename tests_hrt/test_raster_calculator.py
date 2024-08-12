@@ -113,7 +113,7 @@ def test_raster_label_stats():
             value_field="id",
             raster_out=label_raster,
             nodata=-9999,
-            metadata=hrt.create_meta_from_gdf(gdf=label_gdf, res=lu_raster.metadata.pixel_width),
+            metadata=hrt.RasterMetadataV2.from_gdf(gdf=label_gdf, res=lu_raster.metadata.pixel_width),
         )
 
     calc = hrt.RasterCalculatorV2(

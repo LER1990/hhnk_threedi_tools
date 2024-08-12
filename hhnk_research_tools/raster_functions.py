@@ -210,6 +210,14 @@ def save_raster_array_to_tiff(
         raise e
 
 
+def build_vrt():
+    raise DeprecationWarning("This function is depcrated in favour of hrt.Raster.build_vrt")
+
+
+def create_meta_from_gdf(gdf, res):
+    raise DeprecationWarning("This function is depcrated in favour of hrt.RasterMetadataV2.from_gdf.")
+
+
 # def build_vrt(raster_folder, vrt_name="combined_rasters", bandlist=[1], bounds=None, overwrite=False):
 #     """create vrt from all rasters in a folder.
 
@@ -246,21 +254,6 @@ def save_raster_array_to_tiff(
 
 #     if not output_path.exists():
 #         print("Something went wrong, vrt not created.")
-
-
-# TODO vervangen door Metadata.from_gdf
-def create_meta_from_gdf(gdf, res) -> dict:
-    """Create metadata that can be used in raster creation based on gdf bounds.
-    Projection is 28992 default, only option."""
-    gdf_local = gdf[["geometry"]].copy()
-    bounds = gdf_local.bounds
-    bounds_dict = {
-        "minx": np.round(bounds["minx"].min(), 4),
-        "miny": np.round(bounds["miny"].min(), 4),
-        "maxx": np.round(bounds["maxx"].max(), 4),
-        "maxy": np.round(bounds["maxy"].max(), 4),
-    }
-    return RasterMetadata(res=res, bounds_dict=bounds_dict)
 
 
 # TODO uitfaseren, dit kan door .vrt te maken dan zijn alle bounds direct goed.

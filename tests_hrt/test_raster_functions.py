@@ -15,7 +15,7 @@ class TestRasterFunctions:
 
     @pytest.fixture(scope="class")
     def metadata(self, gdf):
-        meta = hrt.create_meta_from_gdf(gdf=gdf, res=40)
+        meta = hrt.RasterMetadataV2.from_gdf(gdf=gdf, res=40)
         return meta
 
     def test_meta(self, metadata):
