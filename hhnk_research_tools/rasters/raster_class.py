@@ -26,6 +26,7 @@ class RasterV2(File):
 
         self.chunksize = chunksize
         self._rxr = None
+        self._profile = None  # rio profile
         self._metadata = None
 
     # DEPRECATED
@@ -71,9 +72,18 @@ class RasterV2(File):
         raise self.deprecation_warn()
 
     @property
+    def profile(self):
+        """Rio profile containing metadata. Can be used to create a new raster with
+        the same attributes.
+        """
+        if self._profile is None:
+            self._profile = self.open_rio().profile
+        return self._profile
+
+    @property
     def metadata(self):
         if self._metadata is None:
-            self._metadata = RasterMetadataV2.from_gdal_src(gdal_src=self.open_gdal())
+            self._metadata = RasterMetadataV2.from_rio_profile(rio_prof=self.open_rio().profile)
         return self._metadata
 
     @property
@@ -87,12 +97,6 @@ class RasterV2(File):
     @property
     def pixelarea(self):
         return self.metadata.pixelarea
-
-    # @property
-    # def rxr(self):
-    #     if self._rxr is None:
-    #         self._rxr = rxr.open_rasterio(self.base, chunks={"x": self.chunksize, "y": self.chunksize})
-    #     return self._rxr
 
     def open_gdal_source_read(self):
         raise self.deprecation_warn(", use: .open_gdal()")
@@ -112,16 +116,24 @@ class RasterV2(File):
         else:
             raise ValueError(f"mode '{mode}' not in ['r','r+']")
 
-    def open_rio(self, mode="r"):
+    def open_rio(self, mode="r", profile=None, dtype=None):
         """Open raster with rasterio.
-        Can be both read (r) and write (r+)
+        Can be both read (r) and write (w)
 
         Parameters
         ----------
         mode : str, by default "r"
-            use "r+" for write access.
+            use "w" for write access.
         """
-        return rio.open(self.base, mode)
+        if profile is None:
+            return rio.open(self.base, mode)
+
+        # Open (non-existing) raster with a profile
+        else:
+            dtype2 = profile.pop("dtype")
+            if dtype is None:
+                dtype = dtype2
+            return rio.open(self.base, mode, **profile, dtype=dtype)
 
     def open_rxr(self, mask_and_scale=False):
         """Open raster as rxr.DataArray
@@ -131,7 +143,7 @@ class RasterV2(File):
         mask_and_scale : bool, default=False
             Lazily scale (using the scales and offsets from rasterio) and mask.
         """
-        rxr.open_rasterio(
+        return rxr.open_rasterio(
             self.base, chunks={"x": self.chunksize, "y": self.chunksize}, masked=True, mask_and_scale=mask_and_scale
         )
 
@@ -433,3 +445,7 @@ df = chunks.to_gdf()
 
 df.plot()
 # %%
+raster2 = RasterV2(TEST_DIRECTORY / r"depth_test2.tif", chunksize=40)
+
+with raster2.open_rio(mode="w", profile=raster.profile, dtype="float32") as dst:
+    pass

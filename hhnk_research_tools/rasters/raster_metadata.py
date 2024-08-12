@@ -25,23 +25,12 @@ class RasterMetadataV2:
     projection: str = "EPSG:28992"
 
     @classmethod
-    def from_gdal_src(cls, gdal_src):
-        """
-
-        Parameters
-        ----------
-        gdal_src : _type_
-            hrt.Raster.open_gdal()
-        """
-
-        proj = gdal_src.GetProjection()
-
-        proj_str = proj.split("AUTHORITY")[-1][2:-3].split('","')
-        projection = f"{proj_str[0]}:{proj_str[1]}"  # TODO andere manier uit raster halen. rio??
-        georef = gdal_src.GetGeoTransform()
-
-        x_res = gdal_src.RasterXSize
-        y_res = gdal_src.RasterYSize
+    def from_rio_profile(cls, rio_prof):
+        """rio_prof = raster.open_rio().profile"""
+        georef = rio_prof["transform"].to_gdal()
+        x_res = rio_prof["width"]
+        y_res = rio_prof["height"]
+        projection = rio_prof["crs"].to_string()
 
         return cls(georef=georef, x_res=x_res, y_res=y_res, projection=projection)
 
@@ -106,18 +95,6 @@ class RasterMetadataV2:
     def bounds(self):
         return [self.x_min, self.x_max, self.y_min, self.y_max]
 
-    # TODO deprecated. Remove in future release.
-    @property
-    def bounds_dl(self):
-        """Lizard v3 bounds"""
-        raise Exception("use .bbox instead. lizard v4 api no longer supports bounds_dl")
-        return {
-            "west": self.x_min,
-            "south": self.y_min,
-            "east": self.x_max,
-            "north": self.y_max,
-        }
-
     @property
     def bbox(self):
         """Lizard v4 bbox; str(x1, y1, x2, y2)"""
@@ -173,7 +150,7 @@ variables: {get_variables(self)}"""
         return f""".projection : {self.projection} 
 .georef : {self.georef}
 .bounds : {self.bounds}
-.pixel_width : {self.pixel_width}
+.shape : {self.shape}
 ----
 {repr_str}"""
 
