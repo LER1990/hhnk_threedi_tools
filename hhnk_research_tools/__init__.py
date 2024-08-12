@@ -56,7 +56,6 @@ from hhnk_research_tools.raster_functions import (
     dx_dy_between_rasters,
     gdf_to_raster,
     hist_stats,
-    load_gdal_raster,
     reproject,
     save_raster_array_to_tiff,
 )

@@ -5,6 +5,7 @@ from dataclasses import dataclass
 
 import geopandas as gpd
 import numpy as np
+from pyproj import CRS
 
 from hhnk_research_tools.general_functions import get_functions, get_variables
 
@@ -23,6 +24,9 @@ class RasterMetadataV2:
     x_res: int
     y_res: int
     projection: str = "EPSG:28992"
+
+    def __post_init__(self):
+        self._proj_crs = None  # propery based on self.projection
 
     @classmethod
     def from_rio_profile(cls, rio_prof):
@@ -53,6 +57,7 @@ class RasterMetadataV2:
         y_res = int((int(np.ceil(bounds_dict["maxy"])) - int(np.floor(bounds_dict["miny"]))) / res)
         return cls(georef=georef, x_res=x_res, y_res=y_res, projection=projection)
 
+    @classmethod
     def from_gdf(cls, gdf: gpd.GeoDataFrame, res: float):
         """Create metadata that can be used in raster creation based on gdf bounds.
         Projection is 28992 default, only option.
@@ -60,12 +65,17 @@ class RasterMetadataV2:
         bounds = gdf.bounds
 
         # Metadata input vars
-        projection = gdf.crs
+        projection = gdf.crs.to_string()
         georef = (int(np.floor(bounds["minx"].min())), res, 0.0, int(np.ceil(bounds["maxy"].max())), 0.0, -res)
         x_res = int((int(np.ceil(bounds["maxx"].max())) - int(np.floor(bounds["minx"].min()))) / res)
         y_res = int((int(np.ceil(bounds["maxy"].max())) - int(np.floor(bounds["miny"].min()))) / res)
 
         return cls(georef=georef, x_res=x_res, y_res=y_res, projection=projection)
+
+    @property
+    def proj(self):
+        print(DeprecationWarning(".proj will be deprecated in future release. Use .projection instead."))
+        return self.projection
 
     @property
     def pixel_width(self):

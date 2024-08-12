@@ -62,7 +62,7 @@ def gdf_to_raster(
     nodata=0, meta=meta, epsg=28992, driver='GTiff')
     """
     try:
-        if type(raster_out) == Raster:
+        if isinstance(raster_out, Raster):
             raster_out = raster_out.path
 
         gdf = gdf[[value_field, "geometry"]]  # filter unnecessary columns
@@ -165,7 +165,8 @@ def create_new_raster_file(
 
             target_ds.SetGeoTransform(meta.georef)
             _set_band_data(target_ds, num_bands, nodata)
-            target_ds.SetProjection(meta.proj)
+
+            target_ds.SetProjection(meta.projection)
             return target_ds
     except Exception as e:
         raise e
@@ -453,3 +454,6 @@ def hist_stats(histogram: dict, stat_type: str, ignore_keys=[0]):
             total += histogram[value]
             if total >= median_index:
                 return value
+
+
+# %%

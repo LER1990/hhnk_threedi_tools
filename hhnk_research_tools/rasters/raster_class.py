@@ -274,7 +274,7 @@ class RasterV2(File):
 
         if check_create_new_file(output_file=vrt_out, overwrite=overwrite):
             # Set inputfiles to list of strings.
-            if type(input_files) != list:
+            if not isinstance(input_files, list):
                 input_files = [str(input_files)]
             else:
                 input_files = [str(i) for i in input_files]
