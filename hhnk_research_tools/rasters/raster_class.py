@@ -88,7 +88,7 @@ class RasterV2(File):
 
     @property
     def nodata(self):
-        return self.metadata.nodata
+        return self.profile["nodata"]
 
     @property
     def shape(self):
@@ -194,9 +194,10 @@ class RasterV2(File):
         cls,
         raster_out: Union[str, Path],
         result: xr.DataArray,
+        nodata: float,
         dtype: str = "float32",
         scale_factor: float = None,
-        chunksize: int = CHUNKSIZE,
+        chunksize: int = CHUNKSIZE,  # TODO not sure if chunksize needed here
     ):
         """
         Write a rxr result to raster.
@@ -226,6 +227,9 @@ class RasterV2(File):
             compress = "LERC_DEFLATE"
         else:
             compress = "ZSTD"
+
+        # Set nodata otherwise its not in raster
+        result.rio.set_nodata(nodata)
 
         result.rio.to_raster(
             raster_out.base,
@@ -436,16 +440,16 @@ class RasterChunks:
 
 
 # %%
-from tests_hrt.config import TEMP_DIR, TEST_DIRECTORY
+# from tests_hrt.config import TEMP_DIR, TEST_DIRECTORY
 
-raster = RasterV2(TEST_DIRECTORY / r"depth_test.tif", chunksize=40)
+# raster = RasterV2(TEST_DIRECTORY / r"depth_test.tif", chunksize=40)
 
-chunks = RasterChunks.from_raster(raster=raster)
-df = chunks.to_gdf()
+# chunks = RasterChunks.from_raster(raster=raster)
+# df = chunks.to_gdf()
 
-df.plot()
-# %%
-raster2 = RasterV2(TEST_DIRECTORY / r"depth_test2.tif", chunksize=40)
+# df.plot()
+# # %%
+# raster2 = RasterV2(TEST_DIRECTORY / r"depth_test2.tif", chunksize=40)
 
-with raster2.open_rio(mode="w", profile=raster.profile, dtype="float32") as dst:
-    pass
+# with raster2.open_rio(mode="w", profile=raster.profile, dtype="float32") as dst:
+#     pass
