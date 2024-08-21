@@ -3,7 +3,6 @@ import re
 import sqlite3
 
 import geopandas as gpd
-import oracledb
 import pandas as pd
 from shapely import wkt
 
@@ -321,6 +320,7 @@ def database_to_gdf(db_dict: dict, sql: str, columns: list[str] = None, crs="EPS
         When not provided, get the column names from the external table
         geometry column 'SHAPE' is renamed to 'geometry'
     """
+    import oracledb
 
     with oracledb.connect(**db_dict) as con:
         cur = oracledb.Cursor(con)
