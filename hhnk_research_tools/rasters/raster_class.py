@@ -20,7 +20,7 @@ from hhnk_research_tools.rasters.raster_metadata import RasterMetadataV2
 CHUNKSIZE = 4096
 
 
-class RasterV2(File):
+class Raster(File):
     def __init__(self, base, chunksize=CHUNKSIZE):
         super().__init__(base)
 
@@ -124,6 +124,8 @@ class RasterV2(File):
         ----------
         mode : str, by default "r"
             use "w" for write access.
+        profile :
+            rio profile with raster metadata. Used to create new raster
         """
         if profile is None:
             return rio.open(self.base, mode)
@@ -179,13 +181,6 @@ class RasterV2(File):
     # Bewerkingen
     def sum(self):
         """Calculate sum of raster"""
-        raster_sum = 0
-        # TODO Hoe rxr
-        for window, block in self:
-            block[block == self.nodata] = 0
-            raster_sum += np.nansum(block)
-        return raster_sum
-
         da = self.open_rxr()
         return da.values.sum()
 
@@ -194,7 +189,7 @@ class RasterV2(File):
         cls,
         raster_out: Union[str, Path],
         result: xr.DataArray,
-        nodata: float,
+        nodata: float = None,
         dtype: str = "float32",
         scale_factor: float = None,
         chunksize: int = CHUNKSIZE,  # TODO not sure if chunksize needed here
@@ -229,7 +224,8 @@ class RasterV2(File):
             compress = "ZSTD"
 
         # Set nodata otherwise its not in raster
-        result.rio.set_nodata(nodata)
+        if nodata is not None:
+            result.rio.set_nodata(nodata)
 
         result.rio.to_raster(
             raster_out.base,
@@ -257,7 +253,7 @@ class RasterV2(File):
     @classmethod
     def build_vrt(
         cls,
-        vrt_out: str,
+        vrt_out,
         input_files: Union[str, list],
         bounds=None,
         overwrite: bool = False,
@@ -336,7 +332,7 @@ class RasterChunks:
     chunksize: int = CHUNKSIZE
 
     @classmethod
-    def from_raster(cls, raster: RasterV2):
+    def from_raster(cls, raster: Raster):
         return cls(metadata=raster.metadata, chunksize=raster.chunksize)
 
     def from_gdf(cls, gdf: gpd.GeoDataFrame, res: float, chunksize=CHUNKSIZE):

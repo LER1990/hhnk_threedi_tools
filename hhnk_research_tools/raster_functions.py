@@ -12,8 +12,8 @@ from hhnk_research_tools.general_functions import (
     check_create_new_file,
     ensure_file_path,
 )
-from hhnk_research_tools.gis.raster import Raster, RasterMetadata
-from hhnk_research_tools.rasters.raster_class import RasterV2
+from hhnk_research_tools.gis.raster import RasterMetadata, RasterOld
+from hhnk_research_tools.rasters.raster_class import Raster
 from hhnk_research_tools.variables import DEF_TRGT_CRS, GDAL_DATATYPE, GEOTIFF
 
 DEFAULT_CREATE_OPTIONS = ["COMPRESS=ZSTD", "TILED=YES", "PREDICTOR=2", "ZSTD_LEVEL=1"]
@@ -63,7 +63,7 @@ def gdf_to_raster(
     nodata=0, meta=meta, epsg=28992, driver='GTiff')
     """
     try:
-        if isinstance(raster_out, (Raster, RasterV2)):
+        if isinstance(raster_out, (Raster, RasterOld)):
             raster_out = raster_out.path
 
         gdf = gdf[[value_field, "geometry"]]  # filter unnecessary columns

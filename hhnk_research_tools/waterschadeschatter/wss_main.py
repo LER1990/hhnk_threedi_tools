@@ -4,7 +4,9 @@ from osgeo import gdal
 import hhnk_research_tools as hrt
 import hhnk_research_tools.waterschadeschatter.wss_calculations as wss_calculations
 import hhnk_research_tools.waterschadeschatter.wss_loading as wss_loading
-from hhnk_research_tools.gis.raster import Raster
+from hhnk_research_tools.gis.raster import RasterOld as Raster
+
+# from hhnk_research_tools.rasters.raster_class import Raster #FIXME new import
 
 gdal.UseExceptions()
 
