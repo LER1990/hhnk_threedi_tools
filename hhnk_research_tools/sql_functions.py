@@ -1,6 +1,7 @@
 import os
 import re
 import sqlite3
+from typing import Union
 
 import geopandas as gpd
 import pandas as pd
@@ -301,7 +302,7 @@ def sqlite_table_to_gdf(query, id_col, to_gdf=True, conn=None, database_path=Non
             conn.close()
 
 
-def database_to_gdf(db_dict: dict, sql: str, columns: list[str] = None, crs="EPSG:28992"):
+def database_to_gdf(db_dict: dict, sql: str, columns: Union[list[str], None] = None, crs="EPSG:28992"):
     """
     Connect to (oracle) database, create a cursor and execute sql
 
@@ -335,7 +336,11 @@ def database_to_gdf(db_dict: dict, sql: str, columns: list[str] = None, crs="EPS
                 col_names = [i[0] for i in cur.description]
 
                 col_select = ", ".join(col_names)
-                col_select = col_select.replace("SHAPE", "sdo_util.to_wktgeometry(SHAPE)")
+                if "SHAPE" in col_names:
+                    col_select = col_select.replace("SHAPE", "sdo_util.to_wktgeometry(SHAPE)")
+                elif "GEOMETRIE" in col_names:
+                    col_select = col_select.replace("GEOMETRIE", "sdo_util.to_wktgeometry(GEOMETRIE)")
+
                 sql = sql.replace("SELECT *", f"SELECT {col_select}")
                 cur.execute(sql)
 
@@ -356,3 +361,6 @@ def database_to_gdf(db_dict: dict, sql: str, columns: list[str] = None, crs="EPS
         if "geometry" in df.columns:
             df = df.set_geometry(gpd.GeoSeries(df["geometry"].apply(lambda x: wkt.loads(str(x)))), crs=crs)
         return df
+
+
+# %%
