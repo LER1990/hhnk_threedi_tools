@@ -181,8 +181,7 @@ class Raster(File):
     # Bewerkingen
     def sum(self):
         """Calculate sum of raster"""
-        da = self.open_rxr()
-        return da.values.sum()
+        return self.open_rxr().sum().values
 
     @classmethod
     def write(
