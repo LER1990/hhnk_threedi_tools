@@ -316,8 +316,27 @@ class Raster(File):
     def sum_labels(self):
         pass
 
-    def reproject(self):
-        pass
+    @classmethod
+    def reproject(cls, src, dst, target_res: float):
+        """
+        Parameters
+        ----------
+        src : str | Path | hrt.Raster
+        dst : str | Path | hrt.Raster
+        target_res : float
+        """
+        # https://svn.osgeo.org/gdal/trunk/autotest/alg/reproject.py
+
+        # TODO create_new_raster_file uitfaseren
+        # TODO datatype from src
+        meta = RasterMetadataV2.from_raster(src, res=target_res)
+        rio_profile = meta.to_rio_profile(nodata=src.nodata, dtype="float32")
+
+        dst.open_rio(mode="w", profile=rio_profile)
+        src_ds = src.open_gdal()
+        dst_ds = dst.open_gdal(mode="r+")
+        if dst_ds is not None:
+            gdal.ReprojectImage(src_ds, dst_ds, src_wkt="EPSG:28992")
 
 
 @dataclass

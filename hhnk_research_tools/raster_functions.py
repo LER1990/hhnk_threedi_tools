@@ -415,19 +415,20 @@ class RasterCalculator:
             target_ds = None
 
 
-def reproject(src: Raster, target_res: float, output_path: str):
-    """src : hrt.Raster
-    output_path : str
-    meta_new : hrt.core
-    """
-    # https://svn.osgeo.org/gdal/trunk/autotest/alg/reproject.py
-    src.metadata.update_resolution(target_res)
+# staat nu onder hrt.Raster.reproject
+# def reproject(src: Raster, target_res: float, output_path: str):
+#     """src : hrt.Raster
+#     output_path : str
+#     meta_new : hrt.core
+#     """
+#     # https://svn.osgeo.org/gdal/trunk/autotest/alg/reproject.py
+#     src.metadata.update_resolution(target_res)
 
-    src_ds = src.source
-    dst_ds = create_new_raster_file(file_name=output_path, nodata=src.nodata, meta=src.metadata)
+#     src_ds = src.source
+#     dst_ds = create_new_raster_file(file_name=output_path, nodata=src.nodata, meta=src.metadata)
 
-    if dst_ds is not None:
-        gdal.ReprojectImage(src_ds, dst_ds, src_wkt="EPSG:28992")
+#     if dst_ds is not None:
+#         gdal.ReprojectImage(src_ds, dst_ds, src_wkt="EPSG:28992")
 
 
 def hist_stats(histogram: dict, stat_type: str, ignore_keys=[0]):
