@@ -187,8 +187,14 @@ class Raster(File):
 
         print(f"Removed overviews: {self.view_name_with_parents(2)}")
 
-    def statistics():
-        pass
+    def statistics(self, decimals=6):
+        raster_src = self.open_rxr()
+        return {
+            "min": np.round(raster_src.min().values, decimals),
+            "max": np.round(raster_src.max().values, decimals),
+            "mean": np.round(raster_src.mean().values, decimals),
+            "std": np.round(raster_src.std().values, decimals),
+        }
 
     # Bewerkingen
     def sum(self):
