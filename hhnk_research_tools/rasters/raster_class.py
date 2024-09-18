@@ -20,10 +20,14 @@ CHUNKSIZE = 4096
 
 
 class Raster(File):
-    def __init__(self, base, chunksize=CHUNKSIZE):
+    def __init__(self, base, chunksize: Union[int, None] = CHUNKSIZE):
         super().__init__(base)
 
-        self.chunksize = chunksize
+        if chunksize is None:
+            self.chunksize = CHUNKSIZE
+        else:
+            self.chunksize = chunksize
+
         self._rxr = None
         self._profile = None  # rio profile
         self._metadata = None
@@ -136,16 +140,25 @@ class Raster(File):
                 dtype = dtype2
             return rio.open(self.base, mode, **profile, dtype=dtype)
 
-    def open_rxr(self, mask_and_scale=False):
+    def open_rxr(self, mask_and_scale=False, chunksize: Union[int, None] = None):
         """Open raster as rxr.DataArray
 
         Parameters
         ----------
         mask_and_scale : bool, default=False
             Lazily scale (using the scales and offsets from rasterio) and mask.
+        chunksize: int | None, default=self.chunksize
+            chuncksize for opening
         """
+
+        if chunksize is None:
+            chunksize = self.chunksize
+
         return rxr.open_rasterio(
-            self.base, chunks={"x": self.chunksize, "y": self.chunksize}, masked=True, mask_and_scale=mask_and_scale
+            self.base,
+            chunks={"x": chunksize, "y": chunksize},
+            masked=True,
+            mask_and_scale=mask_and_scale,
         )
 
     def overviews_build(self, factors: list = [10, 50], resampling="average"):
@@ -380,7 +393,8 @@ class RasterChunks:
             for iy in range(nrows):
                 i += 1
                 blocks_df.loc[i, :] = np.array(
-                    (ix, iy, [xparts[ix], yparts[iy], xparts[ix + 1], yparts[iy + 1]]), dtype=object
+                    (ix, iy, [xparts[ix], yparts[iy], xparts[ix + 1], yparts[iy + 1]]),
+                    dtype=object,
                 )
 
         blocks_df["window_readarray"] = blocks_df["window"].apply(
@@ -453,7 +467,7 @@ class RasterChunks:
 # %%
 
 if __name__ == "__main__":
-    from tests_hrt.config import TEMP_DIR, TEST_DIRECTORY
+    from tests_hrt.config import TEST_DIRECTORY
 
     raster = Raster(TEST_DIRECTORY / r"depth_test.tif", chunksize=40)
 
