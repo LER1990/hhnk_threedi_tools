@@ -1,7 +1,6 @@
 # %%
 from dataclasses import dataclass
 from pathlib import Path
-from re import X
 from typing import Union
 
 import geopandas as gpd
@@ -198,7 +197,7 @@ class Raster(File):
         works both for rasters and gdf.
 
         from geocube.api.core import make_geocube
-        out_grid = make_geocube(
+        result = make_geocube(
             vector_data=grid_gpkg,
             resolution=(5, -5),
             fill=-9999
@@ -327,16 +326,14 @@ class Raster(File):
         """
         # https://svn.osgeo.org/gdal/trunk/autotest/alg/reproject.py
 
-        # TODO create_new_raster_file uitfaseren
-        # TODO datatype from src
         meta = RasterMetadataV2.from_raster(src, res=target_res)
-        rio_profile = meta.to_rio_profile(nodata=src.nodata, dtype="float32")
+        rio_profile = meta.to_rio_profile(nodata=src.nodata, dtype=src.profile["dtype"])
 
         dst.open_rio(mode="w", profile=rio_profile)
         src_ds = src.open_gdal()
         dst_ds = dst.open_gdal(mode="r+")
         if dst_ds is not None:
-            gdal.ReprojectImage(src_ds, dst_ds, src_wkt="EPSG:28992")
+            gdal.ReprojectImage(src_ds, dst_ds, src_wkt=src.metadata.projection)
 
 
 @dataclass
@@ -454,16 +451,18 @@ class RasterChunks:
 
 
 # %%
-# from tests_hrt.config import TEMP_DIR, TEST_DIRECTORY
 
-# raster = RasterV2(TEST_DIRECTORY / r"depth_test.tif", chunksize=40)
+if __name__ == "__main__":
+    from tests_hrt.config import TEMP_DIR, TEST_DIRECTORY
 
-# chunks = RasterChunks.from_raster(raster=raster)
-# df = chunks.to_gdf()
+    raster = Raster(TEST_DIRECTORY / r"depth_test.tif", chunksize=40)
 
-# df.plot()
-# # %%
-# raster2 = RasterV2(TEST_DIRECTORY / r"depth_test2.tif", chunksize=40)
+    chunks = RasterChunks.from_raster(raster=raster)
+    df = chunks.to_gdf()
 
-# with raster2.open_rio(mode="w", profile=raster.profile, dtype="float32") as dst:
-#     pass
+    df.plot()
+    # %%
+    raster2 = Raster(TEST_DIRECTORY / r"depth_test2.tif", chunksize=40)
+
+    with raster2.open_rio(mode="w", profile=raster.profile, dtype="float32") as dst:
+        pass
