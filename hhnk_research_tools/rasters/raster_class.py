@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from re import X
 from typing import Union
-
+import math
 import geopandas as gpd
 import numpy as np
 import pandas as pd
@@ -13,6 +13,9 @@ import xarray as xr
 from osgeo import gdal
 from shapely import geometry
 
+
+from rasterio import features
+import hhnk_research_tools as hrt
 from hhnk_research_tools.folder_file_classes.file_class import File
 from hhnk_research_tools.general_functions import check_create_new_file
 from hhnk_research_tools.rasters.raster_metadata import RasterMetadataV2
@@ -70,7 +73,7 @@ class RasterV2(File):
         # TODO rxr versie maken
         # plt.imshow(self._array)
         raise self.deprecation_warn()
-
+        
     @property
     def profile(self):
         """Rio profile containing metadata. Can be used to create a new raster with
@@ -146,6 +149,8 @@ class RasterV2(File):
         return rxr.open_rasterio(
             self.base, chunks={"x": self.chunksize, "y": self.chunksize}, masked=True, mask_and_scale=mask_and_scale
         )
+    
+
 
     def overviews_build(self, factors: list = [10, 50], resampling="average"):
         """Build overviews for faster rendering.
@@ -188,6 +193,39 @@ class RasterV2(File):
 
         da = self.open_rxr()
         return da.values.sum()
+    
+    def round_nearest(self, x, a):
+        return round(round(x / a) * a, -int(math.floor(math.log10(a))))
+    
+    def read(self, geometry, bounds=None, crs="EPSG:28992"):
+
+        resolution = self.metadata.pixel_width
+        if bounds is None:
+            bounds = [self.round_nearest(i, resolution) for i in geometry.bounds]
+
+        width = (bounds[2] - bounds[0]) * (1 / resolution)
+        height = (bounds[3] - bounds[1]) * (1 / resolution)
+
+        transform = rio.transform.from_bounds(*(bounds + [width, height]))
+        bounds = rio.coords.BoundingBox(*bounds)
+
+        if hasattr(geometry, "geoms"):
+            geometry_list = list(geometry.geoms     )
+        else:
+            geometry_list = [geometry]
+            
+        array = features.rasterize(
+            geometry_list, out_shape=(int(height), int(width)), transform=transform,
+            
+        )
+        
+        raster = self.open_rio()
+        window = raster.window(*bounds)
+        data = raster.read(window=window)[0]
+        data[array == 0] = raster.nodata
+        # data[data == raster.nodata] = np.nan
+        return data
+
 
     @classmethod
     def write(
