@@ -1,14 +1,15 @@
 # hhnk_research_tools/__init__.py
 from typing import TYPE_CHECKING
 
-from hhnk_research_tools.gis.raster import Raster, RasterMetadata  # noqa: F401
-from hhnk_research_tools.rasters.raster_class import RasterV2
+from hhnk_research_tools.gis.raster import RasterMetadata, RasterOld  # noqa: F401
+from hhnk_research_tools.rasters.raster_class import Raster
 from hhnk_research_tools.rasters.raster_metadata import RasterMetadataV2
 
 if TYPE_CHECKING:
     # TODO zou moeten werken met typehints van imports. Maar vraag is maar of het werkt.
     import hhnk_research_tools as hrt
 
+import hhnk_research_tools.installation_checks
 import hhnk_research_tools.threedi as threedi
 import hhnk_research_tools.variables as variables
 import hhnk_research_tools.waterschadeschatter.resources
@@ -60,6 +61,7 @@ from hhnk_research_tools.raster_functions import (
 )
 from hhnk_research_tools.sql_functions import (
     create_sqlite_connection,
+    database_to_gdf,
     execute_sql_changes,
     execute_sql_selection,
     sql_construct_select_query,

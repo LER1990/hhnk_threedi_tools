@@ -20,7 +20,7 @@ gdal.UseExceptions()
 
 
 # %%
-class Raster(File):
+class RasterOld(File):
     def __init__(self, base, min_block_size=1024):
         super().__init__(base)
 

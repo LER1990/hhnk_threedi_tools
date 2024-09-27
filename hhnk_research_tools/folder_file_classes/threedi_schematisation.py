@@ -7,7 +7,9 @@ import hhnk_research_tools as hrt
 from hhnk_research_tools.folder_file_classes.file_class import File
 from hhnk_research_tools.folder_file_classes.folder_file_classes import Folder
 from hhnk_research_tools.folder_file_classes.sqlite_class import Sqlite
-from hhnk_research_tools.gis.raster import Raster
+from hhnk_research_tools.rasters.raster_class import Raster  # FIXME new import
+
+# from hhnk_research_tools.gis.raster import RasterOld as Raster
 from hhnk_research_tools.threedi.threediresult_loader import ThreediResultLoader
 
 # Third-party imports
@@ -158,6 +160,7 @@ class ThreediResult(Folder):
         # Files
         self.add_file("grid_path", "results_3di.nc")
         self.add_file("admin_path", "gridadmin.h5")
+        self.add_file("aggregate_grid_path", "aggregate_results_3di.nc")
 
     @property
     def grid(self):
@@ -165,6 +168,13 @@ class ThreediResult(Folder):
         from threedigrid.admin.gridresultadmin import GridH5ResultAdmin
 
         return GridH5ResultAdmin(self.admin_path.base, self.grid_path.base)
+
+    @property
+    def aggregate_grid(self):
+        # moved imports here because gridbuilder has h5py issues
+        from threedigrid.admin.gridresultadmin import GridH5AggregateResultAdmin
+
+        return GridH5AggregateResultAdmin(self.admin_path.base, self.aggregate_grid_path.base)
 
     @property
     def admin(self):
@@ -175,6 +185,14 @@ class ThreediResult(Folder):
     @property
     def load(self):
         return ThreediResultLoader(self.grid)
+
+    def __repr__(self):
+        return f"""{self.path.name} @ {self.path}
+exists: {self.exists()}
+type: {type(self)}
+functions: {hrt.get_functions(self)}
+variables: {hrt.get_variables(self)}
+"""
 
 
 class RevisionsDir(Folder):

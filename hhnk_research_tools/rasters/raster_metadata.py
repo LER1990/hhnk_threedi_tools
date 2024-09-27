@@ -5,9 +5,10 @@ from dataclasses import dataclass
 
 import geopandas as gpd
 import numpy as np
-from pyproj import CRS
+from affine import Affine
 
 from hhnk_research_tools.general_functions import get_functions, get_variables
+from hhnk_research_tools.variables import DEF_TRGT_CRS, GDAL_DATATYPE, GEOTIFF
 
 
 @dataclass
@@ -32,10 +33,10 @@ class RasterMetadataV2:
     def from_rio_profile(cls, rio_prof):
         """rio_prof = raster.open_rio().profile"""
         georef = rio_prof["transform"].to_gdal()
-        x_res = rio_prof["width"]
-        y_res = rio_prof["height"]
         projection = rio_prof["crs"].to_string()
 
+        x_res = rio_prof["width"]
+        y_res = rio_prof["height"]
         return cls(georef=georef, x_res=x_res, y_res=y_res, projection=projection)
 
     @classmethod
@@ -63,14 +64,16 @@ class RasterMetadataV2:
         Projection is 28992 default, only option.
         """
         bounds = gdf.bounds
-
-        # Metadata input vars
         projection = gdf.crs.to_string()
-        georef = (int(np.floor(bounds["minx"].min())), res, 0.0, int(np.ceil(bounds["maxy"].max())), 0.0, -res)
-        x_res = int((int(np.ceil(bounds["maxx"].max())) - int(np.floor(bounds["minx"].min()))) / res)
-        y_res = int((int(np.ceil(bounds["maxy"].max())) - int(np.floor(bounds["miny"].min()))) / res)
 
-        return cls(georef=georef, x_res=x_res, y_res=y_res, projection=projection)
+        return cls.from_bounds(bounds_dict=bounds, res=res, projection=projection)
+
+    @classmethod
+    def from_raster(cls, raster_path, res):
+        from hhnk_research_tools.rasters.raster_class import Raster
+
+        r = Raster(raster_path)
+        return cls.from_bounds(r.metadata.bounds_dict, res=res)
 
     @property
     def proj(self):
@@ -106,6 +109,11 @@ class RasterMetadataV2:
         return [self.x_min, self.x_max, self.y_min, self.y_max]
 
     @property
+    def bounds_dict(self):
+        return {"minx": self.x_min, "maxx": self.x_max, "miny": self.y_min, "maxy": self.y_max}
+
+    # TODO gaat dit goed?
+    @property
     def bbox(self):
         """Lizard v4 bbox; str(x1, y1, x2, y2)"""
         return f"{self.x_min}, {self.y_min}, {self.x_max}, {self.y_max}"
@@ -114,6 +122,10 @@ class RasterMetadataV2:
     def bbox_gdal(self):
         """Gdal takes bbox as list, for instance in vrt creation."""
         return [self.x_min, self.y_min, self.x_max, self.y_max]
+
+    @property
+    def affine(self):
+        return Affine(self.pixel_width, self.georef[2], self.x_min, self.georef[4], self.pixel_height, self.y_max)
 
     @property
     def shape(self):
@@ -152,6 +164,23 @@ class RasterMetadataV2:
             raise Exception(
                 f"New resolution ({resolution_new}) can currently only be smaller than old resolution ({resolution_current})"
             )
+
+    def to_rio_profile(self, nodata, dtype="float32"):
+        return {
+            "driver": "GTiff",
+            "dtype": dtype,
+            "nodata": nodata,
+            "width": self.x_res,
+            "height": self.y_res,
+            "count": 1,
+            "crs": self.projection,
+            "transform": self.affine,
+            "blockxsize": 256,
+            "blockysize": 256,
+            "tiled": True,
+            "compress": "deflate",
+            "interleave": "band",
+        }
 
     def __repr__(self):
         repr_str = f"""functions: {get_functions(self)}

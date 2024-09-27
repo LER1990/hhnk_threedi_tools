@@ -1,7 +1,6 @@
 # %%
 from dataclasses import dataclass
 from pathlib import Path
-from re import X
 from typing import Union
 import math
 import geopandas as gpd
@@ -23,11 +22,15 @@ from hhnk_research_tools.rasters.raster_metadata import RasterMetadataV2
 CHUNKSIZE = 4096
 
 
-class RasterV2(File):
-    def __init__(self, base, chunksize=CHUNKSIZE):
+class Raster(File):
+    def __init__(self, base, chunksize: Union[int, None] = CHUNKSIZE):
         super().__init__(base)
 
-        self.chunksize = chunksize
+        if chunksize is None:
+            self.chunksize = CHUNKSIZE
+        else:
+            self.chunksize = chunksize
+
         self._rxr = None
         self._profile = None  # rio profile
         self._metadata = None
@@ -127,6 +130,8 @@ class RasterV2(File):
         ----------
         mode : str, by default "r"
             use "w" for write access.
+        profile :
+            rio profile with raster metadata. Used to create new raster
         """
         if profile is None:
             return rio.open(self.base, mode)
@@ -138,16 +143,25 @@ class RasterV2(File):
                 dtype = dtype2
             return rio.open(self.base, mode, **profile, dtype=dtype)
 
-    def open_rxr(self, mask_and_scale=False):
+    def open_rxr(self, mask_and_scale=False, chunksize: Union[int, None] = None):
         """Open raster as rxr.DataArray
 
         Parameters
         ----------
         mask_and_scale : bool, default=False
             Lazily scale (using the scales and offsets from rasterio) and mask.
+        chunksize: int | None, default=self.chunksize
+            chuncksize for opening
         """
+
+        if chunksize is None:
+            chunksize = self.chunksize
+
         return rxr.open_rasterio(
-            self.base, chunks={"x": self.chunksize, "y": self.chunksize}, masked=True, mask_and_scale=mask_and_scale
+            self.base,
+            chunks={"x": chunksize, "y": chunksize},
+            masked=True,
+            mask_and_scale=mask_and_scale,
         )
     
 
@@ -178,61 +192,21 @@ class RasterV2(File):
 
         print(f"Removed overviews: {self.view_name_with_parents(2)}")
 
-    def statistics():
-        pass
-
-    # Bewerkingen
-    def sum(self):
-        """Calculate sum of raster"""
-        raster_sum = 0
-        # TODO Hoe rxr
-        for window, block in self:
-            block[block == self.nodata] = 0
-            raster_sum += np.nansum(block)
-        return raster_sum
-
-        da = self.open_rxr()
-        return da.values.sum()
-    
-    def round_nearest(self, x, a):
-        return round(round(x / a) * a, -int(math.floor(math.log10(a))))
-    
-    def read(self, geometry, bounds=None, crs="EPSG:28992"):
-
-        resolution = self.metadata.pixel_width
-        if bounds is None:
-            bounds = [self.round_nearest(i, resolution) for i in geometry.bounds]
-
-        width = (bounds[2] - bounds[0]) * (1 / resolution)
-        height = (bounds[3] - bounds[1]) * (1 / resolution)
-
-        transform = rio.transform.from_bounds(*(bounds + [width, height]))
-        bounds = rio.coords.BoundingBox(*bounds)
-
-        if hasattr(geometry, "geoms"):
-            geometry_list = list(geometry.geoms     )
-        else:
-            geometry_list = [geometry]
-            
-        array = features.rasterize(
-            geometry_list, out_shape=(int(height), int(width)), transform=transform,
-            
-        )
-        
-        raster = self.open_rio()
-        window = raster.window(*bounds)
-        data = raster.read(window=window)[0]
-        data[array == 0] = raster.nodata
-        # data[data == raster.nodata] = np.nan
-        return data
-
+    def statistics(self, decimals=6):
+        raster_src = self.open_rxr()
+        return {
+            "min": np.round(raster_src.min().values, decimals),
+            "max": np.round(raster_src.max().values, decimals),
+            "mean": np.round(raster_src.mean().values, decimals),
+            "std": np.round(raster_src.std().values, decimals),
+        }
 
     @classmethod
     def write(
         cls,
         raster_out: Union[str, Path],
         result: xr.DataArray,
-        nodata: float,
+        nodata: float = None,
         dtype: str = "float32",
         scale_factor: float = None,
         chunksize: int = CHUNKSIZE,  # TODO not sure if chunksize needed here
@@ -242,7 +216,7 @@ class RasterV2(File):
         works both for rasters and gdf.
 
         from geocube.api.core import make_geocube
-        out_grid = make_geocube(
+        result = make_geocube(
             vector_data=grid_gpkg,
             resolution=(5, -5),
             fill=-9999
@@ -267,7 +241,8 @@ class RasterV2(File):
             compress = "ZSTD"
 
         # Set nodata otherwise its not in raster
-        result.rio.set_nodata(nodata)
+        if nodata is not None:
+            result.rio.set_nodata(nodata)
 
         result.rio.to_raster(
             raster_out.base,
@@ -295,7 +270,7 @@ class RasterV2(File):
     @classmethod
     def build_vrt(
         cls,
-        vrt_out: str,
+        vrt_out,
         input_files: Union[str, list],
         bounds=None,
         overwrite: bool = False,
@@ -359,8 +334,25 @@ class RasterV2(File):
     def sum_labels(self):
         pass
 
-    def reproject(self):
-        pass
+    @classmethod
+    def reproject(cls, src, dst, target_res: float):
+        """
+        Parameters
+        ----------
+        src : str | Path | hrt.Raster
+        dst : str | Path | hrt.Raster
+        target_res : float
+        """
+        # https://svn.osgeo.org/gdal/trunk/autotest/alg/reproject.py
+
+        meta = RasterMetadataV2.from_raster(src, res=target_res)
+        rio_profile = meta.to_rio_profile(nodata=src.nodata, dtype=src.profile["dtype"])
+
+        dst.open_rio(mode="w", profile=rio_profile)
+        src_ds = src.open_gdal()
+        dst_ds = dst.open_gdal(mode="r+")
+        if dst_ds is not None:
+            gdal.ReprojectImage(src_ds, dst_ds, src_wkt=src.metadata.projection)
 
 
 @dataclass
@@ -374,7 +366,7 @@ class RasterChunks:
     chunksize: int = CHUNKSIZE
 
     @classmethod
-    def from_raster(cls, raster: RasterV2):
+    def from_raster(cls, raster: Raster):
         return cls(metadata=raster.metadata, chunksize=raster.chunksize)
 
     def from_gdf(cls, gdf: gpd.GeoDataFrame, res: float, chunksize=CHUNKSIZE):
@@ -407,7 +399,8 @@ class RasterChunks:
             for iy in range(nrows):
                 i += 1
                 blocks_df.loc[i, :] = np.array(
-                    (ix, iy, [xparts[ix], yparts[iy], xparts[ix + 1], yparts[iy + 1]]), dtype=object
+                    (ix, iy, [xparts[ix], yparts[iy], xparts[ix + 1], yparts[iy + 1]]),
+                    dtype=object,
                 )
 
         blocks_df["window_readarray"] = blocks_df["window"].apply(
@@ -478,16 +471,18 @@ class RasterChunks:
 
 
 # %%
-# from tests_hrt.config import TEMP_DIR, TEST_DIRECTORY
 
-# raster = RasterV2(TEST_DIRECTORY / r"depth_test.tif", chunksize=40)
+if __name__ == "__main__":
+    from tests_hrt.config import TEST_DIRECTORY
 
-# chunks = RasterChunks.from_raster(raster=raster)
-# df = chunks.to_gdf()
+    raster = Raster(TEST_DIRECTORY / r"depth_test.tif", chunksize=40)
 
-# df.plot()
-# # %%
-# raster2 = RasterV2(TEST_DIRECTORY / r"depth_test2.tif", chunksize=40)
+    chunks = RasterChunks.from_raster(raster=raster)
+    df = chunks.to_gdf()
 
-# with raster2.open_rio(mode="w", profile=raster.profile, dtype="float32") as dst:
-#     pass
+    df.plot()
+    # %%
+    raster2 = Raster(TEST_DIRECTORY / r"depth_test2.tif", chunksize=40)
+
+    with raster2.open_rio(mode="w", profile=raster.profile, dtype="float32") as dst:
+        pass

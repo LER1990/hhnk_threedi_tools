@@ -12,8 +12,8 @@ from hhnk_research_tools.general_functions import (
     check_create_new_file,
     ensure_file_path,
 )
-from hhnk_research_tools.gis.raster import Raster, RasterMetadata
-from hhnk_research_tools.rasters.raster_class import RasterV2
+from hhnk_research_tools.gis.raster import RasterMetadata, RasterOld
+from hhnk_research_tools.rasters.raster_class import Raster
 from hhnk_research_tools.variables import DEF_TRGT_CRS, GDAL_DATATYPE, GEOTIFF
 
 DEFAULT_CREATE_OPTIONS = ["COMPRESS=ZSTD", "TILED=YES", "PREDICTOR=2", "ZSTD_LEVEL=1"]
@@ -63,7 +63,7 @@ def gdf_to_raster(
     nodata=0, meta=meta, epsg=28992, driver='GTiff')
     """
     try:
-        if isinstance(raster_out, (Raster, RasterV2)):
+        if isinstance(raster_out, (Raster, RasterOld)):
             raster_out = raster_out.path
 
         gdf = gdf[[value_field, "geometry"]]  # filter unnecessary columns
@@ -416,18 +416,7 @@ class RasterCalculator:
 
 
 def reproject(src: Raster, target_res: float, output_path: str):
-    """src : hrt.Raster
-    output_path : str
-    meta_new : hrt.core
-    """
-    # https://svn.osgeo.org/gdal/trunk/autotest/alg/reproject.py
-    src.metadata.update_resolution(target_res)
-
-    src_ds = src.source
-    dst_ds = create_new_raster_file(file_name=output_path, nodata=src.nodata, meta=src.metadata)
-
-    if dst_ds is not None:
-        gdal.ReprojectImage(src_ds, dst_ds, src_wkt="EPSG:28992")
+    raise DeprecationWarning("This function is depcrated in favour of hrt.Raster.reproject")
 
 
 def hist_stats(histogram: dict, stat_type: str, ignore_keys=[0]):
