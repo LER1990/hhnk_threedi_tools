@@ -333,6 +333,51 @@ class Raster(File):
     # Bewerkingen
     def sum_labels(self):
         pass
+    
+    def sum(self):
+        """Calculate sum of raster"""
+
+        raster_sum = 0
+        # TODO Hoe rxr
+        for window, block in self:
+            block[block == self.nodata] = 0
+            raster_sum += np.nansum(block)
+        return raster_sum
+
+        da = self.open_rxr()
+        return da.values.sum()
+    
+    def round_nearest(self, x, a):
+        return round(round(x / a) * a, -int(math.floor(math.log10(a))))
+    
+    def read(self, geometry, bounds=None, crs="EPSG:28992"):
+
+        resolution = self.metadata.pixel_width
+        if bounds is None:
+            bounds = [self.round_nearest(i, resolution) for i in geometry.bounds]
+
+        width = (bounds[2] - bounds[0]) * (1 / resolution)
+        height = (bounds[3] - bounds[1]) * (1 / resolution)
+
+        transform = rio.transform.from_bounds(*(bounds + [width, height]))
+        bounds = rio.coords.BoundingBox(*bounds)
+
+        if hasattr(geometry, "geoms"):
+            geometry_list = list(geometry.geoms     )
+        else:
+            geometry_list = [geometry]
+            
+        array = features.rasterize(
+            geometry_list, out_shape=(int(height), int(width)), transform=transform,
+            
+        )
+        
+        raster = self.open_rio()
+        window = raster.window(*bounds)
+        data = raster.read(window=window)[0]
+        data[array == 0] = raster.nodata
+        # data[data == raster.nodata] = np.nan
+        return data
 
     @classmethod
     def reproject(cls, src, dst, target_res: float):
