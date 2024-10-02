@@ -271,7 +271,7 @@ def sqlite_table_to_df(database_path, table_name, columns=None) -> pd.DataFrame:
 # TODO was: gdf_from_sql
 def sqlite_table_to_gdf(query, id_col, to_gdf=True, conn=None, database_path=None) -> gpd.GeoDataFrame:
     """
-    Returns DataFrame or GeoDataFrame from database query.
+    Return DataFrame or GeoDataFrame from database query.
 
         sqlite_table_to_gdf(
                 query (string)
