@@ -1,8 +1,9 @@
 # %%
+import math
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Union
-import math
+
 import geopandas as gpd
 import numpy as np
 import pandas as pd
@@ -10,10 +11,9 @@ import rasterio as rio
 import rioxarray as rxr
 import xarray as xr
 from osgeo import gdal
+from rasterio import features
 from shapely import geometry
 
-
-from rasterio import features
 import hhnk_research_tools as hrt
 from hhnk_research_tools.folder_file_classes.file_class import File
 from hhnk_research_tools.general_functions import check_create_new_file
@@ -76,7 +76,7 @@ class Raster(File):
         # TODO rxr versie maken
         # plt.imshow(self._array)
         raise self.deprecation_warn()
-        
+
     @property
     def profile(self):
         """Rio profile containing metadata. Can be used to create a new raster with
@@ -163,8 +163,6 @@ class Raster(File):
             masked=True,
             mask_and_scale=mask_and_scale,
         )
-    
-
 
     def overviews_build(self, factors: list = [10, 50], resampling="average"):
         """Build overviews for faster rendering.
@@ -195,10 +193,10 @@ class Raster(File):
     def statistics(self, decimals=6):
         raster_src = self.open_rxr()
         return {
-            "min": np.round(raster_src.min().values, decimals),
-            "max": np.round(raster_src.max().values, decimals),
-            "mean": np.round(raster_src.mean().values, decimals),
-            "std": np.round(raster_src.std().values, decimals),
+            "min": np.round(float(raster_src.min().values), decimals),
+            "max": np.round(float(raster_src.max().values), decimals),
+            "mean": np.round(float(raster_src.mean().values), decimals),
+            "std": np.round(float(raster_src.std().values), decimals),
         }
 
     @classmethod
@@ -333,25 +331,16 @@ class Raster(File):
     # Bewerkingen
     def sum_labels(self):
         pass
-    
+
     def sum(self):
         """Calculate sum of raster"""
-
-        raster_sum = 0
-        # TODO Hoe rxr
-        for window, block in self:
-            block[block == self.nodata] = 0
-            raster_sum += np.nansum(block)
-        return raster_sum
-
         da = self.open_rxr()
         return da.values.sum()
-    
+
     def round_nearest(self, x, a):
         return round(round(x / a) * a, -int(math.floor(math.log10(a))))
-    
-    def read(self, geometry, bounds=None, crs="EPSG:28992"):
 
+    def read(self, geometry, bounds=None, crs="EPSG:28992"):
         resolution = self.metadata.pixel_width
         if bounds is None:
             bounds = [self.round_nearest(i, resolution) for i in geometry.bounds]
@@ -363,15 +352,16 @@ class Raster(File):
         bounds = rio.coords.BoundingBox(*bounds)
 
         if hasattr(geometry, "geoms"):
-            geometry_list = list(geometry.geoms     )
+            geometry_list = list(geometry.geoms)
         else:
             geometry_list = [geometry]
-            
+
         array = features.rasterize(
-            geometry_list, out_shape=(int(height), int(width)), transform=transform,
-            
+            geometry_list,
+            out_shape=(int(height), int(width)),
+            transform=transform,
         )
-        
+
         raster = self.open_rio()
         window = raster.window(*bounds)
         data = raster.read(window=window)[0]
