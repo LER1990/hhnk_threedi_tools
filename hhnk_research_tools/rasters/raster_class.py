@@ -10,7 +10,10 @@ import rasterio as rio
 import rioxarray as rxr
 import xarray as xr
 from osgeo import gdal
+import shapely
 from shapely import geometry
+
+from rasterio.features import shapes
 
 
 from rasterio import features
@@ -378,6 +381,23 @@ class Raster(File):
         data[array == 0] = raster.nodata
         # data[data == raster.nodata] = np.nan
         return data
+    
+    
+    def polygonize(self, array=None, field_name= "field"):
+        
+        raster = self.open_rio()
+        if array is None:
+            array = raster.read()
+            
+        mask = raster.dataset_mask()
+        generator = shapes(array, mask=mask, transform=raster.transform)
+        
+        output = {field_name:[], "geometry":[]}
+        for i, (geom, value) in enumerate(generator):
+            output[field_name].append(value)
+            output['geometry'].append(shapely.geometry.shape(geom))
+
+        return gpd.GeoDataFrame(output)
 
     @classmethod
     def reproject(cls, src, dst, target_res: float):
