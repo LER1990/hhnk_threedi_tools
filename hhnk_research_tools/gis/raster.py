@@ -175,16 +175,24 @@ class Raster(File):
     def pixelarea(self):
         return self.metadata.pixelarea
 
-    def statistics(self, approve_ok=True, force=True) -> dict:
+    def statistics(self, approx_ok=False, force=True) -> dict:
         """
+        Note that if approx_ok is first run with True and then False, and then True it will not
+        return the same results.
+        The False will create a more 'accurate' result, saves it in the xml. It will then use that.
+        The force parameter doesnt change that.
+
         Parameters
         ----------
-        approve_ok: reads stats from xml if available.
-        force: calculates stats, might be slow.
+        approx_ok : bool
+            If TRUE statistics may be computed based on overviews or a subset of all tiles.
+        force : bool
+            FALSE statistics will only be returned if it can be done without rescanning the image.
+            If TRUE, statistics computation will be forced if pre-existing values are not quickly available.
         returns [min, max, mean, std]
         """
         raster_src = self.open_gdal_source_read()
-        stats = raster_src.GetRasterBand(1).GetStatistics(approve_ok, force)  # [min, max, mean, std]
+        stats = raster_src.GetRasterBand(1).GetStatistics(approx_ok, force)  # [min, max, mean, std]
         d = 6  # decimals
         return {
             "min": np.round(stats[0], d),
@@ -313,7 +321,7 @@ class Raster(File):
         """Build vrt from input files.
         overwrite (bool)
         bounds (np.array): format should be; (xmin, ymin, xmax, ymax)
-            if None will use input files.
+            if None will use input files. -> hrt.Raster.metadata.bbox_gdal
         input_files (list): list of paths to input rasters
         resolution: "highest"|"lowest"|"average"
             instead of "user" option, provide a float for manual target_resolution
