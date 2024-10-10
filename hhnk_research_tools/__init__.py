@@ -59,6 +59,7 @@ from hhnk_research_tools.raster_functions import (
     reproject,
     save_raster_array_to_tiff,
 )
+from hhnk_research_tools.rasters.raster_calculator_rxr import RasterCalculatorRxr
 from hhnk_research_tools.sql_functions import (
     create_sqlite_connection,
     database_to_gdf,
