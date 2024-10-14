@@ -338,9 +338,8 @@ def sql_builder_select_by_location(
         raise RuntimeError("Unknown geometry column name, provide columns")
 
     # Round coordinates to integers
-    if simplify:
+    if simplify:  # TODO buffer?
         polygon_wkt = re.sub(r"\d*\.\d+", lambda m: format(float(m.group(0)), ".0f"), str(polygon_wkt))
-
     sql = f"""
         SELECT *
         FROM {schema}.{table_name}
@@ -350,12 +349,6 @@ def sql_builder_select_by_location(
             'mask=ANYINTERACT'
         ) = 'TRUE'
         """
-
-    if columns is not None:
-        col_select = ", ".join(columns)
-        sql = sql.replace(
-            "SELECT *", f"SELECT {col_select}"
-        )  # TODO dit kan niet met de replace die ook in database_to_gdf staat
 
     return sql
 
