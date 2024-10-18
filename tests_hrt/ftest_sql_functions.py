@@ -1,6 +1,7 @@
 # %%
 
 import geopandas as gpd
+import pytest
 from local_settings import DATABASES
 
 from hhnk_research_tools.sql_functions import (
@@ -39,6 +40,27 @@ def test_database_to_gdf():
 
     gdf, sql2 = database_to_gdf(db_dict=db_dict, sql=sql, columns=columns)
     assert gdf.loc[0, "code"] == "KGM-Q-29234"
+
+
+def test_database_to_gdf_no_cols():
+    # %%
+    sql = """SELECT a.OBJECTID, a.CODE, a.NAAM,a.REGIEKAMER, 
+                b.NAAM as ZUIVERINGSKRING, a.SHAPE
+            FROM CS_OBJECTEN.RIOOLGEMAAL_EVW a
+            left outer join CS_OBJECTEN.ZUIVERINGSKRING_EVW b
+            on a.LOOST_OP_RWZI_CODE = b.RWZICODE
+            FETCH FIRST 10 ROWS ONLY
+            """
+    db_dict = DATABASES.get("csoprd", None)
+    columns = None
+    gdf, sql2 = database_to_gdf(db_dict=db_dict, sql=sql, columns=columns)
+
+    # This should fail
+    sql = """SELECT a.OBJECTID, sdo_util.to_wktgeometry(a.SHAPE)
+            FROM CS_OBJECTEN.RIOOLGEMAAL_EVW a
+            """
+    with pytest.raises(ValueError):
+        gdf, sql2 = database_to_gdf(db_dict=db_dict, sql=sql, columns=columns)
 
 
 # %%

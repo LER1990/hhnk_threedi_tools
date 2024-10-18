@@ -409,43 +409,61 @@ def database_to_gdf(
     # %%
     import oracledb  # Import here to prevent dependency
 
+    if "sdo_util.to_wktgeometry" in sql.lower():
+        raise ValueError("Dont pass sdo_util.to_wkt_geometry in the sql. It will be done here.")
+
     with oracledb.connect(**db_dict) as con:
         cur = oracledb.Cursor(con)
 
         # Modify sql to efficiently fetch description only
         sql = sql.replace(";", "")
+        sql = sql.replace("select *", "SELECT *")  # Voor de mensen die geen caps gebruiken
+        sql = sql.replace("where ", "WHERE ")  # Voor de mensen die geen caps gebruiken
+        sql = sql.replace("from ", "FROM ")  # Voor de mensen die geen caps gebruiken
         pattern = r"FETCH FIRST \d+ ROWS ONLY"
         replacement = "FETCH FIRST 0 ROWS ONLY"
         matched_upper = re.search(pattern, sql)
         matched_lower = re.search(pattern.lower(), sql)
         if matched_upper:
             sql_desc = re.sub(pattern, replacement, sql)
-        if matched_lower:
+        elif matched_lower:
             sql_desc = re.sub(pattern.lower(), replacement, sql)
         else:
             sql_desc = f"{sql} {replacement}"
 
         # Retrieve column names
-        cur.execute(sql_desc)  # TODO hier kan nog een WHERE staan met spatial select moet die er misschien ook uit?
         if columns is None:
-            columns = [i[0] for i in cur.description]
+            cur.execute(sql_desc)  # TODO hier kan nog een WHERE staan met spatial select
+            columns_out = [i[0] for i in cur.description]
+
+            if "SELECT *" in sql:
+                cols_dict = {c: c for c in columns_out}
+                select_search_str = "SELECT *"
+            else:
+                # When columns are passed, use those for the sql
+                select_search_str = sql.split("FROM")[0]
+
+                cols_sql = select_search_str.split("SELECT")[1].replace("\n", "").split(",")
+                cols_sql = [c.lstrip().rstrip() for c in cols_sql]
+                cols_dict = dict(zip(columns_out, cols_sql))
 
         # Modify geometry column name to get WKT geometry
-        cols_sql = []
-        for col in columns:
-            if col.lower() in ["shape", "geometrie"]:
-                col = "sdo_util.to_wktgeometry({col}) as geometry"
-            cols_sql.append(col)
+        for key, col in cols_dict.items():
+            for geomcol in ["shape", "geometrie"]:
+                if col.lower() == geomcol:
+                    cols_dict[key] = f"sdo_util.to_wktgeometry({col}) as geometry"
+                # Find pattern e.g.: a.shape
+                if re.search(pattern=rf"\w*\.?{geomcol}", string=col.lower()):
+                    cols_dict[key] = f"sdo_util.to_wktgeometry({col}) as geometry"
 
-        col_select = ", ".join(cols_sql)
-        sql = sql.replace("SELECT *", f"SELECT {col_select}")
-        sql = sql.replace("select *", f"SELECT {col_select}")  # Voor de mensen die perongeluk geen caps gebruiken
+        col_select = ", ".join(cols_dict.values())
+        sql2 = sql.replace(select_search_str, f"SELECT {col_select} ")
 
         # Execute modified sql request
-        cur.execute(sql)
+        cur.execute(sql2)
 
         # load cursor to dataframe
-        df = pd.DataFrame(cur.fetchall(), columns=columns)
+        df = pd.DataFrame(cur.fetchall(), columns=columns_out)
 
         # Take column names from cursor and replace exotic geometry column names
         for i in df.columns:
@@ -457,19 +475,18 @@ def database_to_gdf(
         # make geodataframe and convert curve geometry to linear
         if "geometry" in df.columns:
             df = df.set_geometry(gpd.GeoSeries(df["geometry"].apply(_oracle_curve_polygon_to_linear)), crs=crs)
-        display(df)
-        # %%
-        return df, sql
+        return df, sql2
 
 
 # %%
 if __name__ == "__main__":
     sql = """SELECT a.OBJECTID, a.CODE, a.NAAM, a.OBSCODE, a.SPOC_CODE, a.SOORTRIOOLGEMAALCODE, 
                 a.LOOST_OP_RWZI_CODE, a.LOOST_OP_RIOOLGEMAAL_CODE, a.SOORTRIOOLGEMAAL, a.REGIEKAMER, 
-                b.NAAM as ZUIVERINGSKRING, sdo_util.to_wktgeometry(a.SHAPE)
+                b.NAAM as ZUIVERINGSKRING, a.SHAPE
             FROM CS_OBJECTEN.RIOOLGEMAAL_EVW a
             left outer join CS_OBJECTEN.ZUIVERINGSKRING_EVW b
             on a.LOOST_OP_RWZI_CODE = b.RWZICODE
+            FETCH FIRST 10 ROWS ONLY
             """
     from tests_hrt.local_settings import DATABASES
 
@@ -479,3 +496,4 @@ if __name__ == "__main__":
         "csoprd": DATABASES.get("csoprd", None),
     }
     db_dict = db_dicts["csoprd"]
+    columns = None
