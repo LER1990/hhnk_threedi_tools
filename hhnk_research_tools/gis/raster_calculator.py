@@ -356,6 +356,7 @@ this is not implemented or tested if it works."
             '0': {'2': 61, '6': 2358, '15': 267, '28': 1005, '29': 2262, '241': 279},
             '2': {'2': 2144, '6': 470, '15': 756, '28': 664, '29': 2880, '241': 302},
         }
+        TODO issue #56 nagaan '241' staat onterecht hier.
 
         Parameters
         ----------
