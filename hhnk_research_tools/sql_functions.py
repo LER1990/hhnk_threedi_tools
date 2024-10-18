@@ -377,7 +377,7 @@ def _oracle_curve_polygon_to_linear(blob_curvepolygon):
 
 
 def database_to_gdf(
-    db_dict: dict, sql: str, columns: list[str] = None, crs="EPSG:28992"
+    db_dict: dict, sql: str, columns: list[str] = None, lower_cols=True, crs="EPSG:28992"
 ) -> Union[gpd.GeoDataFrame, str]:
     """
     Connect to (oracle) database, create a cursor and execute sql
@@ -394,9 +394,11 @@ def database_to_gdf(
     sql: str
         oracledb 12 sql to execute
         Takes only one sql statement at a time, ';' is removed
-    columns: list
+    columns: list #TODO allow for dict input
         When not provided, get the column names from the external table
         geometry columns 'SHAPE' or 'GEOMETRIE' are renamed to 'geometry'
+    lower_cols : bool
+        return all output columns with no uppercase
     crs: str
         EPSG code, defaults to 28992.
 
@@ -417,7 +419,7 @@ def database_to_gdf(
 
         # Modify sql to efficiently fetch description only
         sql = sql.replace(";", "")
-        sql = sql.replace("select *", "SELECT *")  # Voor de mensen die geen caps gebruiken
+        sql = sql.replace("select ", "SELECT ")  # Voor de mensen die geen caps gebruiken
         sql = sql.replace("where ", "WHERE ")  # Voor de mensen die geen caps gebruiken
         sql = sql.replace("from ", "FROM ")  # Voor de mensen die geen caps gebruiken
         pattern = r"FETCH FIRST \d+ ROWS ONLY"
@@ -467,9 +469,12 @@ def database_to_gdf(
 
         # Take column names from cursor and replace exotic geometry column names
         for i in df.columns:
-            name = i.lower()
-            if name in ("shape", "geometrie"):
+            name = i
+            if lower_cols:
+                name = i.lower()
+            if i.lower() in ("shape", "geometrie"):
                 name = "geometry"
+
             df.rename(columns={i: name}, inplace=True)
 
         # make geodataframe and convert curve geometry to linear
