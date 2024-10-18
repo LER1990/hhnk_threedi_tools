@@ -411,9 +411,12 @@ def database_to_gdf(db_dict: dict, sql: str, columns: list[str] = None, crs="EPS
         sql = sql.replace(";", "")
         pattern = r"FETCH FIRST \d+ ROWS ONLY"
         replacement = "FETCH FIRST 0 ROWS ONLY"
-        matched = re.search(pattern, sql)
-        if matched:
+        matched_upper = re.search(pattern, sql)
+        matched_lower = re.search(pattern.lower(), sql)
+        if matched_upper:
             sql_desc = re.sub(pattern, replacement, sql)
+        if matched_lower:
+            sql_desc = re.sub(pattern.lower(), replacement, sql)
         else:
             sql_desc = f"{sql} {replacement}"
 
@@ -432,6 +435,7 @@ def database_to_gdf(db_dict: dict, sql: str, columns: list[str] = None, crs="EPS
 
         col_select = ", ".join(cols_sql)
         sql = sql.replace("SELECT *", f"SELECT {col_select}")
+        sql = sql.replace("select *", f"SELECT {col_select}")  # Voor de mensen die perongeluk geen caps gebruiken
 
         # Execute modified sql request
         cur.execute(sql)
