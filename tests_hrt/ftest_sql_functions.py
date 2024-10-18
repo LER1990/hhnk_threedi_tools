@@ -37,7 +37,7 @@ def test_database_to_gdf():
     db_dict = db_dicts["aquaprd"]
     columns = None
 
-    gdf = database_to_gdf(db_dict=db_dict, sql=sql, columns=columns)
+    gdf, sql2 = database_to_gdf(db_dict=db_dict, sql=sql, columns=columns)
     assert gdf.loc[0, "code"] == "KGM-Q-29234"
 
 
