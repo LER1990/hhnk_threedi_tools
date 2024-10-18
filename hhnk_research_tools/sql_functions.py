@@ -5,7 +5,7 @@ import sqlite3
 import geopandas as gpd
 import pandas as pd
 from osgeo import ogr
-from shapely import wkt
+from shapely import Polygon, wkt
 
 from hhnk_research_tools.dataframe_functions import df_convert_to_gdf
 from hhnk_research_tools.variables import DEF_SRC_CRS, MOD_SPATIALITE_PATH
@@ -308,7 +308,7 @@ def sqlite_table_to_gdf(query, id_col, to_gdf=True, conn=None, database_path=Non
 def sql_builder_select_by_location(
     schema: str,
     table_name: str,
-    polygon_wkt: str,
+    polygon_wkt: Polygon,
     columns: list[str] = None,
     epsg_code="28992",
     simplify=False,
@@ -324,6 +324,10 @@ def sql_builder_select_by_location(
     polygon_wkt : str
         Selection polygon. All data that intersects with this polygon will be selected
         Must be 1 geometry, so pass the geometry of a row, or gdf.dissolve() it first.
+    simplify : bool
+        Buffer by 2m
+        Simplify the geometry with 1m tolerance
+        Turn coordinates in ints to reduce sql size.
     """
 
     geomcolumn = None
@@ -341,7 +345,8 @@ def sql_builder_select_by_location(
         raise RuntimeError("Unknown geometry column name, provide columns")
 
     # Round coordinates to integers
-    if simplify:  # TODO buffer?
+    if simplify:
+        polygon_wkt = polygon_wkt.buffer(2).simplify(tolerance=1)
         polygon_wkt = re.sub(r"\d*\.\d+", lambda m: format(float(m.group(0)), ".0f"), str(polygon_wkt))
     sql = f"""
         SELECT *
