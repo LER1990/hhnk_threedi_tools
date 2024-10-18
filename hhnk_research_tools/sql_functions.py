@@ -27,7 +27,7 @@ def sql_create_update_case_statement(
     show_proposed=False,
 ) -> str:
     """
-    Creates an sql statement with the following structure:
+    Create an sql statement with the following structure:
     UPDATE (table_name)
     SET (database_column_to_change) = CASE (database_id_col)
     WHEN (id) THEN (new value associated with id) OPTIONAL -- ['Previous' or 'Proposed'] previous or proposed value
@@ -69,7 +69,7 @@ def sql_create_update_case_statement(
 
 def sql_construct_select_query(table_name, columns=None) -> str:
     """
-    This functions constructs sql queries that select either all
+    Construct sql queries that select either all
     or specified columns from a table.
 
     Columns has to be a list. If a list item is a tuple, it will be interpreted as:
@@ -108,6 +108,7 @@ def create_sqlite_connection(database_path):
         conn.execute("SELECT load_extension('mod_spatialite')")
         return conn
     except sqlite3.OperationalError as e:
+        print("Error loading mod_spatialite")
         if e.args[0] == "The specified module could not be found.\r\n":
             if os.path.exists(MOD_SPATIALITE_PATH):
                 os.environ["PATH"] = MOD_SPATIALITE_PATH + ";" + os.environ["PATH"]
@@ -118,7 +119,7 @@ def create_sqlite_connection(database_path):
                 return conn
             else:
                 print(
-                    """Download mod_spatialite extension from http://www.gaia-gis.it/gaia-sins/windows-bin-amd64/ 
+                    r"""Download mod_spatialite extension from http://www.gaia-gis.it/gaia-sins/windows-bin-amd64/ 
                 and place into anaconda installation C:\ProgramData\Anaconda3\mod_spatialite-5.0.1-win-amd64."""
                 )
                 raise e from None
@@ -162,7 +163,7 @@ def execute_sql_selection(query, conn=None, database_path=None, **kwargs) -> pd.
 # TODO REMOVE
 def execute_sql_changes(query, database=None, conn=None):
     """
-    Takes a query that changes the database and tries
+    Take a query that changes the database and tries
     to execute it. On success, changes are committed.
     On a failure, rolls back to the state before
     the query was executed that caused the error
@@ -189,7 +190,7 @@ def execute_sql_changes(query, database=None, conn=None):
 
 # TODO was: get_creation_statement_from_table
 def _sql_get_creation_statement_from_table(src_table_name, dst_table_name, cursor):
-    """ "Replace the original table name with the new name to make the creation statement"""
+    """Replace the original table name with the new name to make the creation statement"""
     try:
         creation_sql = f"""
                     SELECT sql
@@ -210,7 +211,7 @@ def _sql_get_creation_statement_from_table(src_table_name, dst_table_name, curso
 # TODO was: replace_or_add_table
 def sqlite_replace_or_add_table(db, dst_table_name, src_table_name, select_statement=None):
     """
-    This functions maintains the backup tables.
+    Maintain the backup tables.
     Tables are created if they do not exist yet.
     After that, rows are replaced if their id is already
     in the backup, otherwise they are just inserted.
@@ -271,6 +272,8 @@ def sqlite_table_to_df(database_path, table_name, columns=None) -> pd.DataFrame:
 # TODO was: gdf_from_sql
 def sqlite_table_to_gdf(query, id_col, to_gdf=True, conn=None, database_path=None) -> gpd.GeoDataFrame:
     """
+    sqlite_table_to_gdf
+
     Returns DataFrame or GeoDataFrame from database query.
 
         sqlite_table_to_gdf(
@@ -377,7 +380,7 @@ def database_to_gdf(db_dict: dict, sql: str, columns: list[str] = None, crs="EPS
     Connect to (oracle) database, create a cursor and execute sql
 
     Parameters
-    -----------
+    ----------
     db_dict: dict
         connection dict. e.g.:
         {'service_name': 'ODSPRD',
