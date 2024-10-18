@@ -1,6 +1,7 @@
 import os
 import re
 import sqlite3
+from typing import Union
 
 import geopandas as gpd
 import pandas as pd
@@ -309,7 +310,7 @@ def sql_builder_select_by_location(
     schema: str,
     table_name: str,
     polygon_wkt: Polygon,
-    columns: list[str] = None,
+    geomcolumn: str = None,
     epsg_code="28992",
     simplify=False,
 ):
@@ -330,19 +331,13 @@ def sql_builder_select_by_location(
         Turn coordinates in ints to reduce sql size.
     """
 
-    geomcolumn = None
-    if columns is None:
+    if geomcolumn is None:
         if schema == "DAMO_W":
             geomcolumn = "SHAPE"
         elif schema == "BGT":
             geomcolumn = "GEOMETRIE"
-    else:
-        for name in ["SHAPE", "GEOMETRIE", "geometry", "GEOMETRY"]:
-            if name in columns:
-                geomcolumn = name
-                break
-    if geomcolumn is None:
-        raise RuntimeError("Unknown geometry column name, provide columns")
+        else:
+            raise ValueError("Provide geometry column")
 
     # Round coordinates to integers
     if simplify:
@@ -380,7 +375,9 @@ def _oracle_curve_polygon_to_linear(blob_curvepolygon):
     return g2
 
 
-def database_to_gdf(db_dict: dict, sql: str, columns: list[str] = None, crs="EPSG:28992"):
+def database_to_gdf(
+    db_dict: dict, sql: str, columns: list[str] = None, crs="EPSG:28992"
+) -> Union[gpd.GeoDataFrame, str]:
     """
     Connect to (oracle) database, create a cursor and execute sql
 
@@ -404,7 +401,8 @@ def database_to_gdf(db_dict: dict, sql: str, columns: list[str] = None, crs="EPS
 
     Returns
     -------
-    Geodataframe with data and (linear) geometry, colum names in lowercase.
+    gdf : Geodataframe with data and (linear) geometry, colum names in lowercase.
+    sql : str with the used sql in the request.
 
     """
     import oracledb  # Import here to prevent dependency
@@ -459,4 +457,4 @@ def database_to_gdf(db_dict: dict, sql: str, columns: list[str] = None, crs="EPS
         if "geometry" in df.columns:
             gdf = df.set_geometry(gpd.GeoSeries(df["geometry"].apply(_oracle_curve_polygon_to_linear)), crs=crs)
 
-        return gdf
+        return gdf, sql
