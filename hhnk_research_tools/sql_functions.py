@@ -434,13 +434,13 @@ def database_to_gdf(
             sql_desc = f"{sql} {replacement}"
 
         # Retrieve column names
+        select_search_str = "SELECT *"
         if columns is None:
             cur.execute(sql_desc)  # TODO hier kan nog een WHERE staan met spatial select
             columns_out = [i[0] for i in cur.description]
 
             if "SELECT *" in sql:
                 cols_dict = {c: c for c in columns_out}
-                select_search_str = "SELECT *"
             else:
                 # When columns are passed, use those for the sql
                 select_search_str = sql.split("FROM")[0]
@@ -449,9 +449,23 @@ def database_to_gdf(
                 cols_sql = [c.lstrip().rstrip() for c in cols_sql]
                 cols_dict = dict(zip(columns_out, cols_sql))
 
+        elif isinstance(columns, list):
+            cols_dict = {c: c for c in columns}
+            columns_out = cols_dict.keys()
+        elif isinstance(columns, dict):
+            # van name : name_out naar
+            # name_out : name as name_out
+            cols_dict = {v: f"{k} as {v}" for k, v in columns.items()}
+            for geomcol in ["shape", "geometrie", "geometry"]:
+                if geomcol in cols_dict.keys():
+                    cols_dict[geomcol] = geomcol
+                if geomcol.upper() in cols_dict.keys():
+                    cols_dict[geomcol.upper()] = geomcol
+            columns_out = columns.values()
+
         # Modify geometry column name to get WKT geometry
         for key, col in cols_dict.items():
-            for geomcol in ["shape", "geometrie"]:
+            for geomcol in ["shape", "geometrie", "geometry"]:
                 if col.lower() == geomcol:
                     cols_dict[key] = f"sdo_util.to_wktgeometry({col}) as geometry"
                 # Find pattern e.g.: a.shape
