@@ -1,3 +1,4 @@
+# %%
 import os
 import re
 import sqlite3
@@ -405,6 +406,7 @@ def database_to_gdf(
     sql : str with the used sql in the request.
 
     """
+    # %%
     import oracledb  # Import here to prevent dependency
 
     with oracledb.connect(**db_dict) as con:
@@ -431,9 +433,8 @@ def database_to_gdf(
         # Modify geometry column name to get WKT geometry
         cols_sql = []
         for col in columns:
-            if col.lower() in ("shape", "geometrie"):
-                col = col.replace("SHAPE", "sdo_util.to_wktgeometry(SHAPE) as geometry")
-                col = col.replace("GEOMETRIE", "sdo_util.to_wktgeometry(GEOMETRIE) as geometry")
+            if col.lower() in ["shape", "geometrie"]:
+                col = "sdo_util.to_wktgeometry({col}) as geometry"
             cols_sql.append(col)
 
         col_select = ", ".join(cols_sql)
@@ -455,6 +456,26 @@ def database_to_gdf(
 
         # make geodataframe and convert curve geometry to linear
         if "geometry" in df.columns:
-            gdf = df.set_geometry(gpd.GeoSeries(df["geometry"].apply(_oracle_curve_polygon_to_linear)), crs=crs)
+            df = df.set_geometry(gpd.GeoSeries(df["geometry"].apply(_oracle_curve_polygon_to_linear)), crs=crs)
+        display(df)
+        # %%
+        return df, sql
 
-        return gdf, sql
+
+# %%
+if __name__ == "__main__":
+    sql = """SELECT a.OBJECTID, a.CODE, a.NAAM, a.OBSCODE, a.SPOC_CODE, a.SOORTRIOOLGEMAALCODE, 
+                a.LOOST_OP_RWZI_CODE, a.LOOST_OP_RIOOLGEMAAL_CODE, a.SOORTRIOOLGEMAAL, a.REGIEKAMER, 
+                b.NAAM as ZUIVERINGSKRING, sdo_util.to_wktgeometry(a.SHAPE)
+            FROM CS_OBJECTEN.RIOOLGEMAAL_EVW a
+            left outer join CS_OBJECTEN.ZUIVERINGSKRING_EVW b
+            on a.LOOST_OP_RWZI_CODE = b.RWZICODE
+            """
+    from tests_hrt.local_settings import DATABASES
+
+    db_dicts = {
+        "aquaprd": DATABASES.get("aquaprd_lezen", None),
+        "bgt": DATABASES.get("bgt_lezen", None),
+        "csoprd": DATABASES.get("csoprd", None),
+    }
+    db_dict = db_dicts["csoprd"]
