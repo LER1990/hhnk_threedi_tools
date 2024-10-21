@@ -42,6 +42,9 @@ def test_database_to_gdf():
     assert gdf.loc[0, "code"] == "KGM-Q-29234"
 
 
+# %%
+
+
 def test_database_to_gdf_no_cols():
     # %%
     sql = """SELECT a.OBJECTID, a.CODE, a.NAAM,a.REGIEKAMER, 

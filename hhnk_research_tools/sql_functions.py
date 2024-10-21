@@ -412,7 +412,9 @@ def database_to_gdf(
     import oracledb  # Import here to prevent dependency
 
     if "sdo_util.to_wktgeometry" in sql.lower():
-        raise ValueError("Dont pass sdo_util.to_wkt_geometry in the sql. It will be done here.")
+        raise ValueError(
+            "Dont pass sdo_util.to_wkt_geometry in the sql. It will be added here. Just use e.g. SHAPE as column."
+        )
 
     with oracledb.connect(**db_dict) as con:
         cur = oracledb.Cursor(con)
@@ -471,7 +473,7 @@ def database_to_gdf(
         try:
             cur.execute(sql2)
         except Exception as e:
-            print("fail")
+            print("Failed request. Here is the sql:")
             print(sql2)
             raise e
 
@@ -492,24 +494,3 @@ def database_to_gdf(
         if "geometry" in df.columns:
             df = df.set_geometry(gpd.GeoSeries(df["geometry"].apply(_oracle_curve_polygon_to_linear)), crs=crs)
         return df, sql2
-
-
-# %%
-if __name__ == "__main__":
-    sql = """SELECT a.OBJECTID, a.CODE, a.NAAM, a.OBSCODE, a.SPOC_CODE, a.SOORTRIOOLGEMAALCODE, 
-                a.LOOST_OP_RWZI_CODE, a.LOOST_OP_RIOOLGEMAAL_CODE, a.SOORTRIOOLGEMAAL, a.REGIEKAMER, 
-                b.NAAM as ZUIVERINGSKRING, a.SHAPE
-            FROM CS_OBJECTEN.RIOOLGEMAAL_EVW a
-            left outer join CS_OBJECTEN.ZUIVERINGSKRING_EVW b
-            on a.LOOST_OP_RWZI_CODE = b.RWZICODE
-            FETCH FIRST 10 ROWS ONLY
-            """
-    from tests_hrt.local_settings import DATABASES
-
-    db_dicts = {
-        "aquaprd": DATABASES.get("aquaprd_lezen", None),
-        "bgt": DATABASES.get("bgt_lezen", None),
-        "csoprd": DATABASES.get("csoprd", None),
-    }
-    db_dict = db_dicts["csoprd"]
-    columns = None
