@@ -469,14 +469,19 @@ def database_to_gdf(
                 if col.lower() == geomcol:
                     cols_dict[key] = f"sdo_util.to_wktgeometry({col}) as geometry"
                 # Find pattern e.g.: a.shape
-                if re.search(pattern=rf"\w*\.?{geomcol}", string=col.lower()):
+                if re.search(pattern=rf"(^|\w+\.){geomcol.lower()}$", string=col.lower()):
                     cols_dict[key] = f"sdo_util.to_wktgeometry({col}) as geometry"
 
         col_select = ", ".join(cols_dict.values())
         sql2 = sql.replace(select_search_str, f"SELECT {col_select} ")
 
         # Execute modified sql request
-        cur.execute(sql2)
+        try:
+            cur.execute(sql2)
+        except Exception as e:
+            print("fail")
+            print(sql2)
+            raise e
 
         # load cursor to dataframe
         df = pd.DataFrame(cur.fetchall(), columns=columns_out)
