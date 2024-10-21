@@ -394,7 +394,7 @@ def database_to_gdf(
     sql: str
         oracledb 12 sql to execute
         Takes only one sql statement at a time, ';' is removed
-    columns: list #TODO allow for dict input
+    columns: list
         When not provided, get the column names from the external table
         geometry columns 'SHAPE' or 'GEOMETRIE' are renamed to 'geometry'
     lower_cols : bool
@@ -452,16 +452,8 @@ def database_to_gdf(
         elif isinstance(columns, list):
             cols_dict = {c: c for c in columns}
             columns_out = cols_dict.keys()
-        elif isinstance(columns, dict):
-            # van name : name_out naar
-            # name_out : name as name_out
-            cols_dict = {v: f"{k} as {v}" for k, v in columns.items()}
-            for geomcol in ["shape", "geometrie", "geometry"]:
-                if geomcol in cols_dict.keys():
-                    cols_dict[geomcol] = geomcol
-                if geomcol.upper() in cols_dict.keys():
-                    cols_dict[geomcol.upper()] = geomcol
-            columns_out = columns.values()
+        else:
+            raise ValueError("Columns must be a list {columns}")
 
         # Modify geometry column name to get WKT geometry
         for key, col in cols_dict.items():
