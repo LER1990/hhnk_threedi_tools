@@ -63,7 +63,7 @@ class RasterMetadataV2:
         """Create metadata that can be used in raster creation based on gdf bounds.
         Projection is 28992 default, only option.
         """
-        bounds = gdf.bounds
+        bounds = gdf.bounds.agg({"minx":"min","miny":"min","maxx":"max","maxy":"max"})
         projection = gdf.crs.to_string()
 
         return cls.from_bounds(bounds_dict=bounds, res=res, projection=projection)
