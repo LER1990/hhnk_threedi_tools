@@ -530,3 +530,85 @@ def hist_stats(histogram: dict, stat_type: str, ignore_keys=[0]):
             total += histogram[value]
             if total >= median_index:
                 return value
+
+
+import rioxarray
+
+
+def get_stat_in_polygon(rioxarray_raster, polygon, mode="min"):
+    """
+    Find non-nodata value within polygon.
+    If multiple pixels whotin polygon 'mode' desides.
+
+    Basic zonal statistics without rasterstats module.
+
+    Not as quick or accurate as `get_nearest_non_nodata`
+    """
+    # Mask the raster with the polygon
+    masked_rioxarray_raster = rioxarray_raster.rio.clip([polygon], rioxarray_raster.rio.crs)
+    # Get the data array
+    data = masked_rioxarray_raster.data
+    # Mask the data array to ignore nodata values
+    data = np.ma.masked_equal(data, rioxarray_raster.rio.nodata)
+    # Return the desired value
+    if mode == "min":
+        result = np.nanmin(data)
+    elif mode == "max":
+        result = np.nanmax(data)
+    elif mode == "med":
+        result = np.nanmedian(data)
+    elif mode == "mean":
+        result = np.nanmean(data)
+    elif mode == "sum":
+        result = np.nansum(data)
+    return result
+
+
+from shapely.geometry import Point, box
+
+
+def get_nearest_non_nodata(rioxarray_raster, point_gdf, tolerance=0.5, pixelsize=0.5, mode="min"):
+    """
+    Find nearest (pixel interval) non-nodata pixel within tolerance.
+    Tries at exact location first (within pixelsize), then searches further.
+    If multiple pixels at same distance 'mode' decides.
+
+    With high tolerance a lot of overhead as .sel is performed on all valid pixels
+    within each while loop. Could be improved by somehow storing known values in
+    dataframe, but for small tolerance this is quicker.
+
+    Output is converted to numpy.float
+    """
+    dist = 0
+    # Get bounding box
+    box_geom = box(*rioxarray_raster.rio.bounds())
+    x = point_gdf.x
+    y = point_gdf.y
+    result = rioxarray_raster.sel(x=x, y=y, method="nearest", tolerance=pixelsize).to_numpy()[0]
+    x_set = {x}
+    y_set = {y}
+    while np.isnan(result) and dist < tolerance:
+        dist = dist + pixelsize
+        x_set.add(x - dist)
+        x_set.add(x + dist)
+        y_set.add(y - dist)
+        y_set.add(y + dist)
+
+        data = []
+        for i in x_set:
+            for j in y_set:
+                if Point(i, j).intersects(box_geom):
+                    data.append(rioxarray_raster.sel(x=i, y=j, method="nearest", tolerance=pixelsize).to_numpy()[0])
+
+        if np.isnan(data).all():
+            result = np.nan
+        elif mode == "min":
+            result = np.nanmin(data)
+        elif mode == "max":
+            result = np.nanmax(data)
+        elif mode == "med":
+            result = np.nanmedian(data)
+        elif mode == "mean":
+            result = np.nanmean(data)
+
+    return result

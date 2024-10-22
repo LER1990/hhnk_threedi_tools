@@ -52,6 +52,8 @@ from hhnk_research_tools.raster_functions import (
     create_new_raster_file,
     dx_dy_between_rasters,
     gdf_to_raster,
+    get_nearest_non_nodata,
+    get_stat_in_polygon,
     hist_stats,
     load_gdal_raster,
     reproject,
