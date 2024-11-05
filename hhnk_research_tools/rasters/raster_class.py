@@ -379,6 +379,7 @@ class Raster(File):
         window = raster.window(*bounds)
         data = raster.read(window=window)[0]
         data[array == 0] = raster.nodata
+        raster.close()
         # data[data == raster.nodata] = np.nan
         return data
     
