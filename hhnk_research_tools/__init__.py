@@ -2,7 +2,7 @@
 from typing import TYPE_CHECKING
 
 from hhnk_research_tools.gis.raster import RasterMetadata, RasterOld  # noqa: F401
-from hhnk_research_tools.rasters.raster_class import Raster
+from hhnk_research_tools.rasters.raster_class import Raster, RasterChunks
 from hhnk_research_tools.rasters.raster_metadata import RasterMetadataV2
 
 if TYPE_CHECKING:
