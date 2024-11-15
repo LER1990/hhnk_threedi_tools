@@ -82,7 +82,7 @@ class RasterBlocks:
                         self.masks[key] = self.blocks[key] == self.raster_paths_dict[key].nodata
 
         except Exception as e:
-            raise Exception("Something went wrong. Do all inputs exist?") from e
+            raise e
 
     def read_array_window(self, key):
         """Read window from hrt.Raster"""
@@ -412,62 +412,8 @@ this is not implemented or tested if it works."
                             return True
 
                         r.exists = exists_dummy
-                        # r.source_set = True FIXME commented because creates error, not sure what happens without comment. Error message:
-                        """
-                        ---------------------------------------------------------------------------
-AttributeError                            Traceback (most recent call last)
-File e:\github\wvanesse\hp_statistiek_stedelijk\hydrologen-projecten\statistiek_stedelijk\statistiek.py:91
-     88         inundatie_raster = getattr(folder.input, f"inundatie_T{T}")
-     89         output_json = getattr(label.subfolder, f"inundatie_T{T}{masker}_stats_json")
----> 91         rastercalc(
-     92             raster_paths_dict={
-     93                 "inundatie": inundatie_raster,
-     94                 "label": label.tif,
-     95                 "watervlak": folder.input.watervlak,
-     96                 "maskerkaart": folder.input.maskerkaart,
-     97             },
-     98             label_gdf=label.gdf,
-     99             output_json=output_json,
-    100             output_nodata=inundatie_raster.nodata,
-    101             run_stats_window=run_stats_window_inundatie_masker,
-    102             masker_value=MASKER_NAME_VALUE[masker],
-    103         )
-    105 # DPRA buien
-    106 # DPRA 90 en 160 kunnen niet gebruikt worden, voor 70mm is eerst een 50cm raster gemaakt.
-    107 for v in [70]:  # , 90, 160]:
 
-File e:\github\wvanesse\hp_statistiek_stedelijk\hydrologen-projecten\statistiek_stedelijk\statistiek.py:56
-     41 self = calc = hrt.RasterCalculatorV2(
-     42     raster_out=None,
-     43     raster_paths_dict=raster_paths_dict,
-   (...)
-     52     tempdir=output_json.parent.full_path(f"temp_{hrt.current_time(date=True)}"),
-     53 )
-     55 # Calculate maaiveldcurve
----> 56 calc.run_label_stats(
-     57     label_gdf=label_gdf,
-     58     label_col="idx",
-     59     stats_json=output_json,
-     60     decimals=decimals,
-     61     output_nodata=calc.output_nodata,
-     62     **kwargs,
-     63 )
-
-File \\corp.hhnk.nl\data\hydrologen_data\data\github\wvanesse\hhnk-research-tools\hhnk_research_tools\gis\raster_calculator.py:478, in RasterCalculatorV2.run_label_stats(self, label_gdf, label_col, stats_json, decimals, **kwargs)
-    475         stats_json.path.write_text(json.dumps(stats_dict))
-    477 except Exception as e:
---> 478     raise e
-
-File \\corp.hhnk.nl\data\hydrologen_data\data\github\wvanesse\hhnk-research-tools\hhnk_research_tools\gis\raster_calculator.py:415, in RasterCalculatorV2.run_label_stats(self, label_gdf, label_col, stats_json, decimals, **kwargs)
-    412     return True
-    414 r.exists = exists_dummy
---> 415 r.source_set = True
-    416 blocks_df = r.generate_blocks()
-    418 # Difference between single label and bigger raster
-
-AttributeError: can't set attribute"""
-                        # blocks_df = r.to_df() # FIXME generate_blocks zat in RasterOld, nu in RasterChunks, maar hoe kan ik die benaderen?
-                        blocks_df = hrt.RasterChunks.to_df(r) # FIXME nu krijg ik Exception: Something went wrong. Do all inputs exist?
+                        blocks_df = hrt.RasterChunks.to_df(r)
 
                         # Difference between single label and bigger raster
                         dx_dy_label = hrt.dx_dy_between_rasters(

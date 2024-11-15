@@ -47,9 +47,28 @@ class Raster(File):
     def _array(self):
         raise self.deprecation_warn()
 
-    @property
-    def _read_array(self):
-        raise self.deprecation_warn()
+    def _read_array(self, band=None, window=None):
+        """window=[x0, y0, x1, y1]--oud.
+        window=[x0, y0, xsize, ysize]
+        x0, y0 is left top corner!!
+        """
+        if band is None:
+            gdal_src = self.open_gdal(mode="r")
+            band = gdal_src.GetRasterBand(1)
+
+        if window is not None:
+            raster_array = band.ReadAsArray(
+                xoff=int(window[0]),
+                yoff=int(window[1]),
+                win_xsize=int(window[2]),
+                win_ysize=int(window[3]),
+            )
+        else:
+            raster_array = band.ReadAsArray()
+
+        band.FlushCache()  # close file after writing
+        band = None
+        return raster_array
 
     @property
     def get_array(self):
@@ -330,7 +349,11 @@ class Raster(File):
 
     # Bewerkingen
     def sum_labels(self):
-        pass
+        """Gebruikt in statistiek stedelijk
+        Optie: https://stackoverflow.com/questions/65152041/using-sp-ndimage-label-on-xarray-dataarray-with-apply-ufunc
+        xr.apply_ufunc(sp.ndimage.label, arr, input_core_dims=[['x']], output_core_dims=[['x']])
+        """
+        raise NotImplementedError("sum_labels is nog niet overgezet, gebruik hrt.RasterOld")
 
     def sum(self):
         """Calculate sum of raster"""

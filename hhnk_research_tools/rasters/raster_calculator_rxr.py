@@ -153,7 +153,7 @@ this is not implemented or tested if it works."
                 if np.isnan(nodata):
                     nodatamasks[key] = da_dict[key].isnull()  # noqa PD003, isna is not an option on xr.da
                 else:
-                    nodatamasks[key] == nodata
+                    nodatamasks[key] == nodata  # FIXME gaat dit goed?
 
             da_nodatamasks = xr.concat(list(nodatamasks.values()), dim="condition").any(dim="condition")
         else:
@@ -164,11 +164,13 @@ this is not implemented or tested if it works."
         """Create a DataArray with"""
         return xr.concat(list(masks_dict.values()), dim="condition").any(dim="condition")
 
-    # def run(self, overwrite: bool = False, **kwargs):
-    # The raster calculator should have a run function. Example in;
-    # hhnk_threedi_tools\core\raster_creation\storage_raster.py
+    def run(self, overwrite: bool = False, **kwargs):
+        """Define your own run function when using this calcualtor."""
+        raise NotImplementedError("""The raster calculator should have a run function. Example in;
+        hhnk_threedi_tools\core\raster_creation\storage_raster.py""")
 
-    # def TODO_run_label_stats(
+    # TODO used in statistiek stedelijk
+    # def _run_label_stats(
     #     self,
     #     label_gdf: gpd.GeoDataFrame,
     #     label_col: str,
