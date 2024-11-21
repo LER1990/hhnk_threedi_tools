@@ -164,10 +164,10 @@ this is not implemented or tested if it works."
         """Create a DataArray with"""
         return xr.concat(list(masks_dict.values()), dim="condition").any(dim="condition")
 
-    def run(self, overwrite: bool = False, **kwargs):
-        """Define your own run function when using this calcualtor."""
-        raise NotImplementedError("""The raster calculator should have a run function. Example in;
-        hhnk_threedi_tools\core\raster_creation\storage_raster.py""")
+    # def run(self, **kwargs):
+    #     """Define your own run function when using this calcualtor."""
+    #     raise NotImplementedError("""The raster calculator should have a run function. Example in;
+    #     hhnk_threedi_tools\core\raster_creation\storage_raster.py""")
 
     # TODO used in statistiek stedelijk
     # def _run_label_stats(

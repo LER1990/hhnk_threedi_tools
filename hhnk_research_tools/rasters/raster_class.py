@@ -357,6 +357,7 @@ class Raster(File):
 
     def sum(self):
         """Calculate sum of raster"""
+        # TODO nansum?
         da = self.open_rxr()
         return da.values.sum()
 
