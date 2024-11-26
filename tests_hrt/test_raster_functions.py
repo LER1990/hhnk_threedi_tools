@@ -61,7 +61,7 @@ class TestRasterFunctions:
         # vrt_name = f"vrt_test_{hrt.get_uuid()}"
         # vrt_path = output_folder.full_path(f"{vrt_name}.vrt")
         # hrt.build_vrt(output_folder.path, vrt_name=vrt_name)
-        # RasterV2.build_vrt(input_files=output_file)
+        # Raster.build_vrt(input_files=output_file)
 
         # assert vrt_path.exists()
 

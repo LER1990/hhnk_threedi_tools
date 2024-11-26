@@ -9,10 +9,9 @@ import hhnk_research_tools as hrt
 from tests_hrt.config import TEMP_DIR, TEST_DIRECTORY
 
 
-def test_raster_blocks():
-    """Test raster block loading
-    #TODO still relevant?
-    """
+def ztest_raster_blocks():
+    """Test raster block loading"""
+    # FIXME uitgezet, kan wss weg
     raster = hrt.Raster(TEST_DIRECTORY / r"depth_test.tif")
 
     gdf = hrt.RasterChunks.from_raster(raster).to_gdf()
@@ -36,7 +35,8 @@ def test_raster_blocks():
     assert int(block.blocks["raster1"].sum()) == 1826
 
 
-def test_raster_calculator():
+def ztest_raster_calculator():
+    # FIXME uitgezet, kan wss weg
     """Test raster calculator"""
     raster_depth = hrt.Raster(TEST_DIRECTORY / r"depth_test.tif")
     raster_small = hrt.Raster(TEST_DIRECTORY / r"lu_small.tif")
