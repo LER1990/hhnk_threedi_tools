@@ -256,6 +256,7 @@ this is not implemented or tested if it works."
         print(f"Creating temporary vrt; {output_raster.name} @ {output_raster}")
 
         output_raster.build_vrt(
+            vrt_out=output_raster,
             overwrite=True,
             bounds=self.metadata_raster.metadata.bbox_gdal,
             input_files=input_raster,

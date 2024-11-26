@@ -10,10 +10,13 @@ from tests_hrt.config import TEMP_DIR, TEST_DIRECTORY
 
 
 def test_raster_blocks():
-    """Test raster block loading"""
+    """Test raster block loading
+    #TODO still relevant?
+    """
     raster = hrt.Raster(TEST_DIRECTORY / r"depth_test.tif")
 
-    for idx, block_row in raster.generate_blocks().iterrows():
+    gdf = hrt.RasterChunks.from_raster(raster).to_gdf()
+    for idx, block_row in gdf.iterrows():
         break
 
     block = hrt.RasterBlocks(

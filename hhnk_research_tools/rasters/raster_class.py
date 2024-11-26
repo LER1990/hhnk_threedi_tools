@@ -157,10 +157,11 @@ class Raster(File):
 
         # Open (non-existing) raster with a profile
         else:
-            dtype2 = profile.pop("dtype")
+            profile_copy = profile.copy()  # Otherwise it will change the input profile
+            dtype2 = profile_copy.pop("dtype")
             if dtype is None:
                 dtype = dtype2
-            return rio.open(self.base, mode, **profile, dtype=dtype)
+            return rio.open(self.base, mode, **profile_copy, dtype=dtype)
 
     def open_rxr(self, mask_and_scale=False, chunksize: Union[int, None] = None):
         """Open raster as rxr.DataArray
