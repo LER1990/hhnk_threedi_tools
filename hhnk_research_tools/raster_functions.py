@@ -416,7 +416,7 @@ class RasterCalculator:
 
 
 def reproject(src: Raster, target_res: float, output_path: str):
-    raise DeprecationWarning("This function is depcrated in favour of hrt.Raster.reproject")
+    raise DeprecationWarning("This function is deprecated in favour of hrt.Raster.reproject")
 
 
 def hist_stats(histogram: dict, stat_type: str, ignore_keys=[0]):

@@ -398,8 +398,8 @@ class Raster(File):
         """
         Parameters
         ----------
-        src : str | Path | hrt.Raster
-        dst : str | Path | hrt.Raster
+        src : hrt.Raster - can't be typehint due to circular import
+        dst : hrt.Raster
         target_res : float
         """
         # https://svn.osgeo.org/gdal/trunk/autotest/alg/reproject.py
@@ -407,7 +407,7 @@ class Raster(File):
         meta = RasterMetadataV2.from_raster(src, res=target_res)
         rio_profile = meta.to_rio_profile(nodata=src.nodata, dtype=src.profile["dtype"])
 
-        dst.open_rio(mode="w", profile=rio_profile)
+        dst.open_rio(mode="w", profile=rio_profile)  # Create raster
         src_ds = src.open_gdal()
         dst_ds = dst.open_gdal(mode="r+")
         if dst_ds is not None:

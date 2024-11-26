@@ -57,7 +57,7 @@ class TestRaster:
         assert arr.sum() == np.float32(-46815150.0)
 
     def test_create(self):
-        out_raster = Raster(TEMP_DIR / f"test_create_{hrt.get_uuid()}.tif")
+        out_raster = RasterOld(TEMP_DIR / f"test_create_{hrt.get_uuid()}.tif")
 
         # remove raster
         out_raster.unlink()
