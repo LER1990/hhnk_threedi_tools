@@ -79,7 +79,11 @@ from hhnk_research_tools.waterschadeschatter.wss_main import Waterschadeschatter
 # Set default logging to console
 logging.set_default_logconfig(
     level_root="WARNING",
-    level_dict={"WARNING": ["fiona", "rasterio"]},
+    level_dict={
+        "DEBUG": ["__main__"],
+        "INFO": ["hhnk_research_tools", "hhnk_threedi_tools"],
+        "WARNING": ["fiona", "rasterio"],
+    },
 )
 
 
