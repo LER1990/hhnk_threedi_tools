@@ -2,6 +2,7 @@
 import json
 
 import geopandas as gpd
+import numpy as np
 import pytest
 
 import hhnk_research_tools as hrt
@@ -94,7 +95,7 @@ def test_raster_label_stats():
 
     def run_stats_window(block, output_nodata):
         """custom_run_window_function on blocks in hrt.RasterCalculator"""
-        block_out = block.blocks["lu"]
+        block_out = block.blocks["lu"].astype(np.int16)
 
         # Apply nodatamasks
         block_out[block.masks_all] = output_nodata
@@ -141,7 +142,7 @@ def test_raster_label_stats():
     )
 
     stats_dict = json.loads(stats_json.path.read_text())
-    assert stats_dict["0"] == {"2": 61, "6": 2358, "15": 267, "28": 1005, "29": 2262, "241": 279}
+    assert stats_dict["0"] == {"2": 61, "6": 2358, "15": 267, "28": 1005, "29": 2262}
 
 
 # %%
