@@ -25,16 +25,6 @@ def get_logconfig_dict(level_root="WARNING", level_dict={}, log_filepath=None):
                 "level": level_root,
                 "handlers": ["debug_console_handler"],  # , 'info_rotating_file_handler'],
             },
-            "fiona": {  # Quiet by default!
-                "level": "ERROR",
-                "propagate": False,
-                "handlers": ["debug_console_handler"],
-            },
-            "rasterio": {  # Quiet by default!
-                "level": "CRITICAL",
-                "propagate": False,
-                "handlers": ["debug_console_handler"],
-            },
         },
         "handlers": {
             "null": {
@@ -49,7 +39,7 @@ def get_logconfig_dict(level_root="WARNING", level_dict={}, log_filepath=None):
         },
         "formatters": {
             "time_level_name": {
-                "format": "%(asctime)s|%(levelname)-7s| %(name)s:%(lineno)-4s| %(message)s",
+                "format": "%(asctime)s|%(levelname)-8s| %(name)s:%(lineno)-4s| %(message)s",
                 "datefmt": "%H:%M:%S",
             },
             # "error": {"format": "%(asctime)s-%(levelname)s-%(name)s-%(process)d::%(module)s|%(lineno)s:: %(message)s"},
@@ -85,7 +75,7 @@ def get_logconfig_dict(level_root="WARNING", level_dict={}, log_filepath=None):
     return logconfig_dict
 
 
-def set_default_logconfig(level_root="WARNING", level_dict=None, log_filepath="info.log"):
+def set_default_logconfig(level_root="WARNING", level_dict=None, log_filepath=None):
     """Use this to set the default config, which will log to the console.
 
     In the __init__.py of hrt the hrt logger is initiated. We only need logging.GetLogger to add
@@ -101,6 +91,7 @@ def set_default_logconfig(level_root="WARNING", level_dict=None, log_filepath="i
         level_dict={
             "DEBUG": ["__main__"],
             "INFO": ["hhnk_research_tools", "hhnk_threedi_tools"],
+            "WARNING": ['fiona', 'rasterio']
         },
     )
     """
@@ -124,7 +115,8 @@ def get_logger(name: str, level=None):
         Default use
         name = __name__
     level : str
-        When None it will use the default from get_logconfig_dict
+        Only use this when debugging. Otherwise make the logger inherit the level from the config.
+        When None it will use the default from get_logconfig_dict.
     """
     logger = logging.getLogger(name)
     if level is not None:

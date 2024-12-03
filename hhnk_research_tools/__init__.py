@@ -76,7 +76,10 @@ from hhnk_research_tools.threedi.read_api_file import read_api_file
 from hhnk_research_tools.waterschadeschatter.wss_main import Waterschadeschatter
 
 # Set default logging to console
-logging.set_default_logconfig(level_root="WARNING")
+logging.set_default_logconfig(
+    level_root="WARNING",
+    level_dict={"WARNING": ["fiona", "rasterio"]},
+)
 
 # _ = logging.get_logger(name="hhnk_research_tools", level=LOG_LEVEL)
 # _ = logging.get_logger(name=__name__, level=LOG_LEVEL)
