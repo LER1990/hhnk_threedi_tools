@@ -81,7 +81,7 @@ logging.set_default_logconfig(
     level_dict={
         "DEBUG": ["__main__"],
         "INFO": ["hhnk_research_tools", "hhnk_threedi_tools"],
-        "WARNING": ["fiona", "rasterio"],
+        "ERROR": ["fiona", "rasterio"],
     },
 )
 
