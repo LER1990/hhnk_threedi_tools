@@ -1,4 +1,9 @@
 # %%
+"""
+These functions allow for adding logging to the console.
+This is applied by default in the __init__ of hhnk_research_tools. So when it is imported
+in a project, the logging will be set according to these rules.
+"""
 
 import logging
 from logging import *  # noqa: F401,F403 # type: ignore
