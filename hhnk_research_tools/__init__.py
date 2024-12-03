@@ -81,8 +81,6 @@ logging.set_default_logconfig(
     level_dict={"WARNING": ["fiona", "rasterio"]},
 )
 
-# _ = logging.get_logger(name="hhnk_research_tools", level=LOG_LEVEL)
-# _ = logging.get_logger(name=__name__, level=LOG_LEVEL)
 
 # TODO how does this versioning work?
 # Threedigrid version number is automatic updated with zest.releaser. Geopandas uses versioneer.py.

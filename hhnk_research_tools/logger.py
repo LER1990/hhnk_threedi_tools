@@ -87,11 +87,11 @@ def set_default_logconfig(level_root="WARNING", level_dict=None, log_filepath=No
     loggers to functions and classes. Same can be done for other packages.
     Use this in functions:
 
-    import hhnk_research_tools.logger as logging
-    logger = logging.get_logger(name=__name__, level='INFO')
+    import hhnk_research_tools as hrt
+    logger = hrt.logging.get_logger(name=__name__, level='INFO')
 
     Example changing the default behaviour:
-    logging.set_default_logconfig(
+    hrt.logging.set_default_logconfig(
         level_root="WARNING",
         level_dict={
             "DEBUG": ["__main__"],
@@ -111,8 +111,9 @@ def get_logger(name: str, level=None):
 
     When using in a (sub)class, dont use this function. The logger will inherit the settings.
     Use:
-        self.logger = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
-
+        self.logger = hrt.logging.getLogger(f"{__name__}.{self.__class__.__name__}")
+    Othwerise:
+        logger = hrt.logging.get_logger(name=__name__, level='INFO')
 
     Parameters
     ----------
