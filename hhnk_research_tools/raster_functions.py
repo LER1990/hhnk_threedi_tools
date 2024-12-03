@@ -8,6 +8,7 @@ import numpy as np
 from IPython.display import display
 from osgeo import gdal, ogr
 
+import hhnk_research_tools.logger as logging
 from hhnk_research_tools.folder_file_classes.folder_file_classes import Folder
 from hhnk_research_tools.general_functions import (
     check_create_new_file,
@@ -19,21 +20,7 @@ from hhnk_research_tools.variables import DEF_TRGT_CRS, GDAL_DATATYPE, GEOTIFF
 DEFAULT_CREATE_OPTIONS = ["COMPRESS=ZSTD", "TILED=YES", "PREDICTOR=2", "ZSTD_LEVEL=1"]
 
 
-# if False:
-# %%
-# import importlib
-import logging
-
-# import hhnk_research_tools.logger
-
-# importlib.reload(logging)
-
 logger = logging.getLogger(name=__name__)
-
-# logger.debug("debug")
-# logger.info("info")
-# logger.warning("warning")
-# logger.error("error")
 
 
 # %%
