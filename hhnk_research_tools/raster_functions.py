@@ -81,9 +81,7 @@ def gdf_to_raster(
             overwrite=overwrite,
         )
 
-        if (
-            new_raster is not None
-        ):  # is None when raster already exists and was not overwritten.
+        if new_raster is not None:  # is None when raster already exists and was not overwritten.
             gdal.RasterizeLayer(
                 new_raster,
                 [1],
@@ -158,9 +156,7 @@ def create_new_raster_file(
         else:
             check_is_file = True
         if (
-            check_create_new_file(
-                output_file=file_name, overwrite=overwrite, check_is_file=check_is_file
-            )
+            check_create_new_file(output_file=file_name, overwrite=overwrite, check_is_file=check_is_file)
             or driver == "MEM"
         ):
             gdal_driver = gdal.GetDriverByName(driver)
@@ -213,28 +209,20 @@ def save_raster_array_to_tiff(
             create_options=create_options,
             overwrite=overwrite,
         )  # create new raster
-        if (
-            target_ds is not None
-        ):  # is None when raster already exists and was not overwritten.
+        if target_ds is not None:  # is None when raster already exists and was not overwritten.
             for i in range(1, num_bands + 1):
-                target_ds.GetRasterBand(i).WriteArray(
-                    raster_array
-                )  # fill file with data
+                target_ds.GetRasterBand(i).WriteArray(raster_array)  # fill file with data
             target_ds = None
     except Exception as e:
         raise e
 
 
 def build_vrt():
-    raise DeprecationWarning(
-        "This function is depcrated in favour of hrt.Raster.build_vrt"
-    )
+    raise DeprecationWarning("This function is depcrated in favour of hrt.Raster.build_vrt")
 
 
 def create_meta_from_gdf(gdf, res):
-    raise DeprecationWarning(
-        "This function is depcrated in favour of hrt.RasterMetadataV2.from_gdf."
-    )
+    raise DeprecationWarning("This function is depcrated in favour of hrt.RasterMetadataV2.from_gdf.")
 
 
 # def build_vrt(raster_folder, vrt_name="combined_rasters", bandlist=[1], bounds=None, overwrite=False):
@@ -344,9 +332,7 @@ class RasterCalculator:
         self.raster1 = raster1
         self.raster2 = raster2
 
-        self.raster_big, self.raster_small, self.raster_mapping = self._checkbounds(
-            raster1, raster2
-        )
+        self.raster_big, self.raster_small, self.raster_mapping = self._checkbounds(raster1, raster2)
         self.raster_out = raster_out
 
         # dx dy between rasters.
@@ -356,9 +342,7 @@ class RasterCalculator:
 
         self.blocks_df = self.raster_small.generate_blocks()
         self.blocks_total = len(self.blocks_df)
-        self.custom_run_window_function = types.MethodType(
-            custom_run_window_function, self
-        )
+        self.custom_run_window_function = types.MethodType(custom_run_window_function, self)
         self.output_nodata = output_nodata
         self.verbose = verbose
 
@@ -426,9 +410,7 @@ class RasterCalculator:
                     "raster2": window[self.raster_mapping["raster2"]],
                 }
 
-                self.custom_run_window_function(
-                    windows=windows, band_out=band_out, **kwargs
-                )
+                self.custom_run_window_function(windows=windows, band_out=band_out, **kwargs)
                 if self.verbose:
                     print(f"{idx} / {self.blocks_total}", end="\r")
                 # break
@@ -439,9 +421,7 @@ class RasterCalculator:
 
 
 def reproject(src: Raster, target_res: float, output_path: str):
-    raise DeprecationWarning(
-        "This function is depcrated in favour of hrt.Raster.reproject"
-    )
+    raise DeprecationWarning("This function is depcrated in favour of hrt.Raster.reproject")
 
 
 def hist_stats(histogram: dict, stat_type: str, ignore_keys=[0]):
