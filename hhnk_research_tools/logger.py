@@ -9,7 +9,7 @@ import logging
 from logging import *  # noqa: F401,F403 # type: ignore
 
 
-def get_logconfig_dict(level_root="WARNING", level_dict={}, log_filepath=None):
+def get_logconfig_dict(level_root="WARNING", level_dict=None, log_filepath=None):
     """Make a dict for the logging.
 
     Parameters
@@ -74,8 +74,6 @@ def get_logconfig_dict(level_root="WARNING", level_dict={}, log_filepath=None):
             "when": "D",
             "backupCount": 7,
             "filename": log_filepath,
-            #     'maxBytes': 1048576,
-            #     'backupCount': 10
         }
     return logconfig_dict
 
