@@ -314,6 +314,7 @@ def sql_builder_select_by_location(
     geomcolumn: str = None,
     epsg_code="28992",
     simplify=False,
+    include_todays_mutations=False,
 ):
     """Create Oracle 12 SQL with intersection polygon.
 
@@ -330,8 +331,12 @@ def sql_builder_select_by_location(
         Buffer by 2m
         Simplify the geometry with 1m tolerance
         Turn coordinates in ints to reduce sql size.
+    include_todays_mutations : bool
+        Choose whether to use todays mutations in data, normally mutations are available
+        overnight.
+        Not sure if this works for BGT or OGS
     """
-
+    # Set custom geometry columns
     if geomcolumn is None:
         if schema == "DAMO_W":
             geomcolumn = "SHAPE"
@@ -340,6 +345,11 @@ def sql_builder_select_by_location(
         else:
             raise ValueError("Provide geometry column")
 
+    # modify table_name to include today's mutations
+    if include_todays_mutations and '_EVW' not in table_name:
+        table_name = f'{table_name}_EVW'
+
+    # TODO use convex hull and clip to avoid too long sql
     # Round coordinates to integers
     if simplify:
         polygon_wkt = polygon_wkt.buffer(2).simplify(tolerance=1)
@@ -404,8 +414,6 @@ def _remove_blob_columns(df):
         df = df.drop(columns=[d])
     
     return df
-
-
 
 def database_to_gdf(
     db_dict: dict, 
