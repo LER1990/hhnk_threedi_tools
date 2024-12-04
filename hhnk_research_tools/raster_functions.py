@@ -7,6 +7,7 @@ import numpy as np
 from IPython.display import display
 from osgeo import gdal, ogr
 
+import hhnk_research_tools.logger as logging
 from hhnk_research_tools.folder_file_classes.folder_file_classes import Folder
 from hhnk_research_tools.general_functions import (
     check_create_new_file,
@@ -18,6 +19,10 @@ from hhnk_research_tools.variables import DEF_TRGT_CRS, GDAL_DATATYPE, GEOTIFF
 DEFAULT_CREATE_OPTIONS = ["COMPRESS=ZSTD", "TILED=YES", "PREDICTOR=2", "ZSTD_LEVEL=1"]
 
 
+logger = logging.getLogger(name=__name__)
+
+
+# %%
 # Loading
 # TODO deprecate? replaced by hrt.Raster
 def _get_array_from_bands(gdal_file, band_count, window, raster_source):
@@ -293,7 +298,7 @@ def build_vrt(raster_folder, vrt_name="combined_rasters", bandlist=[1], bounds=N
     output_path = raster_folder.full_path(f"{vrt_name}.vrt")
 
     if output_path.exists() and not overwrite:
-        print(f"vrt already exists: {output_path}")
+        logger.info(f"vrt already exists: {output_path}")
         return
 
     tifs_list = [str(i) for i in raster_folder.find_ext(["tif", "tiff"])]
