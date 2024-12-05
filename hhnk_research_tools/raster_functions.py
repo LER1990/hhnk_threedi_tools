@@ -1,22 +1,22 @@
 # %%
-import datetime
 import json
 import types
 
 import numpy as np
-from IPython.display import display
 from osgeo import gdal, ogr
 
-from hhnk_research_tools.folder_file_classes.folder_file_classes import Folder
+import hhnk_research_tools.logger as logging
 from hhnk_research_tools.general_functions import (
     check_create_new_file,
     ensure_file_path,
 )
-from hhnk_research_tools.gis.raster import RasterMetadata, RasterOld
+from hhnk_research_tools.gis.raster import RasterOld
 from hhnk_research_tools.rasters.raster_class import Raster
 from hhnk_research_tools.variables import DEF_TRGT_CRS, GDAL_DATATYPE, GEOTIFF
 
 DEFAULT_CREATE_OPTIONS = ["COMPRESS=ZSTD", "TILED=YES", "PREDICTOR=2", "ZSTD_LEVEL=1"]
+
+logger = logging.get_logger(name=__name__)
 
 
 # Conversion
@@ -73,7 +73,12 @@ def gdf_to_raster(
             ensure_file_path(raster_out)
 
         new_raster = create_new_raster_file(
-            file_name=raster_out, nodata=nodata, meta=metadata, driver=driver, datatype=datatype, overwrite=overwrite
+            file_name=raster_out,
+            nodata=nodata,
+            meta=metadata,
+            driver=driver,
+            datatype=datatype,
+            overwrite=overwrite,
         )
 
         if new_raster is not None:  # is None when raster already exists and was not overwritten.
