@@ -5,12 +5,16 @@ import sqlite3
 from typing import Union
 
 import geopandas as gpd
+import oracledb
 import pandas as pd
 from osgeo import ogr
 from shapely import Polygon, wkt
 
+import hhnk_research_tools.logger as logging
 from hhnk_research_tools.dataframe_functions import df_convert_to_gdf
 from hhnk_research_tools.variables import DEF_SRC_CRS, MOD_SPATIALITE_PATH
+
+logger = logging.get_logger(name=__name__)
 
 # %%
 
@@ -110,7 +114,7 @@ def create_sqlite_connection(database_path):
         conn.execute("SELECT load_extension('mod_spatialite')")
         return conn
     except sqlite3.OperationalError as e:
-        print("Error loading mod_spatialite")
+        logger.error("Error loading mod_spatialite")
         if e.args[0] == "The specified module could not be found.\r\n":
             if os.path.exists(MOD_SPATIALITE_PATH):
                 os.environ["PATH"] = MOD_SPATIALITE_PATH + ";" + os.environ["PATH"]
@@ -120,9 +124,9 @@ def create_sqlite_connection(database_path):
                 conn.execute("SELECT load_extension('mod_spatialite')")
                 return conn
             else:
-                print(
-                    r"""Download mod_spatialite extension from http://www.gaia-gis.it/gaia-sins/windows-bin-amd64/ 
-                and place into anaconda installation C:\ProgramData\Anaconda3\mod_spatialite-5.0.1-win-amd64."""
+                logger.error(
+                    rf"""Download mod_spatialite extension from http://www.gaia-gis.it/gaia-sins/windows-bin-amd64/ 
+                and place into anaconda installation {MOD_SPATIALITE_PATH}."""
                 )
                 raise e from None
 
@@ -314,6 +318,7 @@ def sql_builder_select_by_location(
     geomcolumn: str = None,
     epsg_code="28992",
     simplify=False,
+    include_todays_mutations=False,
 ):
     """Create Oracle 12 SQL with intersection polygon.
 
@@ -330,8 +335,12 @@ def sql_builder_select_by_location(
         Buffer by 2m
         Simplify the geometry with 1m tolerance
         Turn coordinates in ints to reduce sql size.
+    include_todays_mutations : bool
+        Choose whether to use todays mutations in data, normally mutations are available
+        overnight.
+        Not sure if this works for BGT or OGS
     """
-
+    # Set custom geometry columns
     if geomcolumn is None:
         if schema == "DAMO_W":
             geomcolumn = "SHAPE"
@@ -340,6 +349,11 @@ def sql_builder_select_by_location(
         else:
             raise ValueError("Provide geometry column")
 
+    # modify table_name to include today's mutations
+    if include_todays_mutations and "_EVW" not in table_name:
+        table_name = f"{table_name}_EVW"
+
+    # TODO use convex hull and clip to avoid too long sql
     # Round coordinates to integers
     if simplify:
         polygon_wkt = polygon_wkt.buffer(2).simplify(tolerance=1)
@@ -376,8 +390,43 @@ def _oracle_curve_polygon_to_linear(blob_curvepolygon):
     return g2
 
 
+def _remove_blob_columns(df):
+    """
+    Remove columns that stay in blob from oracle database.
+    Blob columns prohibit further processing of the data
+    since they require an open connection to the Oralce
+    database.
+
+    Known blob column in DAMO: se_anno_cad_data (DAMO_W.PEILGEBIEDPRAKTIJK)
+
+    """
+    # Loop columns and check all rows for blob data
+    blob_columns = set()
+    for c in df.keys():
+        # Check only when column has type object for efficiency
+        if df[c].dtypes == "object":
+            # Loop through unique values since some are None
+            for row in df[c].unique():
+                if isinstance(row, oracledb.LOB):
+                    blob_columns.add(c)
+                    break
+
+    if blob_columns:
+        logger.warning(f"Columns {blob_columns} contain BLOB data and are removed")
+
+    # Remove blob data from geodataframe
+    df.drop(columns=blob_columns, inplace=True)
+
+    return df
+
+
 def database_to_gdf(
-    db_dict: dict, sql: str, columns: list[str] = None, lower_cols=True, crs="EPSG:28992"
+    db_dict: dict,
+    sql: str,
+    columns: list[str] = None,
+    lower_cols=True,
+    remove_blob_cols=True,
+    crs="EPSG:28992",
 ) -> Union[gpd.GeoDataFrame, str]:
     """
     Connect to (oracle) database, create a cursor and execute sql
@@ -399,6 +448,8 @@ def database_to_gdf(
         geometry columns 'SHAPE' or 'GEOMETRIE' are renamed to 'geometry'
     lower_cols : bool
         return all output columns with no uppercase
+    remove_blob_cols: bool
+        remove columns that contain oracle blob data
     crs: str
         EPSG code, defaults to 28992.
 
@@ -408,8 +459,6 @@ def database_to_gdf(
     sql : str with the used sql in the request.
 
     """
-    # %%
-    import oracledb  # Import here to prevent dependency
 
     if "sdo_util.to_wktgeometry" in sql.lower():
         raise ValueError(
@@ -473,8 +522,8 @@ def database_to_gdf(
         try:
             cur.execute(sql2)
         except Exception as e:
-            print("Failed request. Here is the sql:")
-            print(sql2)
+            logger.error(f"""Failed request. Here is the sql:
+{sql}""")
             raise e
 
         # load cursor to dataframe
@@ -493,4 +542,9 @@ def database_to_gdf(
         # make geodataframe and convert curve geometry to linear
         if "geometry" in df.columns:
             df = df.set_geometry(gpd.GeoSeries(df["geometry"].apply(_oracle_curve_polygon_to_linear)), crs=crs)
+
+        # remove blob columns from oracle
+        if remove_blob_cols:
+            df = _remove_blob_columns(df)
+
         return df, sql2
