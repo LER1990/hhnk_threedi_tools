@@ -5,12 +5,16 @@ import sqlite3
 from typing import Union
 
 import geopandas as gpd
+import oracledb
 import pandas as pd
 from osgeo import ogr
 from shapely import Polygon, wkt
 
+import hhnk_research_tools.logger as logging
 from hhnk_research_tools.dataframe_functions import df_convert_to_gdf
 from hhnk_research_tools.variables import DEF_SRC_CRS, MOD_SPATIALITE_PATH
+
+logger = logging.get_logger(name=__name__)
 
 # %%
 
@@ -346,8 +350,8 @@ def sql_builder_select_by_location(
             raise ValueError("Provide geometry column")
 
     # modify table_name to include today's mutations
-    if include_todays_mutations and '_EVW' not in table_name:
-        table_name = f'{table_name}_EVW'
+    if include_todays_mutations and "_EVW" not in table_name:
+        table_name = f"{table_name}_EVW"
 
     # TODO use convex hull and clip to avoid too long sql
     # Round coordinates to integers
@@ -385,6 +389,7 @@ def _oracle_curve_polygon_to_linear(blob_curvepolygon):
 
     return g2
 
+
 def _remove_blob_columns(df):
     """
     Remove columns that stay in blob from oracle database.
@@ -392,34 +397,34 @@ def _remove_blob_columns(df):
     since they require an open connection to the Oralce
     database.
 
-    Known blob column in DAMO: se_anno_cad_data
+    Known blob column in DAMO: se_anno_cad_data (DAMO_W.PEILGEBIEDPRAKTIJK)
 
     """
-    import oracledb  # Import here to prevent dependency
-
     # Loop columns and check all rows for blob data
     blob_columns = set()
     for c in df.keys():
         # Check only when column has type object for efficiency
-        if df[c].dtypes == 'O':
+        if df[c].dtypes == "object":
             # Loop through unique values since some are None
             for row in df[c].unique():
-                if isinstance(row,oracledb.LOB):
-                    print(f'Column {c} contains BLOB data and is removed')
+                if isinstance(row, oracledb.LOB):
                     blob_columns.add(c)
                     break
-    
+
+    if blob_columns:
+        logger.warning(f"Columns {blob_columns} contain BLOB data and are removed")
+
     # Remove blob data from geodataframe
-    for d in blob_columns:
-        df = df.drop(columns=[d])
-    
+    df.drop(columns=blob_columns, inplace=True)
+
     return df
 
+
 def database_to_gdf(
-    db_dict: dict, 
-    sql: str, 
-    columns: list[str] = None, 
-    lower_cols=True, 
+    db_dict: dict,
+    sql: str,
+    columns: list[str] = None,
+    lower_cols=True,
     remove_blob_cols=True,
     crs="EPSG:28992",
 ) -> Union[gpd.GeoDataFrame, str]:
@@ -454,7 +459,6 @@ def database_to_gdf(
     sql : str with the used sql in the request.
 
     """
-    import oracledb  # Import here to prevent dependency
 
     if "sdo_util.to_wktgeometry" in sql.lower():
         raise ValueError(
@@ -518,8 +522,8 @@ def database_to_gdf(
         try:
             cur.execute(sql2)
         except Exception as e:
-            print("Failed request. Here is the sql:")
-            print(sql2)
+            logger.error("Failed request. Here is the sql:")
+            logger.error(sql2)
             raise e
 
         # load cursor to dataframe
