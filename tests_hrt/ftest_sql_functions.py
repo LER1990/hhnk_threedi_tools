@@ -3,6 +3,7 @@
 import geopandas as gpd
 import oracledb
 import pytest
+from IPython.display import display
 from local_settings import DATABASES
 
 import hhnk_research_tools.logger as logging
@@ -82,12 +83,14 @@ def test_remove_blob_cols():
     # %%
     db_dict = DATABASES.get("aquaprd_lezen", None)
     columns = None
-    sql = "SELECT * FROM DAMO_W.PEILGEBIEDPRAKTIJK"
+    # Find code by removing where statement and; gdf[gdf['se_anno_cad_data'].notna()]['code']
+    sql = "SELECT * FROM DAMO_W.PEILGEBIEDPRAKTIJK WHERE CODE = '04851-23'"
     gdf, sql2 = database_to_gdf(db_dict=db_dict, sql=sql, columns=columns, lower_cols=True, remove_blob_cols=False)
 
-    with pytest.raises(ValueError):
-        gdf.to_file(TEMP_DIR / "test_blobcol_fail.gpkg")
+    with pytest.raises(oracledb.InterfaceError):
+        print(gdf)
 
     gdf2 = _remove_blob_columns(gdf)
-    gdf2.to_file(TEMP_DIR / "test_blobcol__success.gpkg")
+
+    display(gdf)
     # %%

@@ -114,7 +114,7 @@ def create_sqlite_connection(database_path):
         conn.execute("SELECT load_extension('mod_spatialite')")
         return conn
     except sqlite3.OperationalError as e:
-        print("Error loading mod_spatialite")
+        logger.error("Error loading mod_spatialite")
         if e.args[0] == "The specified module could not be found.\r\n":
             if os.path.exists(MOD_SPATIALITE_PATH):
                 os.environ["PATH"] = MOD_SPATIALITE_PATH + ";" + os.environ["PATH"]
@@ -124,9 +124,9 @@ def create_sqlite_connection(database_path):
                 conn.execute("SELECT load_extension('mod_spatialite')")
                 return conn
             else:
-                print(
-                    r"""Download mod_spatialite extension from http://www.gaia-gis.it/gaia-sins/windows-bin-amd64/ 
-                and place into anaconda installation C:\ProgramData\Anaconda3\mod_spatialite-5.0.1-win-amd64."""
+                logger.error(
+                    rf"""Download mod_spatialite extension from http://www.gaia-gis.it/gaia-sins/windows-bin-amd64/ 
+                and place into anaconda installation {MOD_SPATIALITE_PATH}."""
                 )
                 raise e from None
 
@@ -522,8 +522,8 @@ def database_to_gdf(
         try:
             cur.execute(sql2)
         except Exception as e:
-            logger.error("Failed request. Here is the sql:")
-            logger.error(sql2)
+            logger.error(f"""Failed request. Here is the sql:
+{sql}""")
             raise e
 
         # load cursor to dataframe
