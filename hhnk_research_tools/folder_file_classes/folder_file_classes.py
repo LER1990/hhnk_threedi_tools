@@ -176,7 +176,7 @@ class Folder(BasePath):
             Use together with cls. keys to extract from cls.
             resulting values should be of Path or hrt.File type.
         files : list
-            List of files
+            List of files, can be used together with cls and keys or standalone.
         """
         filesnotfound = []
 
