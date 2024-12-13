@@ -251,7 +251,7 @@ this is not implemented or tested if it works."
         input_raster = self.raster_paths_dict[raster_key]
 
         # Create temp output folder.
-        self.tempdir.create()
+        self.tempdir.mkdir()
         output_raster = self.tempdir.full_path(f"{input_raster.stem}.vrt")
         print(f"Creating temporary vrt; {output_raster.name} @ {output_raster}")
 
