@@ -39,14 +39,14 @@ def get_logconfig_dict(level_root="WARNING", level_dict=None, log_filepath=None)
             "debug_console_handler": {
                 "level": "NOTSET",
                 "formatter": "time_level_name",
-                "class": logging.StreamHandler,
-                "stream": sys.stdout,
+                "class": "logging.StreamHandler",
+                "stream": "ext://sys.stdout",
             },
             "stderr": {
                 "level": "ERROR",
                 "formatter": "time_level_name",
-                "class": logging.StreamHandler,
-                "stream": sys.stderr,
+                "class": "logging.StreamHandler",
+                "stream": "ext://sys.stderr",
             },
         },
         "formatters": {
