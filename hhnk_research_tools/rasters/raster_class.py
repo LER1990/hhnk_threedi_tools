@@ -14,7 +14,6 @@ from osgeo import gdal
 from rasterio import features
 from shapely import geometry
 
-import hhnk_research_tools as hrt
 from hhnk_research_tools.folder_file_classes.file_class import File
 from hhnk_research_tools.general_functions import check_create_new_file
 from hhnk_research_tools.rasters.raster_metadata import RasterMetadataV2
@@ -358,9 +357,8 @@ class Raster(File):
 
     def sum(self):
         """Calculate sum of raster"""
-        # TODO nansum?
         da = self.open_rxr()
-        return da.values.sum()
+        return da.sum(skipna=True).values.item()
 
     def round_nearest(self, x, a):
         return round(round(x / a) * a, -int(math.floor(math.log10(a))))
