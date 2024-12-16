@@ -1,22 +1,21 @@
 # %%
+import math
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Union
-import math
+
 import geopandas as gpd
 import numpy as np
 import pandas as pd
 import rasterio as rio
 import rioxarray as rxr
+import shapely
 import xarray as xr
 from osgeo import gdal
-import shapely
+from rasterio import features
+from rasterio.features import shapes
 from shapely import geometry
 
-from rasterio.features import shapes
-
-
-from rasterio import features
 import hhnk_research_tools as hrt
 from hhnk_research_tools.folder_file_classes.file_class import File
 from hhnk_research_tools.general_functions import check_create_new_file
@@ -50,9 +49,28 @@ class Raster(File):
     def _array(self):
         raise self.deprecation_warn()
 
-    @property
-    def _read_array(self):
-        raise self.deprecation_warn()
+    def _read_array(self, band=None, window=None):
+        """window=[x0, y0, x1, y1]--oud.
+        window=[x0, y0, xsize, ysize]
+        x0, y0 is left top corner!!
+        """
+        if band is None:
+            gdal_src = self.open_gdal(mode="r")
+            band = gdal_src.GetRasterBand(1)
+
+        if window is not None:
+            raster_array = band.ReadAsArray(
+                xoff=int(window[0]),
+                yoff=int(window[1]),
+                win_xsize=int(window[2]),
+                win_ysize=int(window[3]),
+            )
+        else:
+            raster_array = band.ReadAsArray()
+
+        band.FlushCache()  # close file after writing
+        band = None
+        return raster_array
 
     @property
     def get_array(self):
@@ -79,7 +97,7 @@ class Raster(File):
         # TODO rxr versie maken
         # plt.imshow(self._array)
         raise self.deprecation_warn()
-        
+
     @property
     def profile(self):
         """Rio profile containing metadata. Can be used to create a new raster with
@@ -141,10 +159,11 @@ class Raster(File):
 
         # Open (non-existing) raster with a profile
         else:
-            dtype2 = profile.pop("dtype")
+            profile_copy = profile.copy()  # Otherwise it will change the input profile
+            dtype2 = profile_copy.pop("dtype")
             if dtype is None:
                 dtype = dtype2
-            return rio.open(self.base, mode, **profile, dtype=dtype)
+            return rio.open(self.base, mode, **profile_copy, dtype=dtype)
 
     def open_rxr(self, mask_and_scale=False, chunksize: Union[int, None] = None):
         """Open raster as rxr.DataArray
@@ -166,8 +185,6 @@ class Raster(File):
             masked=True,
             mask_and_scale=mask_and_scale,
         )
-    
-
 
     def overviews_build(self, factors: list = [10, 50], resampling="average"):
         """Build overviews for faster rendering.
@@ -198,10 +215,10 @@ class Raster(File):
     def statistics(self, decimals=6):
         raster_src = self.open_rxr()
         return {
-            "min": np.round(raster_src.min().values, decimals),
-            "max": np.round(raster_src.max().values, decimals),
-            "mean": np.round(raster_src.mean().values, decimals),
-            "std": np.round(raster_src.std().values, decimals),
+            "min": np.round(float(raster_src.min().values), decimals),
+            "max": np.round(float(raster_src.max().values), decimals),
+            "mean": np.round(float(raster_src.mean().values), decimals),
+            "std": np.round(float(raster_src.std().values), decimals),
         }
 
     @classmethod
@@ -335,26 +352,21 @@ class Raster(File):
 
     # Bewerkingen
     def sum_labels(self):
-        pass
-    
+        """Gebruikt in statistiek stedelijk
+        Optie: https://stackoverflow.com/questions/65152041/using-sp-ndimage-label-on-xarray-dataarray-with-apply-ufunc
+        xr.apply_ufunc(sp.ndimage.label, arr, input_core_dims=[['x']], output_core_dims=[['x']])
+        """
+        raise NotImplementedError("sum_labels is nog niet overgezet, gebruik hrt.RasterOld")
+
     def sum(self):
         """Calculate sum of raster"""
-
-        raster_sum = 0
-        # TODO Hoe rxr
-        for window, block in self:
-            block[block == self.nodata] = 0
-            raster_sum += np.nansum(block)
-        return raster_sum
-
         da = self.open_rxr()
-        return da.values.sum()
-    
+        return da.sum(skipna=True).values.item()
+
     def round_nearest(self, x, a):
         return round(round(x / a) * a, -int(math.floor(math.log10(a))))
-    
-    def read(self, geometry, bounds=None, crs="EPSG:28992"):
 
+    def read(self, geometry, bounds=None, crs="EPSG:28992"):
         resolution = self.metadata.pixel_width
         if bounds is None:
             bounds = [self.round_nearest(i, resolution) for i in geometry.bounds]
@@ -366,15 +378,16 @@ class Raster(File):
         bounds = rio.coords.BoundingBox(*bounds)
 
         if hasattr(geometry, "geoms"):
-            geometry_list = list(geometry.geoms     )
+            geometry_list = list(geometry.geoms)
         else:
             geometry_list = [geometry]
-            
+
         array = features.rasterize(
-            geometry_list, out_shape=(int(height), int(width)), transform=transform,
-            
+            geometry_list,
+            out_shape=(int(height), int(width)),
+            transform=transform,
         )
-        
+
         raster = self.open_rio()
         window = raster.window(*bounds)
         data = raster.read(window=window)[0]
@@ -382,21 +395,34 @@ class Raster(File):
         raster.close()
         # data[data == raster.nodata] = np.nan
         return data
-    
-    
-    def polygonize(self, array=None, field_name= "field"):
-        
+
+    def polygonize(self, array=None, field_name="field"):
         raster = self.open_rio()
         if array is None:
             array = raster.read()
-            
+
         mask = raster.dataset_mask()
         generator = shapes(array, mask=mask, transform=raster.transform)
-        
-        output = {field_name:[], "geometry":[]}
+
+        output = {field_name: [], "geometry": []}
         for i, (geom, value) in enumerate(generator):
             output[field_name].append(value)
-            output['geometry'].append(shapely.geometry.shape(geom))
+            output["geometry"].append(shapely.geometry.shape(geom))
+
+        return gpd.GeoDataFrame(output)
+
+    def polygonize(self, array=None, field_name="field"):
+        raster = self.open_rio()
+        if array is None:
+            array = raster.read()
+
+        mask = raster.dataset_mask()
+        generator = shapes(array, mask=mask, transform=raster.transform)
+
+        output = {field_name: [], "geometry": []}
+        for i, (geom, value) in enumerate(generator):
+            output[field_name].append(value)
+            output["geometry"].append(shapely.geometry.shape(geom))
 
         return gpd.GeoDataFrame(output)
 
@@ -405,8 +431,8 @@ class Raster(File):
         """
         Parameters
         ----------
-        src : str | Path | hrt.Raster
-        dst : str | Path | hrt.Raster
+        src : hrt.Raster - can't be typehint due to circular import
+        dst : hrt.Raster
         target_res : float
         """
         # https://svn.osgeo.org/gdal/trunk/autotest/alg/reproject.py
@@ -414,7 +440,7 @@ class Raster(File):
         meta = RasterMetadataV2.from_raster(src, res=target_res)
         rio_profile = meta.to_rio_profile(nodata=src.nodata, dtype=src.profile["dtype"])
 
-        dst.open_rio(mode="w", profile=rio_profile)
+        dst.open_rio(mode="w", profile=rio_profile)  # Create raster
         src_ds = src.open_gdal()
         dst_ds = dst.open_gdal(mode="r+")
         if dst_ds is not None:

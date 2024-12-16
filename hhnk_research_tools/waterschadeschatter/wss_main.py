@@ -1,6 +1,7 @@
 # %%
 from osgeo import gdal
 from tqdm import tqdm
+
 import hhnk_research_tools as hrt
 import hhnk_research_tools.waterschadeschatter.wss_calculations as wss_calculations
 import hhnk_research_tools.waterschadeschatter.wss_loading as wss_loading
@@ -40,17 +41,17 @@ class Waterschadeschatter:
     ):
         self.wss_settings = wss_settings
         self.min_block_size = min_block_size
-        
+
         self.lu_raster = landuse_file
-        if not type(landuse_file) in [Raster, hrt.RasterV2]:
+        if not isinstance(landuse_file, Raster):
             self.lu_raster = Raster(landuse_file)
-            
-        if type(depth_file) in [Raster, hrt.RasterV2]:
+
+        if isinstance(depth_file, Raster):
             self.depth_raster = depth_file
             self.depth_raster.min_block_size = min_block_size
         else:
             self.depth_raster = Raster(depth_file, self.min_block_size)
-                
+
         self.gamma_inundatiediepte = None
 
         self.validate()
@@ -64,9 +65,8 @@ class Waterschadeschatter:
         for r in [self.lu_raster, self.depth_raster]:
             if not r.exists():
                 raise Exception(f"could not find input file in: {r}")
-                
+
     def load_damage_table(self):
-        
         # Inladen configuratie
         self.dmg_table_landuse, self.dmg_table_general = wss_loading.read_dmg_table_config(self.wss_settings)
 

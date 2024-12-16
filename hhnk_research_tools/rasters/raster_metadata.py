@@ -63,8 +63,8 @@ class RasterMetadataV2:
         Projection is 28992 default, only option.
         """
         b = gdf.total_bounds
-        bounds = {"minx": b[0], "miny":b[1], "maxx": b[2], "maxy": b[3]}
-        
+        bounds = {"minx": b[0], "miny": b[1], "maxx": b[2], "maxy": b[3]}
+
         projection = gdf.crs.to_string()
 
         return cls.from_bounds(bounds_dict=bounds, res=res, projection=projection)

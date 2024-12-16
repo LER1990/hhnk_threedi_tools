@@ -82,7 +82,7 @@ class RasterBlocks:
                         self.masks[key] = self.blocks[key] == self.raster_paths_dict[key].nodata
 
         except Exception as e:
-            raise Exception("Something went wrong. Do all inputs exist?") from e
+            raise e
 
     def read_array_window(self, key):
         """Read window from hrt.Raster"""
@@ -256,6 +256,7 @@ this is not implemented or tested if it works."
         print(f"Creating temporary vrt; {output_raster.name} @ {output_raster}")
 
         output_raster.build_vrt(
+            vrt_out=output_raster,
             overwrite=True,
             bounds=self.metadata_raster.metadata.bbox_gdal,
             input_files=input_raster,
@@ -356,6 +357,7 @@ this is not implemented or tested if it works."
             '0': {'2': 61, '6': 2358, '15': 267, '28': 1005, '29': 2262, '241': 279},
             '2': {'2': 2144, '6': 470, '15': 756, '28': 664, '29': 2880, '241': 302},
         }
+        TODO issue #56 nagaan '241' staat onterecht hier.
 
         Parameters
         ----------
@@ -411,8 +413,8 @@ this is not implemented or tested if it works."
                             return True
 
                         r.exists = exists_dummy
-                        r.source_set = True
-                        blocks_df = r.generate_blocks()
+
+                        blocks_df = hrt.RasterChunks.to_df(r)
 
                         # Difference between single label and bigger raster
                         dx_dy_label = hrt.dx_dy_between_rasters(

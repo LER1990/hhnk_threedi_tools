@@ -1,14 +1,20 @@
+# %%
 import os
 import re
 import sqlite3
 from typing import Union
 
 import geopandas as gpd
+import oracledb
 import pandas as pd
-from shapely import wkt
+from osgeo import ogr
+from shapely import Polygon, wkt
 
+import hhnk_research_tools.logger as logging
 from hhnk_research_tools.dataframe_functions import df_convert_to_gdf
 from hhnk_research_tools.variables import DEF_SRC_CRS, MOD_SPATIALITE_PATH
+
+logger = logging.get_logger(name=__name__)
 
 # %%
 
@@ -27,7 +33,7 @@ def sql_create_update_case_statement(
     show_proposed=False,
 ) -> str:
     """
-    Creates an sql statement with the following structure:
+    Create an sql statement with the following structure:
     UPDATE (table_name)
     SET (database_column_to_change) = CASE (database_id_col)
     WHEN (id) THEN (new value associated with id) OPTIONAL -- ['Previous' or 'Proposed'] previous or proposed value
@@ -69,7 +75,7 @@ def sql_create_update_case_statement(
 
 def sql_construct_select_query(table_name, columns=None) -> str:
     """
-    This functions constructs sql queries that select either all
+    Construct sql queries that select either all
     or specified columns from a table.
 
     Columns has to be a list. If a list item is a tuple, it will be interpreted as:
@@ -108,6 +114,7 @@ def create_sqlite_connection(database_path):
         conn.execute("SELECT load_extension('mod_spatialite')")
         return conn
     except sqlite3.OperationalError as e:
+        logger.error("Error loading mod_spatialite")
         if e.args[0] == "The specified module could not be found.\r\n":
             if os.path.exists(MOD_SPATIALITE_PATH):
                 os.environ["PATH"] = MOD_SPATIALITE_PATH + ";" + os.environ["PATH"]
@@ -117,9 +124,9 @@ def create_sqlite_connection(database_path):
                 conn.execute("SELECT load_extension('mod_spatialite')")
                 return conn
             else:
-                print(
-                    """Download mod_spatialite extension from http://www.gaia-gis.it/gaia-sins/windows-bin-amd64/ 
-                and place into anaconda installation C:\ProgramData\Anaconda3\mod_spatialite-5.0.1-win-amd64."""
+                logger.error(
+                    rf"""Download mod_spatialite extension from http://www.gaia-gis.it/gaia-sins/windows-bin-amd64/ 
+                and place into anaconda installation {MOD_SPATIALITE_PATH}."""
                 )
                 raise e from None
 
@@ -162,7 +169,7 @@ def execute_sql_selection(query, conn=None, database_path=None, **kwargs) -> pd.
 # TODO REMOVE
 def execute_sql_changes(query, database=None, conn=None):
     """
-    Takes a query that changes the database and tries
+    Take a query that changes the database and tries
     to execute it. On success, changes are committed.
     On a failure, rolls back to the state before
     the query was executed that caused the error
@@ -189,7 +196,7 @@ def execute_sql_changes(query, database=None, conn=None):
 
 # TODO was: get_creation_statement_from_table
 def _sql_get_creation_statement_from_table(src_table_name, dst_table_name, cursor):
-    """ "Replace the original table name with the new name to make the creation statement"""
+    """Replace the original table name with the new name to make the creation statement"""
     try:
         creation_sql = f"""
                     SELECT sql
@@ -210,7 +217,7 @@ def _sql_get_creation_statement_from_table(src_table_name, dst_table_name, curso
 # TODO was: replace_or_add_table
 def sqlite_replace_or_add_table(db, dst_table_name, src_table_name, select_statement=None):
     """
-    This functions maintains the backup tables.
+    Maintain the backup tables.
     Tables are created if they do not exist yet.
     After that, rows are replaced if their id is already
     in the backup, otherwise they are just inserted.
@@ -271,6 +278,8 @@ def sqlite_table_to_df(database_path, table_name, columns=None) -> pd.DataFrame:
 # TODO was: gdf_from_sql
 def sqlite_table_to_gdf(query, id_col, to_gdf=True, conn=None, database_path=None) -> gpd.GeoDataFrame:
     """
+    sqlite_table_to_gdf
+
     Returns DataFrame or GeoDataFrame from database query.
 
         sqlite_table_to_gdf(
@@ -302,12 +311,128 @@ def sqlite_table_to_gdf(query, id_col, to_gdf=True, conn=None, database_path=Non
             conn.close()
 
 
-def database_to_gdf(db_dict: dict, sql: str, columns: Union[list[str], None] = None, crs="EPSG:28992"):
+def sql_builder_select_by_location(
+    schema: str,
+    table_name: str,
+    polygon_wkt: Polygon,
+    geomcolumn: str = None,
+    epsg_code="28992",
+    simplify=False,
+    include_todays_mutations=False,
+):
+    """Create Oracle 12 SQL with intersection polygon.
+
+    Parameters
+    ----------
+    schema : str
+        database schema options are now ['DAMO_W', 'BGT']
+    table_name : str
+        table name in schema
+    polygon_wkt : str
+        Selection polygon. All data that intersects with this polygon will be selected
+        Must be 1 geometry, so pass the geometry of a row, or gdf.dissolve() it first.
+    simplify : bool
+        Buffer by 2m
+        Simplify the geometry with 1m tolerance
+        Turn coordinates in ints to reduce sql size.
+    include_todays_mutations : bool
+        Choose whether to use todays mutations in data, normally mutations are available
+        overnight.
+        Not sure if this works for BGT or OGS
+    """
+    # Set custom geometry columns
+    if geomcolumn is None:
+        if schema == "DAMO_W":
+            geomcolumn = "SHAPE"
+        elif schema == "BGT":
+            geomcolumn = "GEOMETRIE"
+        else:
+            raise ValueError("Provide geometry column")
+
+    # modify table_name to include today's mutations
+    if include_todays_mutations and "_EVW" not in table_name:
+        table_name = f"{table_name}_EVW"
+
+    # TODO use convex hull and clip to avoid too long sql
+    # Round coordinates to integers
+    if simplify:
+        polygon_wkt = polygon_wkt.buffer(2).simplify(tolerance=1)
+        polygon_wkt = re.sub(r"\d*\.\d+", lambda m: format(float(m.group(0)), ".0f"), str(polygon_wkt))
+    sql = f"""
+        SELECT *
+        FROM {schema}.{table_name}
+        WHERE SDO_RELATE(
+            {geomcolumn},
+            SDO_GEOMETRY('{polygon_wkt}',{epsg_code}),
+            'mask=ANYINTERACT'
+        ) = 'TRUE'
+        """
+
+    return sql
+
+
+def _oracle_curve_polygon_to_linear(blob_curvepolygon):
+    """
+    Turn curved polygon from oracle database into linear one
+    (so it can be used in geopandas)
+    Does no harm to linear geometries
+    """
+
+    # Import as an OGR curved geometry
+    g1 = ogr.CreateGeometryFromWkt(str(blob_curvepolygon))
+    if g1 is None:
+        return None
+
+    # Approximate as linear geometry, and export to GeoJSON
+    g1l = g1.GetLinearGeometry()
+    g2 = wkt.loads(g1l.ExportToWkt())
+
+    return g2
+
+
+def _remove_blob_columns(df):
+    """
+    Remove columns that stay in blob from oracle database.
+    Blob columns prohibit further processing of the data
+    since they require an open connection to the Oralce
+    database.
+
+    Known blob column in DAMO: se_anno_cad_data (DAMO_W.PEILGEBIEDPRAKTIJK)
+
+    """
+    # Loop columns and check all rows for blob data
+    blob_columns = set()
+    for c in df.keys():
+        # Check only when column has type object for efficiency
+        if df[c].dtypes == "object":
+            # Loop through unique values since some are None
+            for row in df[c].unique():
+                if isinstance(row, oracledb.LOB):
+                    blob_columns.add(c)
+                    break
+
+    if blob_columns:
+        logger.warning(f"Columns {blob_columns} contain BLOB data and are removed")
+
+    # Remove blob data from geodataframe
+    df.drop(columns=blob_columns, inplace=True)
+
+    return df
+
+
+def database_to_gdf(
+    db_dict: dict,
+    sql: str,
+    columns: list[str] = None,
+    lower_cols=True,
+    remove_blob_cols=True,
+    crs="EPSG:28992",
+) -> Union[gpd.GeoDataFrame, str]:
     """
     Connect to (oracle) database, create a cursor and execute sql
 
-    Return geodataframe with  Load geometry in crs and return as gdf.
-
+    Parameters
+    ----------
     db_dict: dict
         connection dict. e.g.:
         {'service_name': 'ODSPRD',
@@ -316,51 +441,110 @@ def database_to_gdf(db_dict: dict, sql: str, columns: Union[list[str], None] = N
         'host': 'srvxx.corp.hhnk.nl',
         'port': '1521'}
     sql: str
-        sql to execute
+        oracledb 12 sql to execute
+        Takes only one sql statement at a time, ';' is removed
     columns: list
         When not provided, get the column names from the external table
-        geometry column 'SHAPE' is renamed to 'geometry'
+        geometry columns 'SHAPE' or 'GEOMETRIE' are renamed to 'geometry'
+    lower_cols : bool
+        return all output columns with no uppercase
+    remove_blob_cols: bool
+        remove columns that contain oracle blob data
+    crs: str
+        EPSG code, defaults to 28992.
+
+    Returns
+    -------
+    gdf : Geodataframe with data and (linear) geometry, colum names in lowercase.
+    sql : str with the used sql in the request.
+
     """
-    import oracledb
+
+    if "sdo_util.to_wktgeometry" in sql.lower():
+        raise ValueError(
+            "Dont pass sdo_util.to_wkt_geometry in the sql. It will be added here. Just use e.g. SHAPE as column."
+        )
 
     with oracledb.connect(**db_dict) as con:
         cur = oracledb.Cursor(con)
 
-        cur.execute(sql)
+        # Modify sql to efficiently fetch description only
+        sql = sql.replace(";", "")
+        sql = sql.replace("select ", "SELECT ")  # Voor de mensen die geen caps gebruiken
+        sql = sql.replace("where ", "WHERE ")  # Voor de mensen die geen caps gebruiken
+        sql = sql.replace("from ", "FROM ")  # Voor de mensen die geen caps gebruiken
+        pattern = r"FETCH FIRST \d+ ROWS ONLY"
+        replacement = "FETCH FIRST 0 ROWS ONLY"
+        matched_upper = re.search(pattern, sql)
+        matched_lower = re.search(pattern.lower(), sql)
+        if matched_upper:
+            sql_desc = re.sub(pattern, replacement, sql)
+        elif matched_lower:
+            sql_desc = re.sub(pattern.lower(), replacement, sql)
+        else:
+            sql_desc = f"{sql} {replacement}"
 
-        # Get column names from external table when names are not provided
+        # Retrieve column names
+        select_search_str = "SELECT *"
         if columns is None:
-            # When selecting all columns, retrieve the geometry as text.
-            # For this we need to recreate the sql
+            cur.execute(sql_desc)  # TODO hier kan nog een WHERE staan met spatial select
+            columns_out = [i[0] for i in cur.description]
+
             if "SELECT *" in sql:
-                col_names = [i[0] for i in cur.description]
-
-                col_select = ", ".join(col_names)
-                if "SHAPE" in col_names:
-                    col_select = col_select.replace("SHAPE", "sdo_util.to_wktgeometry(SHAPE)")
-                elif "GEOMETRIE" in col_names:
-                    col_select = col_select.replace("GEOMETRIE", "sdo_util.to_wktgeometry(GEOMETRIE)")
-
-                sql = sql.replace("SELECT *", f"SELECT {col_select}")
-                cur.execute(sql)
-
-            # Take column names from cursor
-            columns = [i[0] for i in cur.description]
-
-        df = pd.DataFrame(cur.fetchall(), columns=columns)
-
-        pattern = r"SDO_UTIL.TO_WKTGEOMETRY\([^)]*\)"
-        cols = []
-        for col in df.columns:
-            if re.findall(pattern=pattern, string=col):
-                cols.append("geometry")
+                cols_dict = {c: c for c in columns_out}
             else:
-                cols.append(col)
-        df.columns = cols
+                # When columns are passed, use those for the sql
+                select_search_str = sql.split("FROM")[0]
 
+                cols_sql = select_search_str.split("SELECT")[1].replace("\n", "").split(",")
+                cols_sql = [c.lstrip().rstrip() for c in cols_sql]
+                cols_dict = dict(zip(columns_out, cols_sql))
+
+        elif isinstance(columns, list):
+            cols_dict = {c: c for c in columns}
+            columns_out = cols_dict.keys()
+        else:
+            raise ValueError("Columns must be a list {columns}")
+
+        # Modify geometry column name to get WKT geometry
+        for key, col in cols_dict.items():
+            for geomcol in ["shape", "geometrie", "geometry"]:
+                if col.lower() == geomcol:
+                    cols_dict[key] = f"sdo_util.to_wktgeometry({col}) as geometry"
+                # Find pattern e.g.: a.shape
+                if re.search(pattern=rf"(^|\w+\.){geomcol.lower()}$", string=col.lower()):
+                    cols_dict[key] = f"sdo_util.to_wktgeometry({col}) as geometry"
+
+        col_select = ", ".join(cols_dict.values())
+        sql2 = sql.replace(select_search_str, f"SELECT {col_select} ")
+
+        # Execute modified sql request
+        try:
+            cur.execute(sql2)
+        except Exception as e:
+            logger.error(f"""Failed request. Here is the sql:
+{sql}""")
+            raise e
+
+        # load cursor to dataframe
+        df = pd.DataFrame(cur.fetchall(), columns=columns_out)
+
+        # Take column names from cursor and replace exotic geometry column names
+        for i in df.columns:
+            name = i
+            if lower_cols:
+                name = i.lower()
+            if i.lower() in ("shape", "geometrie"):
+                name = "geometry"
+
+            df.rename(columns={i: name}, inplace=True)
+
+        # make geodataframe and convert curve geometry to linear
         if "geometry" in df.columns:
-            df = df.set_geometry(gpd.GeoSeries(df["geometry"].apply(lambda x: wkt.loads(str(x)))), crs=crs)
-        return df
+            df = df.set_geometry(gpd.GeoSeries(df["geometry"].apply(_oracle_curve_polygon_to_linear)), crs=crs)
 
+        # remove blob columns from oracle
+        if remove_blob_cols:
+            df = _remove_blob_columns(df)
 
-# %%
+        return df, sql2

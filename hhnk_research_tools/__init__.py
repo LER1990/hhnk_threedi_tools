@@ -2,13 +2,14 @@
 from typing import TYPE_CHECKING
 
 from hhnk_research_tools.gis.raster import RasterMetadata, RasterOld  # noqa: F401
-from hhnk_research_tools.rasters.raster_class import Raster
+from hhnk_research_tools.rasters.raster_class import Raster, RasterChunks
 from hhnk_research_tools.rasters.raster_metadata import RasterMetadataV2
 
 if TYPE_CHECKING:
     # TODO zou moeten werken met typehints van imports. Maar vraag is maar of het werkt.
     import hhnk_research_tools as hrt
 
+import hhnk_research_tools.logger as logging
 import hhnk_research_tools.installation_checks
 import hhnk_research_tools.threedi as threedi
 import hhnk_research_tools.variables as variables
@@ -59,11 +60,13 @@ from hhnk_research_tools.raster_functions import (
     reproject,
     save_raster_array_to_tiff,
 )
+from hhnk_research_tools.rasters.raster_calculator_rxr import RasterCalculatorRxr
 from hhnk_research_tools.sql_functions import (
     create_sqlite_connection,
     database_to_gdf,
     execute_sql_changes,
     execute_sql_selection,
+    sql_builder_select_by_location,
     sql_construct_select_query,
     sql_create_update_case_statement,
     sql_table_exists,
@@ -74,6 +77,17 @@ from hhnk_research_tools.sql_functions import (
 from hhnk_research_tools.threedi.call_api import call_threedi_api
 from hhnk_research_tools.threedi.read_api_file import read_api_file
 from hhnk_research_tools.waterschadeschatter.wss_main import Waterschadeschatter
+
+# Set default logging to console
+logging.set_default_logconfig(
+    level_root="WARNING",
+    level_dict={
+        "DEBUG": ["__main__"],
+        "INFO": ["hhnk_research_tools", "hhnk_threedi_tools"],
+        "ERROR": ["fiona", "rasterio"],
+    },
+)
+
 
 # TODO how does this versioning work?
 # Threedigrid version number is automatic updated with zest.releaser. Geopandas uses versioneer.py.
