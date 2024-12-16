@@ -1,9 +1,3 @@
-import datetime
-import json
-import types
-from dataclasses import dataclass
-
-import geopandas as gpd
 import numpy as np
 import pandas as pd
 import xarray as xr
@@ -142,18 +136,18 @@ this is not implemented or tested if it works."
 
         self.raster_paths_same_bounds[raster_key] = output_raster
 
-    def get_nodatamasks(self, da_dict):
+    def get_nodatamasks(self, da_dict, nodata_keys):
         """Create nodata masks of selected nodata_keys
         Keys are passed with the nodata_keys variable.
         """
         nodatamasks = {}
-        if self.nodata_keys:
-            for key in self.nodata_keys:
+        if nodata_keys:
+            for key in nodata_keys:
                 nodata = da_dict[key].rio.nodata
                 if np.isnan(nodata):
                     nodatamasks[key] = da_dict[key].isnull()  # noqa PD003, isna is not an option on xr.da
                 else:
-                    nodatamasks[key] == nodata  # FIXME gaat dit goed?
+                    nodatamasks[key] = da_dict[key] == nodata
 
             da_nodatamasks = xr.concat(list(nodatamasks.values()), dim="condition").any(dim="condition")
         else:

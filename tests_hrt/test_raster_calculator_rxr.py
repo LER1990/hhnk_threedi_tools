@@ -47,7 +47,7 @@ class RasterCalculatorRxrTest(hrt.RasterCalculatorRxr):
             nodata = da_depth.rio.nodata
 
             # Create global no data mask
-            da_nodatamasks = self.get_nodatamasks(da_dict=da_dict)
+            da_nodatamasks = self.get_nodatamasks(da_dict=da_dict, nodata_keys=self.nodata_keys)
 
             # Mask where out storage should be zero
             zeromasks = {}
