@@ -13,7 +13,6 @@ import shapely
 import xarray as xr
 from osgeo import gdal
 from rasterio import features
-from rasterio.features import shapes
 from shapely import geometry
 
 import hhnk_research_tools as hrt
@@ -397,27 +396,13 @@ class Raster(File):
         return data
 
     def polygonize(self, array=None, field_name="field"):
+        """TODO docstr and test"""
         raster = self.open_rio()
         if array is None:
             array = raster.read()
 
         mask = raster.dataset_mask()
-        generator = shapes(array, mask=mask, transform=raster.transform)
-
-        output = {field_name: [], "geometry": []}
-        for i, (geom, value) in enumerate(generator):
-            output[field_name].append(value)
-            output["geometry"].append(shapely.geometry.shape(geom))
-
-        return gpd.GeoDataFrame(output)
-
-    def polygonize(self, array=None, field_name="field"):
-        raster = self.open_rio()
-        if array is None:
-            array = raster.read()
-
-        mask = raster.dataset_mask()
-        generator = shapes(array, mask=mask, transform=raster.transform)
+        generator = features.shapes(array, mask=mask, transform=raster.transform)
 
         output = {field_name: [], "geometry": []}
         for i, (geom, value) in enumerate(generator):
