@@ -52,7 +52,6 @@ class RasterMetadataV2:
         projection : str, default is "EPSG:28992"
             doesnt work on other projs.
         """
-
         georef = (int(np.floor(bounds_dict["minx"])), res, 0.0, int(np.ceil(bounds_dict["maxy"])), 0.0, -res)
         x_res = int((int(np.ceil(bounds_dict["maxx"])) - int(np.floor(bounds_dict["minx"]))) / res)
         y_res = int((int(np.ceil(bounds_dict["maxy"])) - int(np.floor(bounds_dict["miny"]))) / res)
@@ -63,7 +62,9 @@ class RasterMetadataV2:
         """Create metadata that can be used in raster creation based on gdf bounds.
         Projection is 28992 default, only option.
         """
-        bounds = gdf.bounds.agg({"minx":"min","miny":"min","maxx":"max","maxy":"max"})
+        b = gdf.total_bounds
+        bounds = {"minx": b[0], "miny": b[1], "maxx": b[2], "maxy": b[3]}
+
         projection = gdf.crs.to_string()
 
         return cls.from_bounds(bounds_dict=bounds, res=res, projection=projection)

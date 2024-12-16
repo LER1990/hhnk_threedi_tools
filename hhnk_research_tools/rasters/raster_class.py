@@ -9,11 +9,13 @@ import numpy as np
 import pandas as pd
 import rasterio as rio
 import rioxarray as rxr
+import shapely
 import xarray as xr
 from osgeo import gdal
 from rasterio import features
 from shapely import geometry
 
+import hhnk_research_tools as hrt
 from hhnk_research_tools.folder_file_classes.file_class import File
 from hhnk_research_tools.general_functions import check_create_new_file
 from hhnk_research_tools.rasters.raster_metadata import RasterMetadataV2
@@ -389,8 +391,25 @@ class Raster(File):
         window = raster.window(*bounds)
         data = raster.read(window=window)[0]
         data[array == 0] = raster.nodata
+        raster.close()
         # data[data == raster.nodata] = np.nan
         return data
+
+    def polygonize(self, array=None, field_name="field"):
+        """TODO docstr and test"""
+        raster = self.open_rio()
+        if array is None:
+            array = raster.read()
+
+        mask = raster.dataset_mask()
+        generator = features.shapes(array, mask=mask, transform=raster.transform)
+
+        output = {field_name: [], "geometry": []}
+        for i, (geom, value) in enumerate(generator):
+            output[field_name].append(value)
+            output["geometry"].append(shapely.geometry.shape(geom))
+
+        return gpd.GeoDataFrame(output)
 
     @classmethod
     def reproject(cls, src, dst, target_res: float):
