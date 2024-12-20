@@ -15,12 +15,14 @@ from osgeo import gdal
 from rasterio import features
 from shapely import geometry
 
-import hhnk_research_tools as hrt
+import hhnk_research_tools.logger as logging
 from hhnk_research_tools.folder_file_classes.file_class import File
 from hhnk_research_tools.general_functions import check_create_new_file
 from hhnk_research_tools.rasters.raster_metadata import RasterMetadataV2
 
 CHUNKSIZE = 4096
+
+logger = logging.get_logger(name=__name__)
 
 
 class Raster(File):
@@ -229,6 +231,7 @@ class Raster(File):
         dtype: str = "float32",
         scale_factor: float = None,
         chunksize: int = CHUNKSIZE,  # TODO not sure if chunksize needed here
+        crs=28992,
     ):
         """
         Write a rxr result to raster.
@@ -263,6 +266,14 @@ class Raster(File):
         if nodata is not None:
             result.rio.set_nodata(nodata)
 
+        # Set crs
+        if result.rio.crs is None:
+            logger.warning("crs of output DataArray not provided. CRS 28992 was assumed.")
+        elif result.rio.crs != crs:
+            raise ValueError("CRS on DataArray not equal to provided crs")
+        result.rio.set_crs(crs)
+
+        # Write to file
         result.rio.to_raster(
             raster_out.base,
             # chunks={"x": CHUNKSIZE, "y": CHUNKSIZE},
