@@ -276,6 +276,7 @@ class Raster(File):
             ZSTD_LEVEL=1,  # gdal options
             MAX_Z_ERROR=0.001,  # gdal options
             NUM_THREADS="ALL_CPUS",  # gdal options
+            BIGTIFF="YES",
             dtype=dtype,
         )
 
