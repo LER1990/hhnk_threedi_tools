@@ -317,6 +317,7 @@ class Raster(File):
             instead of "user" option, provide a float for manual target_resolution
         bandList: doesnt work as expected, passing [1] works.
         """
+        # TODO add option for relative to VRT = 1
 
         vrt_out = cls(vrt_out)
 
