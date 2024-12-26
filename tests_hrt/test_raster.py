@@ -2,6 +2,7 @@
 import importlib
 from pathlib import Path
 
+import geopandas as gpd
 import numpy as np
 import pytest
 
@@ -10,6 +11,8 @@ import hhnk_research_tools.rasters.raster_class as raster_class
 
 importlib.reload(raster_class)
 from tests_hrt.config import TEMP_DIR, TEST_DIRECTORY
+
+logger = hrt.logging.get_logger("hhnk_research_tools", level="DEBUG")
 
 
 class TestRaster:
@@ -52,6 +55,20 @@ class TestRaster:
             pass
         assert out_raster.exists()
         assert out_raster.profile == self.raster.profile
+
+    def test_sum_labels(self):
+        label_raster = hrt.Raster(TEST_DIRECTORY / r"area_test_labels.tif", chunksize=40)
+
+        label_gdf = gpd.read_file(TEST_DIRECTORY / r"area_test_labels.gpkg")
+        label_idx = label_gdf["id"].to_numpy()
+
+        # Sum labels
+        label_sum = self.raster.sum_labels(label_raster=label_raster, label_idx=label_idx, decimals=2)
+        assert round(sum(label_sum.values()), 2) == 1826.15
+
+        # Count occurences per label.
+        label_sum_count = self.raster.sum_labels(label_raster=label_raster, label_idx=label_idx, count_values=True)
+        assert sum(label_sum_count.values()) == 13685
 
 
 class TestRasterMetadata:

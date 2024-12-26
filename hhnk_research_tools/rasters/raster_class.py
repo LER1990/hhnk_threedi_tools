@@ -10,9 +10,11 @@ import pandas as pd
 import rasterio as rio
 import rioxarray as rxr
 import shapely
+import tqdm
 import xarray as xr
 from osgeo import gdal
 from rasterio import features
+from scipy import ndimage
 from shapely import geometry
 
 import hhnk_research_tools.logger as logging
@@ -55,6 +57,7 @@ class Raster(File):
         window=[x0, y0, xsize, ysize]
         x0, y0 is left top corner!!
         """
+        # TODO uitfaseren, niet met gdal maar rxr.read
         if band is None:
             gdal_src = self.open_gdal(mode="r")
             band = gdal_src.GetRasterBand(1)
@@ -362,13 +365,71 @@ class Raster(File):
             ds.FlushCache()
         return vrt_out
 
-    # Bewerkingen
-    def sum_labels(self):
-        """Gebruikt in statistiek stedelijk
-        Optie: https://stackoverflow.com/questions/65152041/using-sp-ndimage-label-on-xarray-dataarray-with-apply-ufunc
-        xr.apply_ufunc(sp.ndimage.label, arr, input_core_dims=[['x']], output_core_dims=[['x']])
+    def sum_labels(
+        self, label_raster, label_idx: np.array, count_values=False, decimals: Union[int, None] = None
+    ) -> dict:
+        """Calculate the sum of the rastervalues per label.
+        Used in statistiek stedelijk
+
+        Parameters
+        ----------
+        label_idx : list or array
+            The values to get the statistics for. e.g. label_gdf['id'].to_numpy()
+        count_values : bool
+            Instead of the sum it will count the occurences per label.
+        decimals : int
+            When provided, round the results to the specified decimals
+
+        Returns
+        -------
+        label_dict : dict
+            Each label_idx value is paired with the summed value in the raster.
+            e.g. {1:132.94, 2:628.3}
         """
-        raise NotImplementedError("sum_labels is nog niet overgezet, gebruik hrt.RasterOld")
+        if label_raster.metadata.georef != self.metadata.georef:
+            raise ValueError(
+                f"Label raster georef {label_raster.metadata.georef} does not match the raster georef {self.metadata.georef}"
+            )
+
+        blocks_gdf = RasterChunks.from_raster(self).to_gdf()
+
+        r = self.open_rxr()  # Open rasters for reading
+        r_label = label_raster.open_rxr()
+
+        accum = np.zeros(label_idx.shape)
+        for idx, block_row in tqdm.tqdm(blocks_gdf.iterrows(), total=len(blocks_gdf)):
+            # Read the blocks / window
+            minx, miny, maxx, maxy = block_row["window"]
+            block = r.isel(x=slice(minx, maxx), y=slice(miny, maxy))
+            block_label = r_label.isel(x=slice(minx, maxx), y=slice(miny, maxy))
+
+            # Replace nodata values with 0
+            block = xr.where(block == self.nodata, 0, block)
+            block = xr.where(block.isnull(), 0, block)  # Make sure NaN values are also 0  # noqa: PD003
+
+            # When counting, all other values become 1.
+            if count_values:
+                block = xr.where(block != 0, 1, block)
+
+            # Calculate sum per label (region)
+            result = ndimage.sum_labels(input=block.values, labels=block_label.values, index=label_idx)
+
+            # Add result to total
+            accum += result
+
+        if count_values:
+            decimals = 0
+        if decimals is not None:
+            logger.debug(f".sum_labels - Rounding to {decimals} decimals")
+            if decimals == 0:
+                accum = accum.astype(int)
+            else:
+                accum = np.round(accum, decimals)
+
+        label_dict = dict(zip(label_idx, accum))
+        return label_dict
+
+    # %% TODO working
 
     def sum(self):
         """Calculate sum of raster"""
@@ -443,6 +504,9 @@ class Raster(File):
         dst_ds = dst.open_gdal(mode="r+")
         if dst_ds is not None:
             gdal.ReprojectImage(src_ds, dst_ds, src_wkt=src.metadata.projection)
+
+
+# %%
 
 
 @dataclass
