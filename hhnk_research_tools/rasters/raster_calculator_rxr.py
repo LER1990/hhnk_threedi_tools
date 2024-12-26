@@ -28,7 +28,7 @@ class RasterCalculatorRxr:
         self,
         raster_out: hrt.Raster,
         raster_paths_dict: dict[str : hrt.Raster],
-        nodata_keys: list[str],
+        nodata_keys: list[str],  # TODO deze hier weghalen.
         metadata_key: str,
         verbose: bool = False,
         tempdir: hrt.Folder = None,
