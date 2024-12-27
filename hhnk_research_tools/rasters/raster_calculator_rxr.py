@@ -20,7 +20,6 @@ class RasterCalculatorRxr:
     ----------
     raster_out (hrt.Raster): output raster location
     raster_paths_dict (dict[str : hrt.Raster]): these rasters will have blocks loaded.
-    nodata_keys (list [str]): keys to check if all values are nodata, if yes then skip
     metadata_key (str): key in raster_paths_dict that will be used to
         create blocks and metadata
     tempdir (hrt.Folder): pass if you want temp vrt's to be created in a specific tempdir
@@ -30,13 +29,11 @@ class RasterCalculatorRxr:
         self,
         raster_out: hrt.Raster,
         raster_paths_dict: dict[str : hrt.Raster],
-        nodata_keys: list[str],  # TODO deze hier weghalen.
         metadata_key: str,
         tempdir: hrt.Folder = None,
     ):
         self.raster_out = raster_out
         self.raster_paths_dict = raster_paths_dict
-        self.nodata_keys = nodata_keys
         self.metadata_key = metadata_key
 
         # Local vars
@@ -138,22 +135,26 @@ this is not implemented or tested if it works."
 
         self.raster_paths_same_bounds[raster_key] = output_raster
 
-    def get_nodatamasks(self, da_dict, nodata_keys):
+    def get_nodatamasks(self, da_dict: dict, nodata_keys: list[str]):
         """Create nodata masks of selected nodata_keys
         Keys are passed with the nodata_keys variable.
+
+        Parameters
+        ----------
+        da_dict : dict
+            DataArrays stored in dictionary
+        nodata_keys : list [str]
+            Keys to check if all values are nodata, if yes then skip
         """
         nodatamasks = {}
-        if nodata_keys:
-            for key in nodata_keys:
-                nodata = da_dict[key].rio.nodata
-                if np.isnan(nodata):
-                    nodatamasks[key] = da_dict[key].isnull()  # noqa PD003, isna is not an option on xr.da
-                else:
-                    nodatamasks[key] = da_dict[key] == nodata
+        for key in nodata_keys:
+            nodata = da_dict[key].rio.nodata
+            if np.isnan(nodata):
+                nodatamasks[key] = da_dict[key].isnull()  # noqa PD003, isna is not an option on xr.da
+            else:
+                nodatamasks[key] = da_dict[key] == nodata
 
-            da_nodatamasks = self.concat_masks(nodatamasks)
-        else:
-            da_nodatamasks = False
+        da_nodatamasks = self.concat_masks(nodatamasks)
         return da_nodatamasks
 
     def concat_masks(self, masks_dict: dict) -> xr.DataArray:
