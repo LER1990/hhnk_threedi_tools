@@ -121,7 +121,8 @@ def get_logger(name: str, level=None):
     Othwerise:
         logger = hrt.logging.get_logger(name=__name__, level='INFO')
 
-    The
+    The names of loggers can be replaced here as well. This creates a shorter logmessage.
+    e.g. "hhnk_research_tools" -> "hrt"
 
     Parameters
     ----------

@@ -271,7 +271,9 @@ class Raster(File):
 
         # Set crs
         if result.rio.crs is None:
-            logger.warning("crs of output DataArray not provided. CRS 28992 was assumed.")
+            logger.warning(
+                "write - Crs of output DataArray not provided. EPSG:28992 was assumed. set crs with e.g. da.rio.set_crs(28992)"
+            )
         elif result.rio.crs != crs:
             raise ValueError("CRS on DataArray not equal to provided crs")
         result.rio.set_crs(crs)

@@ -16,7 +16,6 @@ class RasterCalculatorRxrTest(hrt.RasterCalculatorRxr):
         raster_paths_dict: dict[str : hrt.Raster],
         metadata_key: str,
         nodata_keys: list[str],
-        verbose: bool = False,
         tempdir: hrt.Folder = None,
     ):
         super().__init__(
@@ -24,7 +23,6 @@ class RasterCalculatorRxrTest(hrt.RasterCalculatorRxr):
             raster_paths_dict=raster_paths_dict,
             nodata_keys=nodata_keys,
             metadata_key=metadata_key,
-            verbose=verbose,
             tempdir=tempdir,
         )
 
@@ -95,7 +93,6 @@ def test_raster_calc_rxr():
         raster_paths_dict=raster_paths_dict,
         metadata_key=metadata_key,
         nodata_keys=nodata_keys,
-        verbose=True,
         tempdir=None,
     )
     self.run(chunksize=chunksize, overwrite=overwrite)

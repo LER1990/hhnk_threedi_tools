@@ -23,7 +23,6 @@ class RasterCalculatorRxr:
     nodata_keys (list [str]): keys to check if all values are nodata, if yes then skip
     metadata_key (str): key in raster_paths_dict that will be used to
         create blocks and metadata
-    verbose (bool): print progress
     tempdir (hrt.Folder): pass if you want temp vrt's to be created in a specific tempdir
     """
 
@@ -33,14 +32,12 @@ class RasterCalculatorRxr:
         raster_paths_dict: dict[str : hrt.Raster],
         nodata_keys: list[str],  # TODO deze hier weghalen.
         metadata_key: str,
-        verbose: bool = False,
         tempdir: hrt.Folder = None,
     ):
         self.raster_out = raster_out
         self.raster_paths_dict = raster_paths_dict
         self.nodata_keys = nodata_keys
         self.metadata_key = metadata_key
-        self.verbose = verbose
 
         # Local vars
         self.tempdir = tempdir
@@ -73,7 +70,7 @@ class RasterCalculatorRxr:
                 if not isinstance(r, hrt.Raster):
                     raise TypeError(f"{key}:{r} in raster_paths_dict is not of type hrt.Raster")
                 if not r.exists():
-                    logger.info(f"Missing input raster key: {key} @ {r}")
+                    logger.error(f"Missing input raster key: {key} @ {r}")
                     cont = False
                     error = f"{key}: {r} does not exist"
                     continue
@@ -87,7 +84,7 @@ class RasterCalculatorRxr:
             for key, r in self.raster_paths_dict.items():
                 if r.metadata.pixelarea > self.metadata_raster.metadata.pixelarea:
                     logger.info(
-                        f"Resolution of {key} is not the same as metadataraster {self.metadata_key}, creating vrt"
+                        f"Resolution of {key} is not the same as metadataraster {self.metadata_key}, creating temporary vrt"
                     )
                     self._create_vrt(key)
                     vrt_keys.append(key)
@@ -107,16 +104,14 @@ this is not implemented or tested if it works."
                         self._create_vrt(key)
                         vrt_keys.append(key)
 
-                    if self.verbose:
-                        logger.info(f"{key} does not have same extent as {self.metadata_key}, creating vrt")
+                    logger.info(f"{key} does not have same extent as {self.metadata_key}, creating temporary vrt")
 
         # Check if we should create new file
         if cont:
             if self.raster_out is not None:
                 cont = hrt.check_create_new_file(output_file=self.raster_out, overwrite=overwrite)
                 if cont is False:
-                    if self.verbose:
-                        logger.info(f"Output raster already exists: {self.raster_out.name} @ {self.raster_out.path}")
+                    logger.info(f"Output raster already exists: {self.raster_out.name} @ {self.raster_out.path}")
 
         return cont
 
@@ -132,7 +127,6 @@ this is not implemented or tested if it works."
         # Create temp output folder.
         self.tempdir.mkdir()
         output_raster = self.tempdir.full_path(f"{input_raster.stem}.vrt")
-        logger.info(f"Creating temporary vrt; {output_raster.name} @ {output_raster}")
 
         output_raster = hrt.Raster.build_vrt(
             vrt_out=output_raster,
@@ -167,7 +161,8 @@ this is not implemented or tested if it works."
 
         Returns
         -------
-        Single DataArray where any of the dict arrays was True."""
+        Single DataArray where any of the dict arrays was True.
+        """
         return xr.concat(list(masks_dict.values()), dim="condition").any(dim="condition")
 
     # def run(self, **kwargs):
