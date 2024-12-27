@@ -3,6 +3,9 @@ import pandas as pd
 import xarray as xr
 
 import hhnk_research_tools as hrt
+import hhnk_research_tools.logger as logging
+
+logger = logging.get_logger(__name__)
 
 
 class RasterCalculatorRxr:
@@ -57,7 +60,9 @@ class RasterCalculatorRxr:
         return self.raster_paths_dict[self.metadata_key]
 
     def verify(self, overwrite: bool = False) -> bool:
-        """Verify if all inputs can be accessed and if they have the same bounds."""
+        """Verify if all inputs can be accessed and if they have the same bounds.
+        Create vrt based on metadata raster bounds and resolution
+        """
         cont = True
 
         # Check if all input rasters have the same bounds
@@ -68,7 +73,7 @@ class RasterCalculatorRxr:
                 if not isinstance(r, hrt.Raster):
                     raise TypeError(f"{key}:{r} in raster_paths_dict is not of type hrt.Raster")
                 if not r.exists():
-                    print(f"Missing input raster key: {key} @ {r}")
+                    logger.info(f"Missing input raster key: {key} @ {r}")
                     cont = False
                     error = f"{key}: {r} does not exist"
                     continue
@@ -77,11 +82,13 @@ class RasterCalculatorRxr:
             raise FileNotFoundError(error)
 
         # Check resolution
+        vrt_keys = []
         if cont:
-            vrt_keys = []
             for key, r in self.raster_paths_dict.items():
                 if r.metadata.pixelarea > self.metadata_raster.metadata.pixelarea:
-                    print(f"Resolution of {key} is not the same as metadataraster {self.metadata_key}, creating vrt")
+                    logger.info(
+                        f"Resolution of {key} is not the same as metadataraster {self.metadata_key}, creating vrt"
+                    )
                     self._create_vrt(key)
                     vrt_keys.append(key)
                 if r.metadata.pixelarea < self.metadata_raster.metadata.pixelarea:
@@ -98,9 +105,10 @@ this is not implemented or tested if it works."
                     # Create vrt if it was not already created in resolution check
                     if key not in vrt_keys:
                         self._create_vrt(key)
+                        vrt_keys.append(key)
 
                     if self.verbose:
-                        print(f"{key} does not have same extent as {self.metadata_key}, creating vrt")
+                        logger.info(f"{key} does not have same extent as {self.metadata_key}, creating vrt")
 
         # Check if we should create new file
         if cont:
@@ -108,7 +116,7 @@ this is not implemented or tested if it works."
                 cont = hrt.check_create_new_file(output_file=self.raster_out, overwrite=overwrite)
                 if cont is False:
                     if self.verbose:
-                        print(f"Output raster already exists: {self.raster_out.name} @ {self.raster_out.path}")
+                        logger.info(f"Output raster already exists: {self.raster_out.name} @ {self.raster_out.path}")
 
         return cont
 
@@ -124,7 +132,7 @@ this is not implemented or tested if it works."
         # Create temp output folder.
         self.tempdir.mkdir()
         output_raster = self.tempdir.full_path(f"{input_raster.stem}.vrt")
-        print(f"Creating temporary vrt; {output_raster.name} @ {output_raster}")
+        logger.info(f"Creating temporary vrt; {output_raster.name} @ {output_raster}")
 
         output_raster = hrt.Raster.build_vrt(
             vrt_out=output_raster,
@@ -149,13 +157,17 @@ this is not implemented or tested if it works."
                 else:
                     nodatamasks[key] = da_dict[key] == nodata
 
-            da_nodatamasks = xr.concat(list(nodatamasks.values()), dim="condition").any(dim="condition")
+            da_nodatamasks = self.concat_masks(nodatamasks)
         else:
             da_nodatamasks = False
         return da_nodatamasks
 
-    def concat_masks(self, masks_dict) -> xr.DataArray:
-        """Create a DataArray with"""
+    def concat_masks(self, masks_dict: dict) -> xr.DataArray:
+        """Concat DataArray from a dict of arrays.
+
+        Returns
+        -------
+        Single DataArray where any of the dict arrays was True."""
         return xr.concat(list(masks_dict.values()), dim="condition").any(dim="condition")
 
     # def run(self, **kwargs):

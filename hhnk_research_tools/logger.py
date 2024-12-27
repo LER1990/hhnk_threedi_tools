@@ -51,7 +51,8 @@ def get_logconfig_dict(level_root="WARNING", level_dict=None, log_filepath=None)
         },
         "formatters": {
             "time_level_name": {
-                "format": "%(asctime)s|%(levelname)-8s| %(name)s:%(lineno)-4s| %(message)s",
+                "format": "%(asctime)s|%(levelname)-8s| %(name)s:%(lineno)-4d| %(message)s",
+                # "format": "%(asctime)s|%(levelname)-8s| %(name)s-%(process)d::%(module)s|%(lineno)-4s: %(message)s",
                 "datefmt": "%H:%M:%S",
             },
             # "error": {"format": "%(asctime)s-%(levelname)s-%(name)s-%(process)d::%(module)s|%(lineno)s:: %(message)s"},
@@ -120,6 +121,8 @@ def get_logger(name: str, level=None):
     Othwerise:
         logger = hrt.logging.get_logger(name=__name__, level='INFO')
 
+    The
+
     Parameters
     ----------
     name : str
@@ -129,6 +132,15 @@ def get_logger(name: str, level=None):
         Only use this when debugging. Otherwise make the logger inherit the level from the config.
         When None it will use the default from get_logconfig_dict.
     """
+    # Rename long names with shorter ones
+    replacements = {
+        "hhnk_research_tools": "hrt",
+        "hhnk_threedi_tools": "htt",
+    }
+
+    for old, new in replacements.items():
+        name = name.replace(old, new)
+
     logger = logging.getLogger(name)
     if level is not None:
         logger.setLevel(level)

@@ -9,8 +9,8 @@ if TYPE_CHECKING:
     # TODO zou moeten werken met typehints van imports. Maar vraag is maar of het werkt.
     import hhnk_research_tools as hrt
 
-import hhnk_research_tools.logger as logging
 import hhnk_research_tools.installation_checks
+import hhnk_research_tools.logger as logging
 import hhnk_research_tools.threedi as threedi
 import hhnk_research_tools.variables as variables
 import hhnk_research_tools.waterschadeschatter.resources
@@ -83,7 +83,7 @@ logging.set_default_logconfig(
     level_root="WARNING",
     level_dict={
         "DEBUG": ["__main__"],
-        "INFO": ["hhnk_research_tools", "hhnk_threedi_tools"],
+        "INFO": ["hrt", "htt"],
         "ERROR": ["fiona", "rasterio"],
     },
 )
