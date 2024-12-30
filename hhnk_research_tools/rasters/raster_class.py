@@ -316,7 +316,7 @@ class Raster(File):
         """Build vrt from input files.
         overwrite (bool)
         bounds (np.array): format should be; (xmin, ymin, xmax, ymax)
-            if None will use input files.
+            if None will use input files. (Raster.metadata.bbox_gdal)
         input_files (list): list of paths to input rasters
         resolution: "highest"|"lowest"|"average"
             instead of "user" option, provide a float for manual target_resolution
@@ -325,6 +325,9 @@ class Raster(File):
         # TODO add option for relative to VRT = 1
 
         vrt_out = cls(vrt_out)
+
+        if vrt_out.suffix != ".vrt":
+            raise ValueError(f"Provide .vrt file instead of {vrt_out.suffix}")
 
         if check_create_new_file(output_file=vrt_out, overwrite=overwrite):
             # Set inputfiles to list of strings.

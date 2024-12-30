@@ -81,7 +81,7 @@ DEFAULT_NODATA_VALUES = {
     "float32": np.nan,
     "float64": np.nan,  # Or np.finfo(np.float64).min
     "bool": False,
-}
+}  # TODO the gdal datatypes to numpy name conversion is found here; rasterio.dtypes.dtype_fwd
 
 
 class ThreediInformation:
