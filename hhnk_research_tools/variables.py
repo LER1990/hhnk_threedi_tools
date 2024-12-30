@@ -1,3 +1,4 @@
+import numpy as np
 from osgeo import gdal
 
 # default_variables
@@ -68,6 +69,19 @@ t_index_col = "value"
 
 # Results
 one_d_two_d = "1d2d"
+
+
+DEFAULT_NODATA_VALUES = {
+    "int8": np.iinfo(np.int8).min,
+    "int16": np.iinfo(np.int16).min,
+    "int32": np.iinfo(np.int32).min,
+    "uint8": np.iinfo(np.uint8).max,
+    "uint16": np.iinfo(np.uint16).max,
+    "uint32": np.iinfo(np.uint32).max,
+    "float32": np.nan,
+    "float64": np.nan,  # Or np.finfo(np.float64).min
+    "bool": False,
+}
 
 
 class ThreediInformation:
