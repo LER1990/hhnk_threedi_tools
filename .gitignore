@@ -7,6 +7,7 @@ hhnk_research_tools.egg-info
 .spyproject
 local_settings.py
 *.aux.xml
+.mypy_cache
 
 # Pytests
 .coverage

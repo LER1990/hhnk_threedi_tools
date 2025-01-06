@@ -55,9 +55,13 @@ class RasterBlocks:
             if self.nodata_keys is not None:
                 for key in self.nodata_keys:
                     self.blocks[key] = self.read_array_window(key)
-                    self.masks[key] = (
-                        self.blocks[key] == self.raster_paths_dict[key].nodata
-                    )
+
+                    if np.isnan(self.raster_paths_dict[key].nodata):
+                        self.masks[key] = np.isnan(self.blocks[key])
+                    else:
+                        self.masks[key] = (
+                            self.blocks[key] == self.raster_paths_dict[key].nodata
+                        )
 
                     if np.all(self.masks[key]):
                         # if all values in masks are nodata then we can break loading
@@ -83,9 +87,12 @@ class RasterBlocks:
                     if key not in self.blocks:
                         self.blocks[key] = self.read_array_window(key)
                     if (key in self.mask_keys) and (key not in self.masks):
-                        self.masks[key] = (
-                            self.blocks[key] == self.raster_paths_dict[key].nodata
-                        )
+                        if np.isnan(self.raster_paths_dict[key].nodata):
+                            self.masks[key] = np.isnan(self.blocks[key])
+                        else:
+                            self.masks[key] = (
+                                self.blocks[key] == self.raster_paths_dict[key].nodata
+                            )
 
         except Exception as e:
             raise e
@@ -480,12 +487,14 @@ this is not implemented or tested if it works."
                                 # Create histogram of unique values of dem and count
                                 val, count = np.unique(block_out, return_counts=True)
                                 for v, c in zip(val, count):
-                                    if v == v:  # check no nan
+                                    if np.isnan(v):
+                                        v = "nodata"
+                                    else:
                                         v = int(v * 10**decimals)
-                                        if v not in hist_label.keys():
-                                            hist_label[v] = int(c)
-                                        else:
-                                            hist_label[v] += int(c)
+                                    if v not in hist_label.keys():
+                                        hist_label[v] = int(c)
+                                    else:
+                                        hist_label[v] += int(c)
 
                         if self.output_nodata * 10**decimals in hist_label:
                             hist_label.pop(self.output_nodata * 10**decimals)
