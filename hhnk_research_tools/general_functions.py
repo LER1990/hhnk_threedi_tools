@@ -9,6 +9,10 @@ from uuid import uuid4
 
 import geopandas as gpd
 
+import hhnk_research_tools.logger as logging
+
+logger = logging.get_logger(__name__)
+
 
 def get_functions(cls, stringify=True):
     """Get a string with functions (methods) in a class."""
@@ -76,32 +80,34 @@ def check_create_new_file(
     create = False
     output_file = Path(str(output_file))  # noqa
 
-    # Als geen suffix (dus geen file), dan error
-    if check_is_file:  #
+    # Raise when no suffix if checking for file
+    if check_is_file:
         if not output_file.suffix:
             raise TypeError(f"{output_file} is not a file.")
 
-    # Rasterize regions
+    # Check if we should create the file
     if not output_file.exists():
         create = True
-    else:
-        if overwrite:
-            output_file.unlink()
-            create = True
+    elif overwrite:
+        logger.info(f"check_create_new_file - Removed {output_file.name} due to overwrite=True")
+        output_file.unlink()
+        create = True
+    elif input_files:
+        # Check edit times. To see if raster needs to be updated.
+        output_mtime = output_file.stat().st_mtime
 
-        if input_files:
-            # Check edit times. To see if raster needs to be updated.
-            output_mtime = output_file.stat().st_mtime
+        for input_file in input_files:
+            input_file = Path(str(input_file))
+            if input_file.exists():
+                input_mtime = input_file.stat().st_mtime
 
-            for input_file in input_files:
-                input_file = Path(input_file)
-                if input_file.exists():
-                    input_mtime = input_file.stat().st_mtime
-
-                    if input_mtime > output_mtime:
-                        output_file.unlink()
-                        create = True
-                        break
+                if input_mtime > output_mtime:
+                    logger.info(
+                        f"check_create_new_file - Removed {output_file.name} due to creation time older than input"
+                    )
+                    output_file.unlink()
+                    create = True
+                    break
     return create
 
 
